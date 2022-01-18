@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "allowJs": true,
+    "noEmit": true,
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "strict": true
+  },
+  "include": [
+    "node_modules/@types/**/*.d.ts",
+    "./src/**/*"
+  ]
+}

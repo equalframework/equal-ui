@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="fr" id="top">
+<head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+        <!-- webapp title -->
+        <title>Symbiose</title>
+        <meta name="title" content="">
+        <!-- webapp description -->
+        <meta name="description" content="">        
+        
+        <base href="/symbiose-ui/">
+        
+        
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,600,700,400italic|Roboto+Mono:400,500|Material+Icons|Google+Material+Icons" />
+
+        <!-- <link rel="stylesheet" type="text/css" href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css" > -->
+        <link rel="stylesheet" type="text/css" href="https://unpkg.com/material-components-web@12.0.0/dist/material-components-web.min.css">
+        <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.12.0/themes/smoothness/jquery-ui.css">
+        <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+        <!-- scripts -->
+          
+        <!-- <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script> -->    
+
+        <script type="text/javascript" src="equal.bundle.js"></script>
+
+<script>
+
+var menu = [
+{
+        name: 'Catalog',
+        description: '',
+        icon: 'airplanemode_on',
+        type: 'parent',
+    	children: [
+            {
+                name: 'Packs',
+                description: '',
+                icon: '',
+                type: 'entry',
+                entity: 'qursus\\Pack',
+                target: 'list.default'
+            },
+            {
+                name: 'Modules',
+                description: '',
+                icon: '',
+                type: 'entry',
+                entity: 'qursus\\Module',
+                target: 'list.default'
+            },
+            {
+                name: 'Price lists',
+                description: '',
+                icon: '',
+                type: 'entry',
+                entity: 'sale\\price\\PriceList',
+                target: 'list.default'
+            },
+            {
+                name: 'PL Categories',
+                description: '',
+                icon: '',
+                type: 'entry',
+                entity: 'sale\\price\\PriceListCategory',
+                target: 'list.default'
+            }        
+        ]
+    },     
+    {
+        name: 'Booking',
+        description: '',
+        icon: 'wallet_travel',
+        type: 'parent',
+    	children: [
+            {
+                name: 'Bookings',
+                description: '',
+                icon: 'wallet_travel',
+                type: 'entry',
+                entity: 'sale\\booking\\Booking',
+                target: 'list.default'
+            },
+            {
+                name: 'Types',
+                description: '',
+                icon: '',
+                type: 'entry',
+                entity: 'sale\\booking\\Type',
+                target: 'list.default'
+            },
+            {
+                name: 'Categories',
+                description: '',
+                icon: '',
+                type: 'entry',
+                entity: 'sale\\product\\Category',
+                target: 'list.default'
+            },
+            {
+                name: 'Categories',
+                description: '',
+                icon: '',
+                type: 'entry',
+                entity: 'sale\\catalog\\Product',
+                target: 'list.default'
+            }            
+        ]
+    },    
+    {
+        name: 'Users & Groups',
+        description: '',
+        icon: 'groups',
+        type: 'parent',
+    	children: [
+            {
+                name: 'Users',
+                description: '',
+                icon: 'person',
+                type: 'entry',
+                entity: 'identity\\User',
+                target: 'list.default'
+            },
+            {
+                name: 'Groups',
+                description: '',
+                icon: 'group',
+                type: 'entry',
+                entity: 'core\\Group',                
+                target: 'list.default'
+            },
+            {
+                name: 'Permissions',
+                description: '',
+                icon: 'lock',
+                type: 'entry',
+                entity: 'core\\Permission',                
+                target: 'list.default'             
+            }            
+
+        ]
+    },
+    {
+        name: 'Identity',
+        description: '',
+        icon: 'person_outline',
+        type: 'parent',
+    	children: [
+            {
+                name: 'Identities',
+                description: '',
+                icon: 'person_outline',
+                type: 'entry',
+                entity: 'identity\\Identity',
+                target: 'list.default'
+            },
+            {
+                name: 'Partners',
+                description: '',
+                icon: 'group_work',
+                type: 'entry',
+                entity: 'identity\\Partner',
+                target: 'list.default'
+            },
+            {
+                name: 'Establishments',
+                description: '',
+                icon: 'house',
+                type: 'entry',
+                entity: 'identity\\Establishment',
+                target: 'list.default',
+            },
+            {
+                name: 'Centers',
+                description: '',
+                icon: 'house',
+                type: 'entry',
+                entity: "lodging\\identity\\Center",
+                target: 'list.default',
+            },
+            {
+                name: 'Addresses',
+                description: '',
+                icon: 'import_contacts',
+                type: 'entry',
+                entity: 'identity\\Address',
+                target: 'list.default',
+            },
+            {
+                name: 'Contacts',
+                description: '',
+                icon: 'contacts',
+                type: 'entry',
+                entity: 'identity\\Partner',
+                target: 'list.contact'
+            }
+        ]
+    },
+    {
+        name: 'System',
+        description: '',
+        icon: 'settings',
+        type: 'parent',
+    	children: [
+            {
+                name: 'Users',
+                description: '',
+                icon: '',
+                type: 'entry',
+                entity: 'core\\User',
+                target: 'list.default'             
+            },
+            {
+                name: 'Logs',
+                description: '',
+                icon: '',
+                type: 'entry',
+                entity: 'core\\Log',
+                target: 'list.default'             
+            },
+            {
+                name: 'Config',
+                description: '',
+                icon: '',
+                type: 'entry',
+                entity: 'core\\Setting',
+                target: 'list.default'             
+            }            
+        ]
+    }
+
+];
+
+$(document).ready( function() {
+    var eq = new eQ('eq-listener');
+    // eq.test();   
+
+    eq.loadMenu(menu);
+
+    $('#eq-test').on('click', function () {
+        eq.popup({entity: 'core\\User', type: 'list'});
+    });
+
+/*
+for(var i = 0; i < menu.length; ++i) {
+    var item = menu[i];
+    for(var j = 0; j < menu[i].children.length; ++j) {
+        var item = menu[i].children[j];
+        (function(item) {
+            $('#sb-root').append(
+                $('<a>').html(item.name + ' ' + item.entity).on('click', () => {
+                    $('#sb-events').trigger('_openContext', {entity: item.entity, type: 'list', domain: ['id', '>', 5]} );
+                })
+            );
+        })(item);
+    }
+}
+*/
+
+/*
+
+A new context can be invoked either ways:
+- eq.opent(context)
+- $('#sb-events').trigger('_openContext', context );
+
+*/
+
+});
+</script>
+
+</head>
+<body>
+
+    <div id="sb-root">
+        <!--
+        <div id="test" title="test dialog">This is a test dialog generated by jquery-ui</div>
+        <div><input type="text" id="datepicker"></div>
+        -->
+
+        <div id="sb-menu"><a id="eq-test" href="#">test</a></div>
+        <div id="sb-container"></div>
+    </div>
+    <div style="display: none;" id="eq-listener"></div>
+
+</body>
+</html>
