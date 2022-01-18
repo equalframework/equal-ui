@@ -15,7 +15,7 @@ import "jquery-ui/ui/widgets/datepicker";
 
 import 'daterangepicker/daterangepicker.js';
 
-import '../datepicker-improved.jquery.js';
+import './datepicker-improved.jquery.js';
 
 import { locale } from "./i18n/jqueryui";
 

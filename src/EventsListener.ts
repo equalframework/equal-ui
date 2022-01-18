@@ -24,7 +24,7 @@ declare global {
  * It acts as a factory facade for relaying event to the Frames they relate to.
  *
  */
-class EqualEventsListener {
+class EventsListener {
 
     // jquery object for components communication (Views and Widgets)
     private $sbEvents:any;
@@ -370,4 +370,4 @@ class EqualEventsListener {
     }
 }
 
-module.exports = EqualEventsListener;
+module.exports = EventsListener;

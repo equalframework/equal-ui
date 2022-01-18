@@ -2,7 +2,7 @@
  var webpack = require('webpack');
  
  module.exports = {
-    entry: './build/EqualEventsListener.js',
+    entry: './build/EventsListener.js',
     output: {
         path: path.resolve(__dirname, '.'),
         filename: 'equal.bundle.js',
