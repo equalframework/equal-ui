@@ -2,3 +2,5 @@ build
 node_modules
 .vscode
 package-lock.json
+equal.bundle.js
+equal.bundle.js.map
