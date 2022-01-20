@@ -9,7 +9,8 @@ import { environment } from "./environment";
 
 
 /**
- * Frames handle a stack of contexts. They're in charge of their header.
+ * Frames handle a stack of contexts. 
+ * They're in charge of their header and lang switcher.
  *
  */
 export class Frame {
@@ -78,7 +79,7 @@ export class Frame {
         let purpose = context.getPurpose();
 
         let view_schema = await ApiService.getView(entity, type+'.'+name);
-        let translation = await ApiService.getTranslation(entity, environment.lang);
+        let translation = await ApiService.getTranslation(entity, environment.locale);
 
         if(translation.hasOwnProperty('name')) {
             entity = translation['name'];
@@ -252,7 +253,24 @@ export class Frame {
                 this.closeContext();
             });
         }
-        this.$headerContainer.show().empty().append($elem);
+
+        // lang selector controls the current context (lang from current context is used when opening subsequent contexts)
+        let $lang_selector = UIHelper.createSelect('lang-selector', 'Langue', {fr: 'français', en: 'anglais'}, this.context.getLang());
+        $lang_selector.addClass('lang-selector');
+
+        $lang_selector.on('change', () => {
+            // when the lang selector is changed by user, update current context
+            let lang:string = <string> $lang_selector.find('input').val();
+console.log('new lang', lang);
+            let context: Context = new Context(this, this.context.getEntity(), this.context.getType(), this.context.getName(), this.context.getDomain(), this.context.getMode(), this.context.getPurpose(), lang, this.context.getCallback(), this.context.getConfig());
+            this.context.destroy();
+            this.context = context;
+            this.context.isReady().then( () => {
+                $(this.domContainerSelector).append(this.context.getContainer());
+            });
+        });                
+
+        this.$headerContainer.show().empty().append($elem).append($lang_selector);
     }
 
 
@@ -344,6 +362,11 @@ export class Frame {
 
         if(config.hasOwnProperty('display_mode')) {
             this.display_mode = config.display_mode;
+        }
+
+        // if there is a current context, use its lang for the new context
+        if(this.context.hasOwnProperty('$container')) {
+            config.lang = this.context.getLang();
         }
 
         // create a draft object if required: Edition is based on asynchronous creation: a draft is created (or recylcled) and is turned into an instance if 'update' action is triggered.

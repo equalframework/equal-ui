@@ -24,9 +24,8 @@ export class _TranslationService {
         this.translations = $.Deferred();
         this.resolved = false;
 
-
         // load i18n file from server
-        fetch('/assets/i18n/'+environment.lang+'.json')
+        fetch('/assets/i18n/'+environment.locale+'.json')
         .then( (response) => {
             if(response.ok) {
                 response.json().then( (data) => {

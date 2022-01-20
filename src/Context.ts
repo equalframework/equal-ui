@@ -5,7 +5,7 @@ import { environment } from "./environment";
 
 
 export class Context {
-    
+
     public $container: any;
 
     private frame: Frame;
@@ -16,6 +16,8 @@ export class Context {
     // callback to be called when the context closes
     private callback: (data:any) => void;
 
+    private config: any;
+
 /*
 
 Contexts have a type and a mode, and are created for a purpose.
@@ -23,41 +25,43 @@ The purpose influences the need for available actions (buttons in the header),
 and can be displayed to user as an indication of the expected action.
 
 {type = list} (toggleable mode)
-    * {purpose = view}: View a list of existing objects : only possible action should be available ('create')    
-    * {purpose = select}: Select a value for a field : the displayed list purpose is to select an item (other actions should not be available)    
+    * {purpose = view}: View a list of existing objects : only possible action should be available ('create')
+    * {purpose = select}: Select a value for a field : the displayed list purpose is to select an item (other actions should not be available)
     * {purpose = add}: Add one or more objects to a x2many fields
 
 {type = form}
     * {mode = view}
         * {purpose = view}: View a single object : only available actions should be 'edit'
-    * {mode = edit}    
-        * {purpose = create}: Create a new object : only available actions should be 'save' and 'cancel'    
+    * {mode = edit}
+        * {purpose = create}: Create a new object : only available actions should be 'save' and 'cancel'
         * {purpose = update}: Update an existing object : only available actions should be 'save' and 'cancel'
 
  */
- 
+
 
     constructor(frame: Frame, entity: string, type: string, name: string, domain: any[], mode: string = 'view', purpose: string = 'view', lang: string = environment.lang, callback: (data:any) => void = (data:any=null) => {}, config: any = null) {
+        console.log('Context - opening context', entity, type, name, domain, mode, purpose, lang, config);
         this.$container = $('<div />').addClass('sb-context');
 
         this.callback = callback;
 
+        this.config = config;
         this.frame = frame;
         this.view = new View(this, entity, type, name, domain, mode, purpose, lang, config);
         // inject View in parent Context object
         this.$container.append(this.view.getContainer());
 
-    }    
+    }
 
 
     public getUser() {
         return this.frame.getUser();
     }
-        
+
     /**
-     * Close current context.    
+     * Close current context.
      * Should be called only by parent Frame.
-     * 
+     *
      */
     public close(data:any) {
         console.log('Context::close', data);
@@ -66,20 +70,31 @@ and can be displayed to user as an indication of the expected action.
         // invoke callback to relay events across contexts (select, add, ...)
         if( ({}).toString.call(this.callback) === '[object Function]' ) {
             this.callback(data);
-        }        
+        }
+    }
+
+    /**
+     * Close current context without calling callback
+     * Should be called only by parent Frame.
+     *
+     */
+    public destroy() {
+        console.log('Context::destroy');
+        // remove Context container
+        this.$container.remove();
     }
 
     /**
      * Relay closing request to parent Frame.
-     * 
-     * @param data 
+     *
+     * @param data
      */
     public closeContext(data: any = {}) {
         this.frame.closeContext(data);
     }
 
     /**
-     * 
+     *
      * @returns Promise A promise that resolves when the View will be fully rendered
      */
     public isReady() {
@@ -101,7 +116,7 @@ and can be displayed to user as an indication of the expected action.
     public getType() {
         return this.view.type;
     }
-    
+
     public getName() {
         return this.view.name;
     }
@@ -118,6 +133,10 @@ and can be displayed to user as an indication of the expected action.
         return this.view.lang;
     }
 
+    public getCallback() {
+        return this.callback;
+    }
+
     public getContainer() {
         return this.$container;
     }
@@ -129,7 +148,11 @@ and can be displayed to user as an indication of the expected action.
     public getView() {
         return this.view;
     }
-    
+
+    public getConfig() {
+        return this.config;
+    }
+
     /**
      * Calling this method means that we need to update the model : values displayed by the context have to be re-fetched from server
      */
@@ -140,8 +163,8 @@ and can be displayed to user as an indication of the expected action.
 
     /**
      * Relay Context opening requests to parent Frame.
-     * 
-     * @param config 
+     *
+     * @param config
      */
     public async openContext(config: any) {
         await this.frame.openContext(config);

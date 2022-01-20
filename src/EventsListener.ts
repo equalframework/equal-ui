@@ -279,7 +279,8 @@ class EventsListener {
     }
 
     /**
-     * Display the context within a new popup (no target container required)
+     * Open the requested context inside a new popup (no target container required)
+     * 
      * @param config 
      */
     public async popup(config: any) {

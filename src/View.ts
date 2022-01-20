@@ -262,7 +262,7 @@ export class View {
         console.log('View::init');
         try {
 
-            this.translation = await ApiService.getTranslation(this.entity, environment.lang);
+            this.translation = await ApiService.getTranslation(this.entity, this.getLocale());
             try {
                 this.view_schema = await ApiService.getView(this.entity, this.type + '.' + this.name);
             }
@@ -490,9 +490,9 @@ export class View {
     public getLang() {
         return this.lang;
     }
-    public getModelLang() {
+    public getLocale() {
         // #todo - allow swithing amongst available langs
-        return this.lang;
+        return environment.locale;
     }
     public getTotal() {
         return this.getModel().getTotal();
@@ -1032,7 +1032,7 @@ export class View {
                             let object = objects[0];
                             try {
                                 // update new object (set to instance)
-                                const response = await ApiService.update(this.entity, [object['id']], this.model.export(object), false, this.getModelLang());
+                                const response = await ApiService.update(this.entity, [object['id']], this.model.export(object), false, this.getLang());
                                 if(response && response.length) {
                                     // merge object with response (state and name fields might have changed)
                                     object = {...object, ...response[0]};
@@ -1466,7 +1466,7 @@ export class View {
                             }
                             else {
                                 try {
-                                    const response = await ApiService.update(this.entity, [object_id], this.model.export(object), false, this.getModelLang());
+                                    const response = await ApiService.update(this.entity, [object_id], this.model.export(object), false, this.getLang());
                                     $tr.trigger('_toggle_mode', 'view');
                                     $tr.attr('data-edit', '0');
                                     // update the modfied field otherwise a confirmation will be displayed at next update
@@ -1625,7 +1625,7 @@ export class View {
                             let confirmed = confirm(TranslationService.instant('SB_ACTIONS_MESSAGE_ERASE_CONUCRRENT_CHANGES'));
                             return confirmed ? resolve(true) : reject(false);
                         });
-                        const response = await ApiService.update(this.entity, [object['id']], this.model.export(object), true, this.getModelLang());
+                        const response = await ApiService.update(this.entity, [object['id']], this.model.export(object), true, this.getLang());
                         // this.closeContext();
                         return response;
                     }

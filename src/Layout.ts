@@ -257,6 +257,7 @@ export class Layout {
         config.sortable = (item.hasOwnProperty('sortable') && item.sortable);
         config.layout = this.view.getType();
         config.lang = this.view.getLang();
+        config.locale = this.view.getLocale();
 
         if(item.hasOwnProperty('widget')) {
             // overload config with widget config, if any

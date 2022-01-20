@@ -18,7 +18,8 @@ export default class WidgetLink extends Widget {
         let $button_open = UIHelper.createButton('link-actions-open-'+this.id, '', 'icon', 'open_in_new');
 
         // open target in new window
-        $button_open.on('click', async () => {
+        $button_open.on('click', async (event) => {
+            event.stopPropagation();
             if(window) {
                 let w = window.open(value, '_blank');
                 if(w) {

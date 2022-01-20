@@ -58,12 +58,18 @@ export default class WidgetMany2Many extends Widget {
 
                 if(this.mode == 'edit') {
 
+
+                    let has_action_select = (this.config.action_select)?this.config.action_select:false;
+                    let has_action_create = (this.config.action_create)?this.config.action_create:false;
+
+
                     let $actions_set = $container.find('.sb-view-header-list-actions-set');
 
-                    if(this.rel_type == 'many2many') {
+                    if(has_action_select) {
+                        let button_label = TranslationService.instant((this.rel_type == 'many2many')?'SB_ACTIONS_BUTTON_ADD':'SB_ACTIONS_BUTTON_SELECT');
                         $actions_set
                         .append(
-                            UIHelper.createButton('action-edit', TranslationService.instant('SB_ACTIONS_BUTTON_ADD'), 'raised')
+                            UIHelper.createButton('action-edit', button_label, 'raised')
                             .on('click', async () => {
                                 let purpose = (this.rel_type == 'many2many')?'add':'select';
 
@@ -92,37 +98,37 @@ export default class WidgetMany2Many extends Widget {
                         );
                     }
 
+                    if(has_action_create) {
+                        // generate domain for object creation
+                        let domain = new Domain(this.config.domain);
+                        domain.merge(new Domain([this.config.foreign_field, '=', this.config.object_id]));
 
-                    // generate domain for object creation
-                    let domain = new Domain(this.config.domain);
-                    domain.merge(new Domain([this.config.foreign_field, '=', this.config.object_id]));
-
-                    $actions_set
-                    .append(
-                        UIHelper.createButton('action-create', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'raised')
-                        .on('click', async () => {
-                            // request a new Context for selecting an existing object to add to current selection
-                            this.getLayout().openContext({
-                                entity: this.config.entity,
-                                type: 'form',
-                                name: 'default',
-                                domain: domain.toArray(),
-                                mode: 'edit',
-                                purpose: 'create',
-                                callback: (data:any) => {
-                                    if(data && data.selection) {
-                                        if(data.selection.length) {
-                                            for(let id of data.selection) {
-                                                this.value.push(id);
+                        $actions_set
+                        .append(
+                            UIHelper.createButton('action-create', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'raised')
+                            .on('click', async () => {
+                                // request a new Context for selecting an existing object to add to current selection
+                                this.getLayout().openContext({
+                                    entity: this.config.entity,
+                                    type: 'form',
+                                    name: 'default',
+                                    domain: domain.toArray(),
+                                    mode: 'edit',
+                                    purpose: 'create',
+                                    callback: (data:any) => {
+                                        if(data && data.selection) {
+                                            if(data.selection.length) {
+                                                for(let id of data.selection) {
+                                                    this.value.push(id);
+                                                }
+                                                this.$elem.trigger('_updatedWidget');
                                             }
-                                            this.$elem.trigger('_updatedWidget');
                                         }
                                     }
-                                }
-                            });
-                        })
-                    );
-
+                                });
+                            })
+                        );
+                    }
                 }
 
                 // inject View in parent Context object

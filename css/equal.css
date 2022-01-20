@@ -85,6 +85,7 @@ body, html {
 }
 
 .sb-container-header {
+    position: relative;
     padding-left: 12px;
     height: 48px;
     border-bottom: solid 1px lightgrey;
@@ -103,6 +104,22 @@ body, html {
     color: var(--mdc-theme-primary);
 }
 
+.sb-container-header .lang-selector {
+    height: 48px;
+    width: 150px;
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+.sb-container-header .lang-selector .mdc-select__anchor {
+    height: 48px;
+}
+
+.sb-container-header .lang-selector .mdc-select__menu {
+    min-width: 150px !important;
+    max-width: 150px !important;
+}
 
 .sb-context {
     /* container height minus the header */
