@@ -64,7 +64,7 @@ export default class WidgetLink extends Widget {
                 break;
         }
 
-        if(this.config.hasOwnProperty('header') && this.getLayout().getView().getType() == 'form') {
+        if(this.config.hasOwnProperty('header') && this.config.layout == 'form') {
             this.$elem.addClass('title');
         }
 

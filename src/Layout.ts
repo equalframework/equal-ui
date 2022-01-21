@@ -215,6 +215,11 @@ export class Layout {
                     case 'uri/url':
                         type = 'link';
                         break;
+                    case 'image/gif':
+                    case 'image/png':                        
+                    case 'image/jpeg':
+                        type = 'file';
+                        break;    
                 }
             }
             config.type = type;
@@ -223,6 +228,10 @@ export class Layout {
             // we shouldn't end up here : malformed schema
             console.log('ERROR - malformed schema for field '+field);
             return config;
+        }
+
+        if(def.hasOwnProperty('usage')) { 
+            config.usage = def.usage;
         }
 
         if(def.hasOwnProperty('foreign_object')) {
@@ -252,7 +261,7 @@ export class Layout {
         config.ready = false;
         config.title = TranslationService.resolve(translation, 'model', [], field, label, 'label');
         config.description = TranslationService.resolve(translation, 'model', [], field, description, 'description');
-        config.readonly = (item.hasOwnProperty('readonly'))?item.readonly:(def.hasOwnProperty('readonly'))?def['readonly']:false;
+        config.readonly = (def.hasOwnProperty('readonly'))?def.readonly:(item.hasOwnProperty('readonly'))?item['readonly']:false;
         config.align = (item.hasOwnProperty('align'))?item.align:'left';
         config.sortable = (item.hasOwnProperty('sortable') && item.sortable);
         config.layout = this.view.getType();
@@ -382,6 +391,10 @@ export class Layout {
 
                         if(column.hasOwnProperty('width')) {
                             $column.addClass('mdc-layout-grid__cell--span-' + Math.floor((parseInt(column.width, 10) / 100) * 12));
+                        }
+
+                        if(column.hasOwnProperty('align') && column.align == 'right') {
+                            $column.css({'margin-left': 'auto'});
                         }
 
                         let $inner_cell = $('<div />').addClass('mdc-layout-grid__cell').appendTo($column);
@@ -552,9 +565,16 @@ export class Layout {
                     let $cell = $(elem);
                     let field:any = $cell.attr('data-field');
                     let widget = this.model_widgets[object.id][field];
+
                     // toggle mode
                     let mode = (widget.getMode() == 'view')?'edit':'view';
                     let $widget = widget.setMode(mode).render();
+
+                    // handle special situations that allow cell content to overflow
+                    if(widget.getType() == 'boolean') {
+                        $cell.addClass('allow-overflow');
+                    }
+
                     $cell.empty().append($widget);
 
                     if(mode == 'edit') {
@@ -628,7 +648,8 @@ export class Layout {
 
                 let widget:Widget = WidgetFactory.getWidget(this, config.type, '', '', config);
                 widget.setValue(value);
-
+                widget.setReadonly(config.readonly);
+                
                 // store widget in widgets Map, using widget id as key (there are several rows for each field)
                 if(typeof this.model_widgets[object.id] == 'undefined') {
                     this.model_widgets[object.id] = {};

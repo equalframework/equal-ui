@@ -169,7 +169,7 @@ export class Frame {
 
         let current_purpose_string = await this.getPurposeString(this.context);
 
-        let available_width = (this.$headerContainer.length && this.$headerContainer[0])?this.$headerContainer[0].clientWidth * 0.8:300;
+        let available_width = (this.$headerContainer.length && this.$headerContainer[0])?this.$headerContainer[0].clientWidth * 0.9:300;
 
         let font = $temp.css( "font-weight" ) + ' ' +$temp.css( "font-size" ) + ' ' + $temp.css( "font-family");
         let total_text_width = this.getTextWidth(current_purpose_string, font);
@@ -179,7 +179,7 @@ export class Frame {
         if(total_text_width > available_width) {
             let char_width = total_text_width / current_purpose_string.length;
             let max_chars = available_width / char_width;
-            current_purpose_string = current_purpose_string.substr(0, max_chars-1)+'...';
+            current_purpose_string = current_purpose_string.substring(0, max_chars-1)+'...';
         }
         else {
             // use all contexts in stack (loop in reverse order)

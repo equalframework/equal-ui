@@ -1012,7 +1012,7 @@ export class View {
             case 'edit':
                 $std_actions
                 .append(
-                    UIHelper.createButton('action-save', TranslationService.instant('SB_ACTIONS_BUTTON_SAVE'), 'raised')
+                    UIHelper.createButton('action-save', TranslationService.instant('SB_ACTIONS_BUTTON_SAVE'), 'raised', '', 'secondary')
                     .on('click', async () => {
                         let objects;
                         if(this.purpose == 'create') {
@@ -1442,7 +1442,7 @@ export class View {
 
             let $action_set_selected_edit_actions = $('<div/>').addClass('sb-view-header-list-actions-selected-edit');
 
-            let $button_save = UIHelper.createButton('action-selected-edit-save', TranslationService.instant('SB_ACTIONS_BUTTON_SAVE'), 'raised').appendTo($action_set_selected_edit_actions);
+            let $button_save = UIHelper.createButton('action-selected-edit-save', TranslationService.instant('SB_ACTIONS_BUTTON_SAVE'), 'raised', '', 'secondary').appendTo($action_set_selected_edit_actions);
             let $button_cancel = UIHelper.createButton('action-selected-edit-cancel', TranslationService.instant('SB_ACTIONS_BUTTON_CANCEL'), 'outlined').appendTo($action_set_selected_edit_actions);
 
             $action_set.append($action_set_selected_edit_actions);

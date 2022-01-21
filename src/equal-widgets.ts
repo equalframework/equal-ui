@@ -9,6 +9,7 @@ import WidgetString from "./widgets/WidgetString";
 import WidgetText from "./widgets/WidgetText";
 import WidgetLink from "./widgets/WidgetLink";
 import WidgetSelect from "./widgets/WidgetSelect";
+import WidgetFile from "./widgets/WidgetFile";
 import WidgetOne2Many  from "./widgets/WidgetOne2Many";
 import WidgetMany2One  from "./widgets/WidgetMany2One";
 import WidgetMany2Many  from "./widgets/WidgetMany2Many";
@@ -71,6 +72,9 @@ config: {
                 return new WidgetText(layout, label, value, config);    
             case 'link':
                 return new WidgetLink(layout, label, value, config);    
+            case 'binary':
+            case 'file':
+                return new WidgetFile(layout, label, value, config);    
             case 'string':
             default:
                 return new WidgetString(layout, label, value, config);

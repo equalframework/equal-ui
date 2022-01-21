@@ -19,7 +19,7 @@ class UIHelper {
 /*
  Helpers for element creation
 */
-    public static createButton(id:string, label:string, type:string = '', icon:string = '')  { 
+    public static createButton(id:string, label:string, type:string = '', icon:string = '', variant='')  { 
         let $button = $('<button/>').attr('id', id);
 
         if(['outlined', 'raised', 'text'].indexOf(type) >= 0) {
@@ -66,6 +66,16 @@ class UIHelper {
             $button.on( "mouseleave", () => {
                 $button.parent().find('#'+id+'-tooltip').addClass('mdc-tooltip--hide');
             });
+        }
+
+        switch(variant) {
+            case 'primary':
+                $button.addClass('mdc-button--primary');                
+                break;
+            case 'secondary':
+                $button.addClass('mdc-button--secondary');
+                break;
+            default:
         }
         
         new MDCRipple($button[0]);        

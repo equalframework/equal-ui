@@ -6,8 +6,12 @@
     --mdc-theme-primary-selected: #f5f5ff;
     --mdc-theme-primary-outline: #b1b1dc;
 
+
+    
     /* checkbox background */
-    --mdc-theme-secondary: #3f51b5;
+    /* --mdc-theme-secondary: #3f51b5; */
+    --mdc-theme-secondary: #ff4081;
+
     /* menus */
     --mdc-typography-subtitle1-font-size: 14px;
     /* table headers */
@@ -504,6 +508,14 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     opacity: 0;
 }
 
+.mdc-button--primary {
+    background-color: var(--mdc-theme-primary) !important;
+}
+
+.mdc-button--secondary {
+    background-color: var(--mdc-theme-secondary) !important;
+}
+
 /* Special SB widgets customizations */
 
 /* support for title strings */
@@ -556,15 +568,33 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     padding-left: 16px;
 }
 
-/* added for WP colmpliance */ 
+/* added for WP compliance */ 
 .sb-widget.sb-widget-type-boolean .mdc-switch__native-control {
     opacity: 0 !important;
 }
 
+.sb-widget-cell .sb-file-thumbnail{
+    height: 45px;
+    width: 45px;
+    background-size: cover;
+}
+
+.sb-widget.sb-dropable {
+    outline: dashed 2px var(--mdc-theme-secondary);
+}
+
+.sb-widget.sb-dropable.highlight {
+    outline: solid 2px var(--mdc-theme-secondary);
+    opacity: 0.5;
+}
 
 /* adapt inputs for inline editing */
 .sb-widget-cell .mdc-text-field {
   height: 100%;
+}
+
+.sb-widget-cell.allow-overflow {
+    overflow: visible !important;
 }
 
 .sb-widget-cell .mdc-text-field {
