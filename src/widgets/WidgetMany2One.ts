@@ -153,7 +153,21 @@ export default class WidgetMany2One extends Widget {
                 };
 
                 if(!this.readonly) {
+
                     
+                    let $button_reset = UIHelper.createButton('m2o-actions-reset-'+this.id, '', 'icon', 'close').css({'position': 'absolute', 'right': '45px', 'top': '5px', 'z-index': '2'});
+
+                    if(value.length) {
+                        this.$elem.append($button_reset);
+                        // make room for reset button
+                        $select.find('input').css({'width': 'calc(100% - 50px)'});
+                    }
+                    
+                    $button_reset.on('click', () => {
+                        this.value = {id: 0, name:''};
+                        this.$elem.trigger('_updatedWidget');
+                    });
+
                     $select.on('click', () => {
                         // make the menu sync with its parent width (menu is 'fixed')
                         $select.find('.mdc-menu-surface').width(<number>$select.width());
@@ -193,7 +207,7 @@ export default class WidgetMany2One extends Widget {
                     });
                 }
 
-                // #memo - do not load on init (to prevent burst requests when view are displayed in edit mode)
+                // #memo - do not load on init (to prevent burst requests when view is displayed in edit mode)
                 // feedObjects();                
                 
                 break;

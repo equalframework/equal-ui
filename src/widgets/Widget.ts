@@ -72,7 +72,6 @@ export default class Widget {
 
 
     public setValue(value: any) {
-        console.log('Widget::setValue', value);
         this.value = value;
         return this;
     }

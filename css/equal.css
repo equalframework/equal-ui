@@ -573,10 +573,15 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     opacity: 0 !important;
 }
 
-.sb-widget-cell .sb-file-thumbnail{
+.sb-widget.sb-image-thumbnail {
+    height: 150px;
+    width: 150px;
+    background-size: cover;
+}
+
+.sb-widget-cell .sb-widget.sb-image-thumbnail {
     height: 45px;
     width: 45px;
-    background-size: cover;
 }
 
 .sb-widget.sb-dropable {
@@ -667,6 +672,9 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     box-shadow: none !important;
     margin: 2px 0;
 }
+
+
+/* mdc styling customizations */
 
 .mdc-data-table {
     height: 100%;

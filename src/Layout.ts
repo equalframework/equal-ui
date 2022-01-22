@@ -839,7 +839,7 @@ export class Layout {
                         config.domain = tmpDomain.toArray();
                     }
                 }
-
+                
                 has_changed = (!value || $parent.data('value') != JSON.stringify(value));
 
                 widget.setConfig({...config, ready: true})
@@ -847,7 +847,7 @@ export class Layout {
                 .setValue(value);
 
                 // store data to parent, for tracking changes at next refresh (prevent storing references)
-                $parent.data('value', JSON.stringify(value));
+                $parent.data('value', JSON.stringify(value) || null);
 
                 let visible = true;
                 // handle visibility tests (domain)

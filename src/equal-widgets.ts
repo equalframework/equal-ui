@@ -10,6 +10,7 @@ import WidgetText from "./widgets/WidgetText";
 import WidgetLink from "./widgets/WidgetLink";
 import WidgetSelect from "./widgets/WidgetSelect";
 import WidgetFile from "./widgets/WidgetFile";
+import WidgetImage from "./widgets/WidgetImage";
 import WidgetOne2Many  from "./widgets/WidgetOne2Many";
 import WidgetMany2One  from "./widgets/WidgetMany2One";
 import WidgetMany2Many  from "./widgets/WidgetMany2Many";
@@ -74,6 +75,9 @@ config: {
                 return new WidgetLink(layout, label, value, config);    
             case 'binary':
             case 'file':
+                if(config.hasOwnProperty('usage') && config.usage.substring(0, 5) == 'image') {
+                    return new WidgetImage(layout, label, value, config);        
+                }
                 return new WidgetFile(layout, label, value, config);    
             case 'string':
             default:
