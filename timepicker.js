@@ -1,4 +1,3 @@
-
 (function ($, window, document) {
 
     "use strict";
@@ -49,7 +48,7 @@
         this.options = $.extend({}, defaults, options);
 
         this.element.addClass('hastimepicker');
-//        this.element.attr('onkeypress', 'return false;');
+        // this.element.attr('onkeypress', 'return false;');
         this.element.attr('aria-showingpicker', 'false');
         this.createPicker();
         this.timepicker = $('.timepicker');
@@ -163,7 +162,7 @@
                 }
                 picker += '<li class="timepicker__controls__control"><span class="' + this.options.upArrow + '"></span><span class="timepicker__controls__control--meridiem" tabindex="-1">AM</span><span class="' + this.options.downArrow + '"></span></li></ul></div>';
                 $('body').append(picker);
-//                this.attachKeyboardEvents();
+                // this.attachKeyboardEvents();
             }
         },
 

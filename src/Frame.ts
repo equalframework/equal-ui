@@ -1,21 +1,21 @@
 import { $ } from "./jquery-lib";
 
 import { Context, Domain } from "./equal-lib";
-import { ApiService, TranslationService } from "./equal-services";
-
+import { ApiService, EnvService, TranslationService } from "./equal-services";
 import { UIHelper } from './material-lib';
-
-import { environment } from "./environment";
 
 
 /**
- * Frames handle a stack of contexts. 
- * They're in charge of their header and lang switcher.
+ * Frames handle a stack of contexts
+ * and are in charge of their header and lang switcher.
  *
  */
 export class Frame {
 
     private eq: any;
+
+    private environment: any = null;
+    private languages: any = {};
 
     private $headerContainer: any;
 
@@ -49,14 +49,36 @@ export class Frame {
         return this.context;
     }
 
+    public getParentContext(offset:number = -1) {
+        let len = this.stack.length;
+        let pos = len - Math.abs(offset);
+        if(pos >= 0) {
+            return this.stack[pos];
+        }
+        return this.context;
+    }
+
+    public getEnv() {
+        return this.environment;
+    }
+
     private async init() {
+
+        this.environment = await EnvService.getEnv();
+
+        // get list of available languages for Models
+        const languages = await ApiService.collect('core\\Lang', [], ['id', 'code', 'name'], 'name', 'asc', 0, 100, this.environment.locale);
+    
+        for(let lang of languages) {
+            this.languages[lang.code] = lang.name;
+        }
+
         // trigger header re-draw when available horizontal space changes
         var resize_debounce:any;
         $(window).on('resize', () => {
             clearTimeout(resize_debounce);
             resize_debounce = setTimeout( async () => this.updateHeader(), 100);
         });
-
     }
 
     private getTextWidth(text:string, font:string) {
@@ -78,8 +100,11 @@ export class Frame {
         let name = context.getName();
         let purpose = context.getPurpose();
 
+        await EnvService.getEnv();
+
         let view_schema = await ApiService.getView(entity, type+'.'+name);
-        let translation = await ApiService.getTranslation(entity, environment.locale);
+        // get translation from currently selected locale
+        let translation = await ApiService.getTranslation(entity, this.environment.locale);
 
         if(translation.hasOwnProperty('name')) {
             entity = translation['name'];
@@ -254,21 +279,28 @@ export class Frame {
             });
         }
 
-        // lang selector controls the current context (lang from current context is used when opening subsequent contexts)
-        let $lang_selector = UIHelper.createSelect('lang-selector', 'Langue', {fr: 'français', en: 'anglais'}, this.context.getLang());
+        // lang selector controls the current context and is used for opening subsequent contexts
+        await EnvService.getEnv();
+        let locale = this.environment.locale;
+        
+        // if there is a current context, use its lang
+        if(this.context.hasOwnProperty('$container')) {
+            locale = this.context.getLang();
+        }
+
+        let $lang_selector = UIHelper.createSelect('lang-selector', 'Langue', this.languages, locale);
         $lang_selector.addClass('lang-selector');
 
         $lang_selector.on('change', () => {
             // when the lang selector is changed by user, update current context
             let lang:string = <string> $lang_selector.find('input').val();
-console.log('new lang', lang);
             let context: Context = new Context(this, this.context.getEntity(), this.context.getType(), this.context.getName(), this.context.getDomain(), this.context.getMode(), this.context.getPurpose(), lang, this.context.getCallback(), this.context.getConfig());
             this.context.destroy();
             this.context = context;
             this.context.isReady().then( () => {
                 $(this.domContainerSelector).append(this.context.getContainer());
             });
-        });                
+        });
 
         this.$headerContainer.show().empty().append($elem).append($lang_selector);
     }
@@ -348,6 +380,8 @@ console.log('new lang', lang);
      */
     public async _openContext(config: any) {
         console.log('Frame: received _openContext', config);
+
+        await EnvService.getEnv();
         // extend default params with received config
         config = {...{
             entity:     '',
@@ -356,7 +390,8 @@ console.log('new lang', lang);
             domain:     [],
             mode:       'view',             // view, edit
             purpose:    'view',             // view, select, add, create
-            lang:       environment.lang,
+            lang:       this.environment.lang,
+            locale:     this.environment.locale,
             callback:   null
         }, ...config};
 

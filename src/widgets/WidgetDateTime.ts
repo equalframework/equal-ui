@@ -5,11 +5,9 @@ import { UIHelper } from '../material-lib';
 
 import moment from 'moment/moment.js';
 import { $, jqlocale } from "../jquery-lib";
-import { environment } from "../environment";
 
 export default class WidgetDateTime extends Widget {
-    
-    
+        
     constructor(layout: Layout, label: string, value: any, config: {}) {
         super(layout, 'date', label, value, config);
     }
@@ -19,7 +17,6 @@ export default class WidgetDateTime extends Widget {
     }
 
     public render(): JQuery {
-
         let date = new Date(this.value);
         let value:any;
 
@@ -35,8 +32,8 @@ export default class WidgetDateTime extends Widget {
                 this.$elem.find('input')
                 .on('keypress', (event:any) => {
                     if (event.which == 9) {
-// todo: force focus to the next input
-                       event.preventDefault();
+                        // #todo: force focus to the next input
+                        event.preventDefault();
                     }
                 })
                 .on('change', (event) => {
@@ -55,7 +52,7 @@ export default class WidgetDateTime extends Widget {
                     datetime: true, 
                     twentyFour: true, 
                     showSeconds: false, 
-                    ...jqlocale[environment.locale],
+                    ...jqlocale[this.getLayout().getEnv().locale],
                     onClose: () => {
                         let date = $datetimepicker.datepicker('getDate');
                         this.value = date.toISOString();

@@ -16,10 +16,16 @@ import { $ } from "./jquery-lib";
 
 class UIHelper {
 
+    public static getUUID() {
+        var S4 = () => (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+        // generate a random guid
+        return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
+    }
+
 /*
  Helpers for element creation
 */
-    public static createButton(id:string, label:string, type:string = '', icon:string = '', variant='')  { 
+    public static createButton(id:string, label:string, type:string = '', icon:string = '', variant='')  {
         let $button = $('<button/>').attr('id', id);
 
         if(['outlined', 'raised', 'text'].indexOf(type) >= 0) {
@@ -30,7 +36,7 @@ class UIHelper {
                 $button.append($('<i/>').addClass('material-icons mdc-button__icon').text(icon))
             }
             $button.append($('<span/>').attr('for', id).addClass('mdc-button__label').text(label));
-    
+
             switch(type) {
                 case 'outlined':
                     $button.addClass('mdc-button--outlined');
@@ -52,13 +58,13 @@ class UIHelper {
                 $button.addClass('mdc-fab--touch');
             }
             $button.append($('<span/>').addClass('material-icons mdc-fab__icon').text(icon))
-            $button.append($('<div/>').addClass('mdc-fab__touch'));        
+            $button.append($('<div/>').addClass('mdc-fab__touch'));
         }
         else if(['icon'].indexOf(type) >= 0) {
             $button.addClass('mdc-icon-button').attr('aria-describedby', id+'-tooltip').attr('data-tooltip-id', id+'-tooltip')
             .append($('<span/>').addClass('material-icons mdc-icon-button__icon').text(icon))
             // #todo - fix ripple not working on icon-button
-            
+
             // workaround to fix tooltips not hiding
             $button.on( "mouseenter", () => {
                 $button.parent().find('#'+id+'-tooltip').removeClass('mdc-tooltip--hide');
@@ -70,16 +76,46 @@ class UIHelper {
 
         switch(variant) {
             case 'primary':
-                $button.addClass('mdc-button--primary');                
+                $button.addClass('mdc-button--primary');
                 break;
             case 'secondary':
                 $button.addClass('mdc-button--secondary');
                 break;
             default:
         }
-        
-        new MDCRipple($button[0]);        
+
+        new MDCRipple($button[0]);
         return $button;
+    }
+
+    public static createSplitButton(id:string, label:string, variant='') {
+        let $elem = $('<div style="display: inline-flex;"></div>');
+
+        let $button = this.createButton(id+'_button', label, 'raised', '', variant).addClass('mdc-button-split_button');
+        let $drop_button = this.createButton(id+'_drop', '', 'raised', 'arrow_drop_down', variant).addClass('mdc-button-split_drop');            
+
+        let $drop_menu = this.createMenu(id+'_drop'+'menu').appendTo($drop_button);
+        let $menu_list = this.createList(id+'_drop'+'menu-list').addClass('menu-list').appendTo($drop_menu);
+
+        this.decorateMenu($drop_menu);
+
+        $drop_button.css({'right': 0});
+
+        $drop_button.on('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            let parent_width = <number> Math.round(<number>$button.innerWidth()) + Math.round(<number>$drop_button.innerWidth());
+            if(parent_width > <number> $drop_menu.innerWidth()) {
+                $drop_menu.css({'width': parent_width+'px'})
+            }
+            else {
+                $drop_menu.css({'left': '-'+(Math.round(<number>$button.innerWidth()))+ 'px'})
+            }
+            $drop_menu.trigger('_toggle')
+            return false;
+        });
+
+        return $elem.append($button).append($drop_button);
     }
 
     public static createTooltip(id:string, label: string) {
@@ -110,7 +146,7 @@ class UIHelper {
     }
 
     /**
-     * 
+     *
      * @param type  'filled' (default) or 'outlined'
      */
     public static createInput(id:string, label:string, value:string, helper:string = '', icon: string = '', disabled: boolean = false, type: string = 'filled', trailing_icon: string ='') {
@@ -129,9 +165,12 @@ class UIHelper {
             </div> \
         </div>');
 
-        
-        new MDCTextField($elem[0]);
-        return $elem
+        let text = new MDCTextField($elem[0]);
+        $elem.find('input').on('change', () => {
+            // sync MDC object and input
+            text.value = <string> $elem.find('input').val();
+        });
+        return $elem;
     }
 
     public static createTextArea(id:string, label:string, value:string, helper:string = '', icon: string = '', disabled: boolean = false) {
@@ -151,7 +190,7 @@ class UIHelper {
           </div> \
         </div>');
 
-        
+
         new MDCTextField($elem[0]);
         return $elem;
     }
@@ -184,7 +223,7 @@ class UIHelper {
             </div> \
             <label for="'+id+'">'+label+'</label> \
         </div>');
-      
+
         return $elem;
     }
 
@@ -226,10 +265,10 @@ class UIHelper {
             <span class="mdc-list-item__ripple"></span> \
             <span class="mdc-list-item__text">'+label+'</span> \
         </li>');
-        
+
         new MDCRipple($elem[0]);
         return $elem;
-    }    
+    }
 
     public static createTableCellCheckbox(is_header:boolean = false) {
         let elem = (is_header)?'th':'td';
@@ -245,10 +284,10 @@ class UIHelper {
             <div class="mdc-checkbox__ripple"></div> \
         </'+elem+'> \
         ');
-        
+
         new MDCRipple($elem[0]);
         return $elem;
-    }    
+    }
 
     public static createChip(label: string) {
         let $elem = $(' \
@@ -263,7 +302,7 @@ class UIHelper {
                 <i class="material-icons mdc-chip__icon mdc-chip__icon--trailing" tabindex="-1" role="button">cancel</i> \
             </span> \
         </div>');
-        return $elem;        
+        return $elem;
     }
 
     public static createSnackbar(label: string, action: string = '', link: string = '', timeout: number = 4000) {
@@ -318,7 +357,7 @@ class UIHelper {
                 <div class="mdc-text-field-helper-text" aria-hidden="true" title=""></div> \
             </div> \
         </div>');
-     
+
         let $list = $elem.find('ul.mdc-list');
         // we recevied an object as param (map)
         if( !Array.isArray(values) ) {
@@ -332,7 +371,7 @@ class UIHelper {
                     $line.addClass('mdc-list-item--selected').attr('aria-selected', 'true');
                 }
                 $list.append($line);
-            }        
+            }
         }
         // we received an array
         else {
@@ -375,7 +414,7 @@ class UIHelper {
     }
 
     public static createMenu(id:string, label:string='', values:any=[]) {
-        let $elem = $('<div class="sb-ui-menu mdc-menu mdc-menu-surface mdc-menu-surface--fixed"></div>');        
+        let $elem = $('<div class="sb-ui-menu mdc-menu mdc-menu-surface mdc-menu-surface--fixed"></div>');
         return $elem;
     }
 
@@ -407,7 +446,7 @@ class UIHelper {
         </button>');
 
         return $elem
-    }    
+    }
 
     public static createPagination() {
         let $elem = $(' \
@@ -478,7 +517,7 @@ class UIHelper {
 
 
  /*
-  Decorators 
+  Decorators
   Some widgets need to be injected in DOM document before running MDC methods on them.
  */
 
@@ -502,17 +541,15 @@ class UIHelper {
 
     public static decorateTable($elem:any) {
         if(!$elem.length) return;
-        $elem.addClass('mdc-data-table').children().addClass('mdc-data-table__table-container');
+        $elem.addClass('mdc-data-table').children().first().addClass('mdc-data-table__table-container');
 
         let $thead = $elem.find('thead');
-        let $head_rows = $thead.find('tr').addClass('mdc-data-table__header-row');
-        let $head_cells = $thead.find('th').addClass('mdc-data-table__header-cell').attr('role', 'columnheader').attr('scope', 'col');
-
         let $table = $elem.find('table').addClass('mdc-data-table__table');
         let $tbody = $table.find('tbody').addClass('mdc-data-table__content');
-        let $rows = $tbody.find('tr').addClass('mdc-data-table__row');
-        let $cells = $tbody.find('td').addClass('mdc-data-table__cell');
 
+        $thead.find('th').addClass('mdc-data-table__header-cell');
+        $tbody.find('td').addClass('mdc-data-table__cell');
+        
         /*
          handler for click on header checkbox
         */
@@ -521,13 +558,33 @@ class UIHelper {
         .attr('data-decorated', '1')
         .on('change', (event:any) => {
             let $this = $(event.currentTarget);
+            // tbody might
+            let $tbody = $table.find('tbody');
             if($this.prop('checked')) {
-                $table.find('tbody').find('td:first-child').find('input[type="checkbox"]').prop('checked', true);
-                $table.find('tbody').find('tr').addClass('mdc-data-table__row--selected');
+                $tbody.find('td:first-child').find('input[type="checkbox"]').prop('checked', true).prop('indeterminate', false);
+                $tbody.find('tbody').find('tr').addClass('mdc-data-table__row--selected');
             }
             else {
-                $table.find('tbody').find('td:first-child').find('input[type="checkbox"]').prop('checked', false);
-                $table.find('tbody').find('tr').removeClass('mdc-data-table__row--selected');
+                $tbody.find('td:first-child').find('input[type="checkbox"]').prop('checked', false).prop('indeterminate', false);
+                $tbody.find('tr').removeClass('mdc-data-table__row--selected');
+            }
+        })
+        .on('refresh', (event:any) => {
+            let $tbody = $table.find('tbody');
+
+            let rows_count = $tbody.find('tr').length;
+            let selection_count = 0;
+            $('td:first-child', $tbody).each( (i:number, elem:any) => {
+                selection_count += +$('input[type="checkbox"]', elem).prop('checked');
+            });
+            if(selection_count == rows_count && rows_count) {
+                $thead.find('th:first-child').find('input').prop("indeterminate", false).prop("checked", true);
+            }
+            else if(selection_count) {
+                $thead.find('th:first-child').find('input').prop("indeterminate", true).prop("checked", false);
+            }
+            else {
+                $thead.find('th:first-child').find('input').prop("indeterminate", false).prop("checked", false);
             }
         });
 
@@ -539,12 +596,18 @@ class UIHelper {
         .attr('data-decorated', '1')
         .on('change', (event:any) => {
             let $this = $(event.currentTarget);
-            let $row = $this.closest('tr');
+            let $tbody = $table.find('tbody');
+
+            let rows_count = $tbody.find('tr').length;
+            let selection_count = 0;
+            $('td:first-child', $tbody).each( (i:number, elem:any) => {
+                selection_count += +$('input[type="checkbox"]', elem).prop('checked');
+            });            
 
             if($this.prop('checked')) {
-                $row.addClass('mdc-data-table__row--selected');
+                $tbody.find('tbody').find('tr').addClass('mdc-data-table__row--selected');
                 // all checkboxes checked ?
-                if($tbody.find('input:checked').length == $rows.length) {
+                if(selection_count == rows_count) {
                     $thead.find('th:first-child').find('input').prop("indeterminate", false).prop("checked", true);
                 }
                 else {
@@ -552,9 +615,9 @@ class UIHelper {
                 }
             }
             else {
-                $row.removeClass('mdc-data-table__row--selected');
+                $this.closest('tr').removeClass('mdc-data-table__row--selected');
                 // none of the checkboxes checked ?
-                if($tbody.find('input:checked').length == 0) {
+                if(selection_count == 0) {
                     $thead.find('th:first-child').find('input').prop("indeterminate", false).prop("checked", false);
                 }
                 else {
@@ -587,7 +650,7 @@ class UIHelper {
                         $this.addClass('asc');
                     }
                 }
-            }, 
+            },
             (event:any) => {
                 // unset hover and sort order indicator
                 let $this = $(event.currentTarget);
@@ -614,13 +677,13 @@ class UIHelper {
                 if($this.hasClass('sortable')) {
                     // set order according to column field
                     if(!$this.hasClass('sorted')) {
-                        console.log('column is not sorted');
-                        $thead.find('.sorted').removeClass('sorted').removeClass('asc').removeClass('desc');
-                        $this.addClass('sorted').addClass(<string>$this.attr('data-sort'));
+                        let sort = ( (<string>$this.attr('data-sort')).length )?<string>$this.attr('data-sort'):'asc';
+                        $this.removeClass('sorted').removeClass('asc').removeClass('desc');
+                        $this.addClass('sorted').addClass(sort);
+                        $this.attr('data-sort', sort);
                     }
                     // toggle sorting order
                     else {
-                        console.log('column is sorted');
                         let sort:string = <string>$this.attr('data-sort');
                         if(sort == 'asc') {
                             $this.removeClass('asc').addClass('desc');
@@ -640,6 +703,6 @@ class UIHelper {
     }
 }
 
-export { 
+export {
     MDCFormField, MDCRipple, MDCSelect, MDCCheckbox, MDCDataTable, MDCMenu, UIHelper
 }

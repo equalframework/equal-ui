@@ -5,11 +5,10 @@ import { UIHelper } from '../material-lib';
 
 import moment from 'moment/moment.js';
 import { $, jqlocale } from "../jquery-lib";
-import { environment } from "../environment";
 
 export default class WidgetDate extends Widget {
-    
-    
+
+
     constructor(layout: Layout, label: string, value: any, config: {}) {
         super(layout, 'date', label, value, config);
     }
@@ -20,7 +19,7 @@ export default class WidgetDate extends Widget {
 
     public render(): JQuery {
         let date = new Date(this.value);
-        let value:any;
+        let value:any;    
 
         switch(this.mode) {
             case 'edit':
@@ -32,8 +31,8 @@ export default class WidgetDate extends Widget {
                 // setup handler for relaying value update to parent layout
                 this.$elem.find('input')
                 .datepicker( {
-                    showOn: "button", 
-                    ...jqlocale[environment.locale], 
+                    showOn: "button",
+                    ...jqlocale[this.getLayout().getEnv().locale],
                     onClose: () => {
                         // give the focus back once the widget will have been refreshed
                         setTimeout( () => {
@@ -59,5 +58,5 @@ export default class WidgetDate extends Widget {
 
         return this.$elem;
     }
-    
+
 }

@@ -14,7 +14,9 @@ import WidgetImage from "./widgets/WidgetImage";
 import WidgetOne2Many  from "./widgets/WidgetOne2Many";
 import WidgetMany2One  from "./widgets/WidgetMany2One";
 import WidgetMany2Many  from "./widgets/WidgetMany2Many";
+
 import Layout from "./Layout";
+import View from "./View";
 
 class WidgetFactory {
 
@@ -35,18 +37,28 @@ config: {
     id:
     helper:
     view:
-    domain: 
-}    
+    domain:
+}
     */
 
 
 /**
  * factory : maps type guessed from model and view schema with a specific widget
- * @param type 
- * @param value 
+ * @param type
+ * @param value
  */
-    public static getWidget(layout:Layout, type: string, label: string, value: any = null, config:any = {}): Widget {
-        let view_type = layout.getView().getType();
+    public static getWidget(parent:Layout | View, type: string, label: string, value: any = null, config:any = {}): Widget {
+        let view_type, layout;
+
+        if(parent instanceof Layout) {
+            layout = parent;
+            view_type = layout.getView().getType();
+        }
+        else {
+            layout = new Layout(parent);
+            view_type = parent.getType();
+        }
+
         switch(type) {
             case 'boolean':
                 return new WidgetBoolean(layout, label, value, config);
@@ -65,21 +77,24 @@ config: {
             case 'integer':
                 return new WidgetInteger(layout, label, value, config);
             case 'float':
-                return new WidgetFloat(layout, label, value, config);    
+                return new WidgetFloat(layout, label, value, config);
+            case 'link':
+                return new WidgetLink(layout, label, value, config);
+            case 'binary':
+            case 'file':
+                if(config.hasOwnProperty('usage') && config.usage.substring(0, 5) == 'image') {
+                    return new WidgetImage(layout, label, value, config);
+                }
+                return new WidgetFile(layout, label, value, config);
             case 'text':
                 if(view_type == 'list') {
                     return new WidgetString(layout, label, value, config);
                 }
                 return new WidgetText(layout, label, value, config);    
-            case 'link':
-                return new WidgetLink(layout, label, value, config);    
-            case 'binary':
-            case 'file':
-                if(config.hasOwnProperty('usage') && config.usage.substring(0, 5) == 'image') {
-                    return new WidgetImage(layout, label, value, config);        
-                }
-                return new WidgetFile(layout, label, value, config);    
             case 'string':
+                if(config.hasOwnProperty('usage') && config.usage == 'string/text' && view_type == 'form') {
+                    return new WidgetText(layout, label, value, config);
+                }
             default:
                 return new WidgetString(layout, label, value, config);
         }

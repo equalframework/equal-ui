@@ -25,7 +25,7 @@ export class Model {
 
 
     
-    // Collecitons do not deal with lang: it is used in ApiService set in the environment var
+    // Collecitons do not deal with lang: it is used from EnvService in ApiService 
     
     constructor(view:View) {
         this.view = view;
@@ -156,7 +156,7 @@ export class Model {
     /** 
      * Update model by requesting data from server using parent View parameters
     */
-    public async refresh() {
+    public async refresh(full: boolean = false) {
         console.log('Model::refresh');
 
         // fetch fields that are present in the parent View 
@@ -202,7 +202,7 @@ export class Model {
             this.total = 0;
         }        
         // trigger model change handler in the parent View (in order to update the layout)
-        await this.view.onchangeModel();        
+        await this.view.onchangeModel(full);        
     }
     
     /**

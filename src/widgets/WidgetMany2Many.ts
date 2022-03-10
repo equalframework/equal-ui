@@ -15,7 +15,6 @@ export default class WidgetMany2Many extends Widget {
     }
 
     public render():JQuery {
-        console.log('WidgetMany2Many::render', this);
 
         this.$elem = $('<div />');
 
@@ -55,13 +54,21 @@ export default class WidgetMany2Many extends Widget {
             view.isReady().then( () => {
                 let $container = view.getContainer();
 
-
                 if(this.mode == 'edit') {
 
+                    // default values
+                    let has_action_select = (this.rel_type == 'many2many');
+                    let has_action_create = true;
 
-                    let has_action_select = (this.config.action_select)?this.config.action_select:false;
-                    let has_action_create = (this.config.action_create)?this.config.action_create:false;
-
+                    // override with view schema
+                    if(this.config.hasOwnProperty('header') && this.config.header.hasOwnProperty('actions')) {
+                        if(this.config.header.actions.hasOwnProperty('ACTION.SELECT')) {
+                            has_action_select = (this.config.header.actions['ACTION.SELECT'])?true:false;
+                        }
+                        if(this.config.header.actions.hasOwnProperty('ACTION.CREATE')) {
+                            has_action_create = (this.config.header.actions['ACTION.CREATE'])?true:false;
+                        }
+                    }
 
                     let $actions_set = $container.find('.sb-view-header-list-actions-set');
 
@@ -69,7 +76,7 @@ export default class WidgetMany2Many extends Widget {
                         let button_label = TranslationService.instant((this.rel_type == 'many2many')?'SB_ACTIONS_BUTTON_ADD':'SB_ACTIONS_BUTTON_SELECT');
                         $actions_set
                         .append(
-                            UIHelper.createButton('action-edit', button_label, 'raised')
+                            UIHelper.createButton(this.getId()+'_action-edit', button_label, 'raised')
                             .on('click', async () => {
                                 let purpose = (this.rel_type == 'many2many')?'add':'select';
 
@@ -105,13 +112,27 @@ export default class WidgetMany2Many extends Widget {
 
                         $actions_set
                         .append(
-                            UIHelper.createButton('action-create', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'raised')
+                            UIHelper.createButton(this.getId()+'_action-create', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'raised')
                             .on('click', async () => {
+                                // retrieve view_type and view_name from parent view
+                                let view_type = 'form';
+                                let view_name = view.getName();
+                                let custom_actions = view.getCustomActions();
+                                if(custom_actions.hasOwnProperty('ACTION.CREATE')) {
+                                    if(Array.isArray(custom_actions['ACTION.CREATE']) && custom_actions['ACTION.CREATE'].length) {
+                                        let custom_action_create = custom_actions['ACTION.CREATE'][0];
+                                        if(custom_action_create.hasOwnProperty('view')) {
+                                            let parts = custom_action_create.view.split('.');
+                                            if(parts.length) view_type = <string>parts.shift();
+                                            if(parts.length) view_name = <string>parts.shift();
+                                        }
+                                    }
+                                }
                                 // request a new Context for selecting an existing object to add to current selection
                                 this.getLayout().openContext({
                                     entity: this.config.entity,
-                                    type: 'form',
-                                    name: 'default',
+                                    type: view_type,
+                                    name: view_name,
                                     domain: domain.toArray(),
                                     mode: 'edit',
                                     purpose: 'create',

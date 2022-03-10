@@ -1,7 +1,7 @@
 import { $ } from "./jquery-lib";
 
 import { Frame, View } from "./equal-lib";
-import { environment } from "./environment";
+
 
 
 export class Context {
@@ -39,7 +39,7 @@ and can be displayed to user as an indication of the expected action.
  */
 
 
-    constructor(frame: Frame, entity: string, type: string, name: string, domain: any[], mode: string = 'view', purpose: string = 'view', lang: string = environment.lang, callback: (data:any) => void = (data:any=null) => {}, config: any = null) {
+    constructor(frame: Frame, entity: string, type: string, name: string, domain: any[], mode: string = 'view', purpose: string = 'view', lang: string = '', callback: (data:any) => void = (data:any=null) => {}, config: any = null) {
         console.log('Context - opening context', entity, type, name, domain, mode, purpose, lang, config);
         this.$container = $('<div />').addClass('sb-context');
 
@@ -50,10 +50,13 @@ and can be displayed to user as an indication of the expected action.
         this.view = new View(this, entity, type, name, domain, mode, purpose, lang, config);
         // inject View in parent Context object
         this.$container.append(this.view.getContainer());
-
     }
 
 
+    public getEnv() {
+        return this.frame.getEnv();
+    }
+    
     public getUser() {
         return this.frame.getUser();
     }
@@ -89,8 +92,8 @@ and can be displayed to user as an indication of the expected action.
      *
      * @param data
      */
-    public closeContext(data: any = {}) {
-        this.frame.closeContext(data);
+    public async closeContext(data: any = {}) {
+        await this.frame.closeContext(data);
     }
 
     /**
@@ -151,6 +154,10 @@ and can be displayed to user as an indication of the expected action.
 
     public getConfig() {
         return this.config;
+    }
+
+    public getParent() {
+        return this.frame.getParentContext();
     }
 
     /**

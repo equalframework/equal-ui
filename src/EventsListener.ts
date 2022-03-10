@@ -2,8 +2,8 @@ import { $ } from "./jquery-lib";
 import { Frame, Context, Domain } from "./equal-lib";
 
 import { UIHelper } from './material-lib';
-import { ApiService } from "./equal-services";
-import { environment } from "./environment";
+import { ApiService, EnvService } from "./equal-services";
+
 import moment from 'moment/moment.js';
 
 require("../css/material-basics.css");
@@ -36,7 +36,7 @@ class EventsListener {
     private popups: any[] = [];
 
     // User (requested as instanciation of the View). This value can be applied on subsequent Domain objects.
-    private user: any;
+    private user: any = {id: 0};
 
 
     private subscribers: any = {};
@@ -56,28 +56,13 @@ class EventsListener {
             this.$sbEvents = $('<div/>').attr('id', domListenerId).css('display','none').appendTo('body');
         }
 
-        
-        // init locale
-        moment.locale(environment.locale);
-
-        // init user 
-        this.user = {id: 0};
-        ( async () => {
-            try {
-                this.user = await ApiService.getUser();
-            }
-            catch(err) {
-                console.warn('unable to retrieve user info');
-            }    
-        })();
-
         // setup event handlers
         this.init();
     }
 
     public addSubscriber(events: [], callback: (context:any) => void) {
         for(let event of events) {
-            if(!['open', 'close'].includes(event)) continue;
+            if(!['open', 'close', 'navigate'].includes(event)) continue;
             if(!this.subscribers.hasOwnProperty(event)) {
                 this.subscribers[event] = [];
             }
@@ -85,47 +70,40 @@ class EventsListener {
         }
     }
 
+    public navigate(route:string) {
+        // run callback of subscribers
+        if(this.subscribers.hasOwnProperty('navigate') && this.subscribers['navigate'].length) {
+            for(let callback of this.subscribers['navigate']) {
+                if( ({}).toString.call(callback) === '[object Function]' ) {
+                    callback({route: route});
+                }
+            }
+        }
+    }
 
-    private init() {
+    private async init() {
+        try {
+            // get default config
+            await EnvService.getEnv();
+            // attempt to retrieve user
+            this.user = await ApiService.getUser();
+        }
+        catch(err) {
+            console.warn('unable to retrieve user info, fallback to guest');
+        }
+
+        const environment = await EnvService.getEnv();
+
+        // init locale
+        moment.locale(environment.locale);
 
         // overload environment lang if set in URL
         const queryString = window.location.search;
         const urlParams = new URLSearchParams(queryString);
-            
+
         if(urlParams.has('lang')) {
             environment.lang = <string> urlParams.get('lang');
         }
-
-// #todo - deprecate no longer necessary : open() directly invokes _openContext
-        this.$sbEvents.on('click', (event: any, context:any, reset: boolean = false) => {
-
-            if(!context) {
-                context = window.context;
-            }
-
-            // extend default params with received config
-            context = {...{
-                entity:     '',
-                type:       'list',
-                name:       'default',
-                domain:     [],
-                mode:       'view',             // view, edit
-                purpose:    'view',             // view, select, add
-                lang:       environment.lang,
-                callback:   null,
-                target:     '#sb-container'
-            }, ...context};
-
-
-            if( context.hasOwnProperty('view') ) {
-                let parts = context.view.split('.');
-                if(parts.length) context.type = <string>parts.shift();
-                if(parts.length) context.name = <string>parts.shift();
-            }
-
-            // ContextService uses 'window' global object to store the arguments (context parameters)
-            this.$sbEvents.trigger('_openContext', [context, reset]);
-        });
 
         /**
          *
@@ -136,6 +114,8 @@ class EventsListener {
                 config = window.context;
             }
 
+            const environment = await EnvService.getEnv();
+
             // extend default params with received config
             config = {...{
                 entity:     '',
@@ -145,6 +125,7 @@ class EventsListener {
                 mode:       'view',             // view, edit
                 purpose:    'view',             // view, select, add
                 lang:       environment.lang,
+                locale:     environment.locale,
                 callback:   null,
                 target:     '#sb-container'
             }, ...config};
@@ -193,15 +174,20 @@ class EventsListener {
                         if( ({}).toString.call(callback) === '[object Function]' ) {
                             let context = frame.getContext();
                             if(Object.keys(context).length) {
+                                // retrieve raw values of Context object
                                 callback({
-                                    entity: context.getEntity(), 
-                                    type: context.getType(), 
-                                    name: context.getName(), 
-                                    domain: context.getDomain(), 
-                                    mode: context.getMode(), 
+                                    entity: context.getEntity(),
+                                    type: context.getType(),
+                                    name: context.getName(),
+                                    domain: context.getDomain(),
+                                    mode: context.getMode(),
                                     purpose: context.getPurpose(),
                                     lang: context.getLang()
-                                });    
+                                });
+                            }
+                            else {
+                                // run callback with empty context
+                                callback({});
                             }
                         }
                     }
@@ -249,39 +235,41 @@ class EventsListener {
     public open(context: any) {
         console.log("eQ::open");
 
-        // extend default params with received config
-        context = {...{
-            entity:     '',
-            type:       'list',
-            name:       'default',
-            domain:     [],
-            mode:       'view',             // view, edit
-            purpose:    'view',             // view, select, add
-            lang:       environment.lang,
-            callback:   null,
-            target:     '#sb-container',
-            reset:      false
-        }, ...context};
+        EnvService.getEnv().then( (environment:any) => {
+            // extend default params with received config
+            context = {...{
+                entity:     '',
+                type:       'list',
+                name:       'default',
+                domain:     [],
+                mode:       'view',             // view, edit
+                purpose:    'view',             // view, select, add
+                lang:       environment.lang,
+                callback:   null,
+                target:     '#sb-container',
+                reset:      false
+            }, ...context};
 
-        // this.$sbEvents.trigger('click', [context, context.hasOwnProperty('reset') && context.reset]);
+            // this.$sbEvents.trigger('click', [context, context.hasOwnProperty('reset') && context.reset]);
 
-        if( context.hasOwnProperty('view') ) {
-            let parts = context.view.split('.');
-            if(parts.length) context.type = <string>parts.shift();
-            if(parts.length) context.name = <string>parts.shift();
-        }
+            if( context.hasOwnProperty('view') ) {
+                let parts = context.view.split('.');
+                if(parts.length) context.type = <string>parts.shift();
+                if(parts.length) context.name = <string>parts.shift();
+            }
 
-        // make context available to the outside
-        window.context = context;
+            // make context available to the outside
+            window.context = context;
 
-        // ContextService uses 'window' global object to store the arguments (context parameters)
-        this.$sbEvents.trigger('_openContext', [context, context.reset]);
+            // ContextService uses 'window' global object to store the arguments (context parameters)
+            this.$sbEvents.trigger('_openContext', [context, context.reset]);
+        });
     }
 
     /**
      * Open the requested context inside a new popup (no target container required)
-     * 
-     * @param config 
+     *
+     * @param config
      */
     public async popup(config: any) {
 
@@ -296,7 +284,7 @@ class EventsListener {
         });
 
         $popup.css('left', x_offset+'px');
-        $popup.css('top', y_offset+'px');        
+        $popup.css('top', y_offset+'px');
         $popup.css('z-index', 9000 + popup_id);
         $popup.find('.sb-popup').append($inner);
 
@@ -311,7 +299,7 @@ class EventsListener {
     }
 
     public popup_close(params: any) {
-        let frame = this.popups.pop();                
+        let frame = this.popups.pop();
         frame._closeContext(params.data);
     }
 

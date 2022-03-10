@@ -7,6 +7,7 @@ import { TranslationService, ApiService } from "./equal-services";
 
 import { Domain, Clause, Condition } from "./Domain";
 import View from "./View";
+import moment from 'moment/moment.js';
 
 /*
     There are two main branches of Layouts depending on what is to be displayed:
@@ -48,8 +49,24 @@ export class Layout {
         }
     }
 
+    public loading(loading:boolean) {
+        let $elem = this.$layout.find('.table-wrapper');
+        let $loader = $elem.find('.table-loader');
+
+        if(loading) {
+            $loader.show();
+        }
+        else {
+            $loader.hide();
+        }
+    }
+
     public getView() {
         return this.view;
+    }
+
+    public getEnv() {
+        return this.view.getEnv();
     }
 
     /**
@@ -100,7 +117,7 @@ export class Layout {
                 value = value['name'];
             }
             else {
-// #todo : this method should use the same logic as the feed* methods.
+                // #todo : this method should use the same logic as the feed* methods.
             }
         }
 
@@ -119,6 +136,11 @@ export class Layout {
             this.$layout.empty();
             this.layout();
         }
+        else {
+            // unselect all
+            $('td:first-child', this.$layout.find('tbody')).each( (i:number, elem:any) => { $('input[type="checkbox"]', elem).prop('checked', false) });
+            this.$layout.find('thead').find('th:first-child').find('input').trigger('refresh');
+        }
 
         // feed layout with current Model
         let objects = await this.view.getModel().get();
@@ -129,14 +151,72 @@ export class Layout {
         var selection = <any>[];
         let $tbody = this.$layout.find("tbody");
         $tbody.find("input:checked").each( (i:number, elem:any) => {
-            let data = $(elem).attr('data-id');
-            if(data != undefined) {
-                selection.push( parseInt(<string>data, 10) );
+            let id = $(elem).attr('data-id');
+            if(id != undefined) {
+                selection.push( parseInt(<string>id, 10) );
             }
         });
         return selection;
     }
 
+    public setSelection(selection: Array<any>) {
+        console.log('Layout::setSelection', selection);
+        let $tbody = this.$layout.find("tbody");
+
+        $tbody.find('input[type="checkbox"]').each( (i:number, elem:any) => {
+            let data:any = $(elem).attr('data-id');
+            if(data != undefined) {
+                let id = parseInt(<string> data, 10);
+                let $elem = $(elem);
+                if(selection.indexOf(id) >= 0) {
+                    $elem.prop('checked', true);
+                    $elem.trigger('change');
+                }
+                else {
+                    $elem.prop('checked', false);
+                    $elem.trigger('change');
+                }
+            }
+        });
+    }
+
+    public addToSelection(selection: Array<any>) {
+        console.log('Layout::addToSelection', selection);
+        let $tbody = this.$layout.find("tbody");
+
+        $tbody.find('input[type="checkbox"]').each( (i:number, elem:any) => {
+            let data:any = $(elem).attr('data-id');
+            if(data != undefined) {
+                let id = parseInt(<string> data, 10);
+                let $elem = $(elem);
+                if(selection.indexOf(id) >= 0) {
+                    $elem.prop('checked', true);
+                    $elem.trigger('change');
+                }
+            }
+        });
+        this.$layout.find('thead').find('th:first-child').find('input').trigger('refresh');
+        setTimeout( () => this.view.onchangeSelection(this.getSelected()) );
+    }
+
+    public removeFromSelection(selection: Array<any>) {
+        console.log('Layout::removeFromSelection', selection);
+        let $tbody = this.$layout.find("tbody");
+
+        $tbody.find('input[type="checkbox"]').each( (i:number, elem:any) => {
+            let data:any = $(elem).attr('data-id');
+            if(data != undefined) {
+                let id = parseInt(<string> data, 10);
+                let $elem = $(elem);
+                if(selection.indexOf(id) >= 0) {
+                    $elem.prop('checked', false);
+                    $elem.trigger('change');
+                }
+            }
+        });
+        this.$layout.find('thead').find('th:first-child').find('input').trigger('refresh');
+        setTimeout( () => this.view.onchangeSelection(this.getSelected()) );
+    }
 
     public getSelectedSections() {
         let selectedSections:any = {};
@@ -208,7 +288,7 @@ export class Layout {
             if(def.hasOwnProperty('usage')) {
                 switch(def.usage) {
                     // #todo - complete the list
-                    case 'markup/html': 
+                    case 'markup/html':
                         type = 'text';
                         break;
                     case 'uri/url:http':
@@ -216,10 +296,11 @@ export class Layout {
                         type = 'link';
                         break;
                     case 'image/gif':
-                    case 'image/png':                        
+                    case 'image/png':
                     case 'image/jpeg':
+                        // binary alt
                         type = 'file';
-                        break;    
+                        break;
                 }
             }
             config.type = type;
@@ -230,7 +311,7 @@ export class Layout {
             return config;
         }
 
-        if(def.hasOwnProperty('usage')) { 
+        if(def.hasOwnProperty('usage')) {
             config.usage = def.usage;
         }
 
@@ -378,7 +459,7 @@ export class Layout {
 
                     if(section.hasOwnProperty('visible')) {
                         $tab.attr('data-visible', JSON.stringify(section.visible));
-                    }    
+                    }
 
                     $tabs.find('.sb-view-form-sections').append($tab);
                 }
@@ -390,7 +471,7 @@ export class Layout {
                         let $column = $('<div />').addClass('mdc-layout-grid__cell').appendTo($row);
 
                         if(column.hasOwnProperty('width')) {
-                            $column.addClass('mdc-layout-grid__cell--span-' + Math.floor((parseInt(column.width, 10) / 100) * 12));
+                            $column.addClass('mdc-layout-grid__cell--span-' + Math.round((parseInt(column.width, 10) / 100) * 12));
                         }
 
                         if(column.hasOwnProperty('align') && column.align == 'right') {
@@ -403,7 +484,7 @@ export class Layout {
                         $.each(column.items, (i, item) => {
                             let $cell = $('<div />').addClass('mdc-layout-grid__cell').appendTo($column);
                             // compute the width (on a 12 columns grid basis), from 1 to 12
-                            let width = (item.hasOwnProperty('width'))?Math.floor((parseInt(item.width, 10) / 100) * 12): 12;
+                            let width = (item.hasOwnProperty('width'))?Math.round((parseInt(item.width, 10) / 100) * 12): 12;
                             $cell.addClass('mdc-layout-grid__cell--span-' + width);
 
                             if(item.hasOwnProperty('type') && item.hasOwnProperty('value')) {
@@ -423,6 +504,7 @@ export class Layout {
                                     }
                                 }
                                 else if(item.type == 'label') {
+                                    // #todo - create WidgetLabel, to be able to apply visibility rules on labels
                                     let label_title = TranslationService.resolve(translation, 'view', [this.view.getId(), 'layout'], item.id, item.value);
                                     $cell.append('<span style="font-weight: 600;">'+label_title+'</span>');
                                 }
@@ -445,8 +527,11 @@ export class Layout {
         // create table
 
         // we define a tree structure according to MDC pattern
-        let $elem = $('<div/>').css({"width": "100%"})
+        let $elem = $('<div/>').addClass('table-wrapper').css({"width": "100%"})
         let $container = $('<div/>').css({"width": "100%"}).appendTo($elem);
+
+        // add spinner
+        $container.append( $('<div class="table-loader"> <div class="table-spinner"><div class="spinner__element"></div></div> <div class="table-overlay"></div> </div>') );
 
         let $table = $('<table/>').css({"width": "100%"}).appendTo($container);
         let $thead = $('<thead/>').appendTo($table);
@@ -460,6 +545,32 @@ export class Layout {
             .appendTo($hrow)
             .find('input')
             .on('click', () => setTimeout( () => this.view.onchangeSelection(this.getSelected()) ) );
+        }
+
+        let group_by = this.view.getGroupBy();
+        if(group_by.length > 0) {
+            let $fold_toggle = $('<th />').addClass('sb-group-cell folded').css({'width': '44px', 'cursor': 'pointer'}).append( $('<i/>').addClass('material-icons sb-toggle-button').text('chevron_right') );
+            $hrow.append( $fold_toggle );
+            
+            $fold_toggle.on('click', () => {
+                console.log('fold click');
+                let $tbody = this.$layout.find('tbody');
+                let folded = $fold_toggle.hasClass('folded');
+                if(folded) {
+                    $fold_toggle.removeClass('folded');                    
+                }
+                else {
+                    $fold_toggle.addClass('folded');                    
+                }
+                folded = !folded;
+                $tbody.find('.sb-group-row').each( (index:number, elem:any) => {
+                    let $this = $(elem);
+                    let subfolded = $this.hasClass('folded');
+                    if(subfolded != folded) {
+                        $this.trigger('click');
+                    }
+                });
+            });
         }
 
         // create other columns, based on the col_model given in the configuration
@@ -497,27 +608,30 @@ export class Layout {
             if(config.visible) {
                 let width = Math.floor(10 * item.width) / 10;
                 let $cell = $('<th/>').attr('name', item.value)
-                .attr('width', width+'%')
+                // .attr('width', width+'%')
+                .css({width: width+'%'})
                 .append(config.title)
                 .on('click', (event:any) => {
                     let $this = $(event.currentTarget);
                     if($this.hasClass('sortable')) {
-                        // wait for handling of sort toggle
+                        // unselect all lines
+                        $('td:first-child', this.$layout.find('tbody')).each( (i:number, elem:any) => {
+                            $('input[type="checkbox"]', elem).prop('checked', false).prop('indeterminate', false);
+                        });
+                        $thead.find('th:first-child').find('input').trigger('refresh');
+
+                        // wait for handling of sort toggle (table decorator)
                         setTimeout( () => {
                             // change sortname and/or sortorder
                             this.view.setOrder(<string>$this.attr('name'));
                             this.view.setSort(<string>$this.attr('data-sort'));
                             this.view.onchangeView();
-                            // unselect all lines
-                            this.$layout.find('input[type="checkbox"]').each( (i:number, elem:any) => {
-                                $(elem).prop('checked', false).prop('indeterminate', false);
-                            });
-                        }, 100);
+                        });
                     }
                 });
 
                 if(config.sortable) {
-                    $cell.addClass('sortable').attr('data-sort', 'asc');
+                    $cell.addClass('sortable').attr('data-sort', '');
                 }
                 $hrow.append($cell);
             }
@@ -528,145 +642,138 @@ export class Layout {
 
         this.$layout.append($elem);
 
+        if(schema.hasOwnProperty('operations')) {
+            let $operations = $('<div>').addClass('table-operations');
+            for(let operation in schema.operations) {
+                let op_descriptor = schema.operations[operation];
+
+                let $op_div = $('<div>').addClass('operation');
+                let $title = $('<div>').addClass('operation-title').text(operation);
+
+                // $op_div.append($title);
+                let $op_row = $('<div>').addClass('operation-row').appendTo($op_div);
+                let pos = 0;
+                for(let item of schema.layout.items) {
+                    if(!item.hasOwnProperty('visible') || item.visible == true) {
+                        let width = Math.ceil(10 * item.width) / 10;
+                        let $cell = $('<div>').addClass('operation-cell').css({width: width+'%'});
+                        if(op_descriptor.hasOwnProperty(item.value)) {
+                            $cell.append( $('<input>').attr('type', 'number').attr('data-id', 'operation-'+operation+'-'+item.value) );
+                        }
+                        else {
+                            if(pos == 0) {
+                                $cell.append($title);
+                            }
+                        }
+                        $op_row.append($cell);
+                    }
+                    ++pos;
+                }
+
+                $operations.append($op_div);
+            }
+            $elem.append($operations);
+        }
+
         UIHelper.decorateTable($elem);
     }
 
 
-
     private feedList(objects: any) {
-        console.log('Layout::feed', objects);
+        console.log('Layout::feedList', objects);
+
+        let group_by = this.view.getGroupBy();
+
+        let groups:any = {};
+
+        if(group_by.length > 0) {
+            groups = this.feedListGroupObjects(objects, group_by);
+        }
 
         let schema = this.view.getViewSchema();
 
-        let $elem = this.$layout.children().first();
-        $elem.find('tbody').remove();
+        let $elem = this.$layout.find('.table-wrapper');
+        let $table = $elem.find('table');
 
         let $tbody = $('<tbody/>');
 
-        for (let object of objects) {
+        let stack = (group_by.length == 0)?[objects]:[groups];
 
-            let $row = $('<tr/>')
-            .addClass('sb-view-layout-list-row')
-            .attr('data-id', object.id)
-            .attr('data-edit', '0')
-            // open form view on click
-            .on('click', (event:any) => {
-                let $this = $(event.currentTarget);
-                // discard click when row is being edited
-                if($this.attr('data-edit') == '0') {
-                    this.openContext({entity: this.view.getEntity(), type: 'form', name: this.view.getName(), domain: ['id', '=', object.id]});
+        while(true) {
+            if(stack.length == 0) break;
+
+            let group = stack.pop();
+
+            if( Array.isArray(group) ) {
+                let $previous = $tbody.children().last();
+                let parent_group_id = '';
+                if($previous && $previous.hasClass('sb-group-row')) {
+                    parent_group_id = <string> $previous.attr('data-id');
                 }
-            })
-            // toggle mode for all cells in row
-            .on( '_toggle_mode', (event:any, mode: string) => {
-                let $this = $(event.currentTarget);
 
-                $this.find('td.sb-widget-cell').each( (index: number, elem: any) => {
-                    let $cell = $(elem);
-                    let field:any = $cell.attr('data-field');
-                    let widget = this.model_widgets[object.id][field];
-
-                    // toggle mode
-                    let mode = (widget.getMode() == 'view')?'edit':'view';
-                    let $widget = widget.setMode(mode).render();
-
-                    // handle special situations that allow cell content to overflow
-                    if(widget.getType() == 'boolean') {
-                        $cell.addClass('allow-overflow');
-                    }
-
-                    $cell.empty().append($widget);
-
-                    if(mode == 'edit') {
-                        $widget.on('_updatedWidget', (event:any) => {
-                            let value:any = {};
-                            value[field] = widget.getValue();
-                            // propagate model change, without requesting a layout refresh
-                            this.view.onchangeViewModel([object.id], value, false);
-                        });
-                    }
-                });
-            })
-            // dispatch value setter
-            .on( '_setValue', (event: any, field: string, value: any) => {
-                let widget = this.model_widgets[object.id][field];
-                widget.change(value);
-            });
-
-            // for lists in edit mode (excepted widgets), add a checkbox
-            if(this.view.getPurpose() != 'widget' || this.view.getMode() == 'edit') {
-                UIHelper.createTableCellCheckbox()
-                .addClass('sb-view-layout-list-row-checkbox')
-                .appendTo($row)
-                .find('input')
-                .attr('data-id', object.id)
-                .on('click', (event:any) => {
-                    // wait for widget to update and notify about change
-                    setTimeout( () => this.view.onchangeSelection(this.getSelected()) );
-                    // prevent handling of click on parent `tr` element
-                    event.stopPropagation();
-                });
+                // group is an array of objects: render a row for each object
+                for (let object of group) {
+                    let $row = this.feedListCreateObjectRow(object, parent_group_id);
+                    $tbody.append($row);
+                }
             }
-
-            // for each field, create a widget, append to a cell, and append cell to row
-            for(let item of schema.layout.items) {
-
-                let config = this.getWidgetConfig(item);
-
-                // unknown or invisible field
-                if(config === null || (config.hasOwnProperty('visible') && !config.visible)) continue;
-
-                let value = object[item.value];
-
-                // for relational fields, we need to check if the Model has been fetched
-                if(['one2many', 'many2one', 'many2many'].indexOf(config.type) > -1) {
-
-                    // if widget has a domain, parse it using current object and user
-                    if(config.hasOwnProperty('original_domain')) {
-                        let user = this.view.getUser();
-                        let tmpDomain = new Domain(config.original_domain);
-                        config.domain = tmpDomain.parse(object, user).toArray();
+            else if(group.hasOwnProperty('_is_group')) {
+                let $row = this.feedListCreateGroupRow(group, $tbody);            
+                $tbody.append($row);
+            }
+            else {
+                let keys = Object.keys(group).sort().reverse();
+                for(let key of keys) {
+                    if(['_id', '_parent_id', '_key', '_label'].indexOf(key) >= 0) continue;
+                    // add object or array
+                    if(group[key].hasOwnProperty('_data')) {
+                        stack.push(group[key]['_data']);
                     }
                     else {
-                        config.domain = [];
+                        stack.push(group[key]);
                     }
-
-                    // by convention, `name` subfield is always loaded for relational fields
-                    if(config.type == 'many2one') {
-                        value = object[item.value]['name'];
-                        config.object_id = object[item.value]['id'];
-                    }
-                    else {
-                        // Model do not load o2m and m2m fields : these are handled by sub-views
-                        // value = object[item.value].map( (o:any) => o.name).join(', ');
-                        // value = (value.length > 35)? value.substring(0, 35) + "..." : value;
-                        value = "...";
-                        // we need the current object id for new objects creation
-                        config.object_id = object.id;
-                    }
+                    stack.push({'_is_group': true, ...group[key]});
                 }
-
-                let widget:Widget = WidgetFactory.getWidget(this, config.type, '', '', config);
-                widget.setValue(value);
-                widget.setReadonly(config.readonly);
-                
-                // store widget in widgets Map, using widget id as key (there are several rows for each field)
-                if(typeof this.model_widgets[object.id] == 'undefined') {
-                    this.model_widgets[object.id] = {};
-                }
-                // store widget: use id and field as keys for storing widgets (current layout is for a single entity)
-                this.model_widgets[object.id][item.value] = widget;
-
-                let $cell = $('<td/>').addClass('sb-widget-cell').attr('data-field', item.value).append(widget.render());
-
-                $row.append($cell);
             }
-
-            $tbody.append($row);
         }
 
+        $table.find('tbody').remove();
+        $table.append($tbody);
 
-        $elem.find('table').append($tbody);
+        if(schema.hasOwnProperty('operations')) {
+
+            for(let operation in schema.operations) {
+                let descriptor = schema.operations[operation];
+
+                for(let item of schema.layout.items) {
+                    if(!item.hasOwnProperty('visible') || item.visible == true) {
+
+                        if(descriptor.hasOwnProperty(item.value)) {
+                            let type = descriptor[item.value].type;
+                            let result:number = 0.0;
+                            for (let object of objects) {
+                                switch(type) {
+                                    case 'SUM':
+                                        result += object[item.value];
+                                        break;
+                                    case 'COUNT':
+                                        result += 1;
+                                        break;
+                                    case 'MIN':
+                                        break;
+                                    case 'MAX':
+                                        break;
+                                    case 'AVG':
+                                        break;
+                                }
+                            }
+                            let value = String( (Math.round(result * 100) / 100).toFixed(2) );
+                            this.$layout.find('[data-id="'+'operation-'+operation+'-'+item.value+'"]').val(value);
+                        }
+                    }
+                }
+            }
+        }
 
         UIHelper.decorateTable($elem);
     }
@@ -839,7 +946,7 @@ export class Layout {
                         config.domain = tmpDomain.toArray();
                     }
                 }
-                
+
                 has_changed = (!value || $parent.data('value') != JSON.stringify(value));
 
                 widget.setConfig({...config, ready: true})
@@ -871,7 +978,7 @@ export class Layout {
                     let $widget = widget.render();
                     // Handle Widget update handler
                     $widget.on('_updatedWidget', (event:any, refresh: boolean = true) => {
-                        console.log("Layout::feedForm : received _updatedWidget", field, widget.getValue());
+                        console.log("Layout::feedForm : received _updatedWidget", field, widget.getValue(), refresh);
                         // update object with new value
                         let value:any = {};
                         value[field] = widget.getValue();
@@ -889,6 +996,315 @@ export class Layout {
         }
     }
 
+    private feedListGroupObjects(objects:any[], group_by:string[]) {
+        let groups: any = {};
+        let model_schema = this.view.getModelFields();
+
+        // group objects
+        for (let object of objects) {
+            const n = group_by.length;
+            let parent = groups;
+            let parent_id = '';
+
+            for(let i = 0; i < n; ++i) {
+                let field = group_by[i];
+                let model_def = model_schema[field];
+                let key = object[field];
+                let label = key;
+
+                if(key.hasOwnProperty('name')) {
+                    label = key.name;
+                    key = key.name;
+                }
+
+                if(['date', 'datetime'].indexOf(model_def['type']) >= 0) {
+                    label = moment(key).format(moment.localeData().longDateFormat('L'));
+                    key = moment(key).format('YYYY-MM-DD')
+                }
+
+                if(!parent.hasOwnProperty(key)) {
+                    if(i < n-1) {
+                        parent[key] = {'_id': parent_id+key, '_parent_id': parent_id, '_key': key, '_label': label};
+                    }
+                    else {
+                        parent[key] = {'_id': parent_id+key, '_parent_id': parent_id, '_key': key, '_label': label, '_data': []};
+                    }
+                }
+                parent_id = key;
+                parent = parent[key];
+            }
+            if( parent.hasOwnProperty('_data') && Array.isArray(parent['_data']) ) {
+                parent['_data'].push(object);
+            }
+        }
+        return groups;
+    }
+
+    private feedListCreateObjectRow(object:any, parent_group_id:string) {
+        let schema = this.view.getViewSchema();
+        let group_by = this.view.getGroupBy();
+
+        let $row = $('<tr/>')
+        .addClass('sb-view-layout-list-row')
+        .attr('data-parent-id', parent_group_id)
+        .attr('data-id', object.id)
+        .attr('data-edit', '0')
+        // open form view on click
+        .on('click', (event:any) => {
+            let $this = $(event.currentTarget);
+            // discard click when row is being edited
+            if($this.attr('data-edit') == '0') {
+                // #todo - allow overloading default action ('ACTIONS.UPDATE')
+                this.openContext({entity: this.view.getEntity(), type: 'form', name: this.view.getName(), domain: ['id', '=', object.id]});
+            }
+        })
+        // toggle mode for all cells in row
+        .on( '_toggle_mode', (event:any, mode: string = 'view') => {
+            console.log('Layout - received toggle_mode', mode);
+            let $this = $(event.currentTarget);
+
+            $this.find('td.sb-widget-cell').each( (index: number, elem: any) => {
+                let $cell = $(elem);
+                let field:any = $cell.attr('data-field');
+                let widget = this.model_widgets[object.id][field];
+
+                // switch to given mode
+                if(widget.getMode() == mode) return;
+                let $widget = widget.setMode(mode).render();
+
+                // handle special situations that allow cell content to overflow
+                if(widget.getType() == 'boolean') {
+                    $cell.addClass('allow-overflow');
+                }
+
+                $cell.empty().append($widget);
+
+                if(mode == 'edit') {
+                    $widget.on('_updatedWidget', (event:any) => {
+                        console.log('Layout - received _updatedWidget event', widget.getValue());
+                        let value:any = {};
+                        value[field] = widget.getValue();
+                        // propagate model change, without requesting a layout refresh
+                        this.view.onchangeViewModel([object.id], value, false);
+                    });
+                }
+            });
+        })
+        // dispatch value setter
+        .on( '_setValue', (event: any, field: string, value: any) => {
+            let widget = this.model_widgets[object.id][field];
+            widget.change(value);
+        });
+
+        // for lists in edit mode (excepted widgets), add a checkbox
+        if(this.view.getPurpose() != 'widget' || this.view.getMode() == 'edit') {
+            UIHelper.createTableCellCheckbox()
+            .addClass('sb-view-layout-list-row-checkbox')
+            .appendTo($row)
+            .find('input')
+            .attr('data-id', object.id)
+            .on('click', (event:any) => {
+                // wait for widget to update and notify about change
+                setTimeout( () => this.view.onchangeSelection(this.getSelected()) );
+                // prevent handling of click on parent `tr` element
+                event.stopPropagation();
+            });
+        }
+
+        if(group_by.length > 0) {
+            // add a cell for the toggle chevron column
+            $row.append( $('<td/>') );
+        }
+
+        // for each field, create a widget, append to a cell, and append cell to row
+        for(let item of schema.layout.items) {
+
+            let config = this.getWidgetConfig(item);
+
+            // unknown or invisible field
+            if(config === null || (config.hasOwnProperty('visible') && !config.visible)) continue;
+
+            let value = object[item.value];
+
+            // for relational fields, we need to check if the Model has been fetched
+            if(['one2many', 'many2one', 'many2many'].indexOf(config.type) > -1) {
+
+                // if widget has a domain, parse it using current object and user
+                if(config.hasOwnProperty('original_domain')) {
+                    let user = this.view.getUser();
+                    let tmpDomain = new Domain(config.original_domain);
+                    config.domain = tmpDomain.parse(object, user).toArray();
+                }
+                else {
+                    config.domain = [];
+                }
+
+                // by convention, `name` subfield is always loaded for relational fields
+                if(config.type == 'many2one') {
+                    value = object[item.value]['name'];
+                    config.object_id = object[item.value]['id'];
+                }
+                else {
+                    // Model do not load o2m and m2m fields : these are handled by sub-views
+                    // value = object[item.value].map( (o:any) => o.name).join(', ');
+                    // value = (value.length > 35)? value.substring(0, 35) + "..." : value;
+                    value = "...";
+                    // we need the current object id for new objects creation
+                    config.object_id = object.id;
+                }
+            }
+
+            let widget:Widget = WidgetFactory.getWidget(this, config.type, '', '', config);
+            widget.setValue(value);
+            widget.setReadonly(config.readonly);
+
+            // store widget in widgets Map, using widget id as key (there are several rows for each field)
+            if(typeof this.model_widgets[object.id] == 'undefined') {
+                this.model_widgets[object.id] = {};
+            }
+            // store widget: use id and field as keys for storing widgets (current layout is for a single entity)
+            this.model_widgets[object.id][item.value] = widget;
+
+            let $cell = $('<td/>').addClass('sb-widget-cell').attr('data-field', item.value).append(widget.render());
+
+            $row.append($cell);
+        }
+        if(parent_group_id.length) {
+            $row.hide();
+        }
+        return $row;
+    }
+
+    private feedListCreateGroupRow(group:any, $tbody:any) {
+        let schema = this.view.getViewSchema();
+
+        let label:string = group['_label'];
+        let prefix:string = '';
+        let suffix:string = '';
+
+        let children_count = 0;
+        let parent_group_id = group['_parent_id'];
+
+        if(parent_group_id.length > 0) {
+            let $prev_td = $tbody.find("[data-id='" + parent_group_id + "']").find('.sb-group-cell-label').first();
+            if($prev_td) {
+                prefix = <string> $prev_td.attr('title') + ' › ';
+            }
+        }
+
+        if(group.hasOwnProperty('_data')) {
+            children_count = group['_data'].length;
+            suffix = '['+children_count+']';
+        }
+        else {
+            // sum children groups
+        }
+
+        let $row = $('<tr/>')
+        .addClass('sb-view-layout-list-row sb-group-row folded')
+        .attr('data-parent-id', parent_group_id)
+        .attr('data-id', group['_id'])
+        .attr('data-children-count', children_count)
+        .attr('id', UIHelper.getUUID());
+
+        let $checkbox = UIHelper.createTableCellCheckbox().addClass('sb-view-layout-list-row-checkbox');
+        $checkbox.find('input').on('click', (event:any) => {
+            event.stopPropagation();
+
+            let $tbody = this.$layout.find('tbody');
+            let checked = $checkbox.find('input').prop('checked');
+
+            let selection:any[] = [];
+
+            $tbody.find("[data-parent-id='" + group['_id'] + "']").each( (index:number, elem:any) => {
+                let $this = $(elem);
+                if($this.hasClass('sb-group-row')) {
+                    let subchecked = $this.children().first().find('input').prop('checked');
+                    if(checked != subchecked) {
+                        $this.children().first().find('input').trigger('click');
+                    }
+                }
+                else {
+                    selection.push(parseInt(<string>$this.children().first().find('input').attr('data-id'), 10));
+                }
+            });
+            
+            if(checked) {
+                this.addToSelection(selection);
+            }
+            else {
+                this.removeFromSelection(selection);
+            }
+        });
+        $row.append($checkbox);
+        $row.append( $('<td />').addClass('sb-group-cell').append( $('<i/>').addClass('material-icons sb-toggle-button').text('chevron_right') ) );
+        $row.append( $('<td/>').attr('title', prefix + label).attr('colspan', schema.layout.items.length).addClass('sb-group-cell sb-group-cell-label').append(prefix + ' <span>'+label+'</span>'+' '+suffix) );
+
+        $row.on('click', () => {
+            let $tbody = this.$layout.find('tbody');
+            let group_id = $row.attr('data-id');
+            if($row.hasClass('folded')){
+                $row.removeClass('folded');
+                $tbody.find("[data-parent-id='" + group_id + "']").each( (index:number, elem:any) => {
+                    let $this = $(elem);
+                    if($this.hasClass('sb-group-row')) {
+                        $this.trigger('show');
+                    }
+                    else {
+                        $this.show();
+                    }
+                });
+            }
+            else {
+                $row.addClass('folded');
+                $tbody.find("[data-parent-id='" + group_id + "']").each( (index:number, elem:any) => {
+                    let $this = $(elem);
+                    if($this.hasClass('sb-group-row')) {
+                        $this.trigger('hide');
+                    }
+                    else {
+                        $this.hide();
+                    }
+                });
+            }
+        });
+
+        $row.on('show', () => {
+            let $tbody = this.$layout.find('tbody');
+    
+            let group_id = $row.attr('data-id');
+            $row.show();
+            $tbody.find("[data-parent-id='" + group_id + "']").each( (index:number, elem:any) => {
+                let $this = $(elem);
+                if($this.hasClass('sb-group-row')) {
+                    $this.trigger('show');
+                }
+                else if(!$row.hasClass('folded')) {
+                    $this.show();
+                }
+            });
+        });
+        $row.on('hide', () => {
+            let $tbody = this.$layout.find('tbody');
+            let group_id = $row.attr('data-id');
+            $row.hide();
+            $tbody.find("[data-parent-id='" + group_id + "']").each( (index:number, elem:any) => {
+                let $this = $(elem);
+                if($this.hasClass('sb-group-row')) {
+                    $this.trigger('hide');
+                }
+                else {
+                    $this.hide();
+                }
+            });
+        });
+
+        if(parent_group_id.length) {
+            $row.hide();
+        }
+
+        return $row;
+    }
 }
 
 export default Layout;

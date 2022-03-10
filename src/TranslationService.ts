@@ -1,5 +1,5 @@
+import { EnvService } from "./equal-services";
 import { $ } from "./jquery-lib";
-import { environment } from "./environment";
 
 /**
  * This service is in charge of loading the UI translations and provide getters to retrieve requested values.
@@ -20,9 +20,11 @@ export class _TranslationService {
         this.init();
     }
 
-    private init() {
+    public async init() {
         this.translations = $.Deferred();
         this.resolved = false;
+
+        const environment:any = await EnvService.getEnv();
 
         // load i18n file from server
         fetch('/assets/i18n/'+environment.locale+'.json')
@@ -30,7 +32,7 @@ export class _TranslationService {
             if(response.ok) {
                 response.json().then( (data) => {
                     this.resolved = data;
-                    this.translations.resolve(data);                    
+                    this.translations.resolve(data);
                 });
             }
             else {
@@ -44,6 +46,12 @@ export class _TranslationService {
 
     }
 
+    /**
+     * Handle an asynchronous request for translation.
+     * 
+     * @param   value    string       The string identifier to translate using current locale.
+     * @returns Promise
+     */
     public async translate(value:string) {
         let translation: string = '';
         try {
@@ -58,9 +66,11 @@ export class _TranslationService {
 
 
     /**
-     * Instant translation (non-blocking). If no value is found the given string is returned as result.
-     * *
-     * @param value 
+     * Handle instant request for translation (non-blocking). 
+     * If no value is found the given string is returned as result.
+     * 
+     * @param   value   string   
+     * @returns string
      */
     public instant(value:string) {
         let translation: string = value;
@@ -80,7 +90,7 @@ export class _TranslationService {
      * @param type          Kind of terms we want to perform ('model','view','error')
      * @param id            The identifier of the item we want to translate
      * @param value         The default value, if any, to fall back to in case translation fails 
-     * @param property       The translation section we're looking for, for the considered value ('label', 'help', ...)
+     * @param property      The translation section we're looking for, for the considered value ('label', 'help', ...)
      * 
      * @returns The translated value, or the original value if translation fails.
      */ 

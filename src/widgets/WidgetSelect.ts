@@ -37,7 +37,7 @@ export default class WidgetSelect extends Widget {
                 break;
         }
 
-        if(this.config.hasOwnProperty('header') && this.config.layout == 'form') {
+        if(this.config.hasOwnProperty('heading') && this.config.layout == 'form') {
             this.$elem.addClass('title');
         }
 

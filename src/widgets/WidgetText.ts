@@ -40,7 +40,7 @@ export default class WidgetText extends Widget {
                     Quill.register(AlignStyle,true);
 
                     const editor = new Quill($editor[0], {
-                        placeholder: this.label,
+                        placeholder: this.config.description,
                         theme: "snow",
                         modules: {
                             toolbar: [
@@ -71,9 +71,11 @@ export default class WidgetText extends Widget {
                 break;
             case 'view':
             default:            
-                this.$elem = $('<div class="sb-ui-textarea" />').html(value);
+                this.$elem = $('<div class="sb-ui-textarea" />').append( $('<div class="textarea-content" />').html(value) );                
                 break;
         }
+
+        this.$elem.append( $('<div class="textarea-title" />').text(this.label) );
 
         this.$elem.addClass('sb-widget').addClass('sb-widget-mode-'+this.mode).attr('id', this.getId());
         return this.$elem;

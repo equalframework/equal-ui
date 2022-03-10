@@ -136,12 +136,22 @@ export default class WidgetMany2One extends Widget {
                             .appendTo($menu_list)
                             .attr('id', object.id)
                             .on('click', (event) => {
-                                $select.find('input').val(object.name);
-                                $select.trigger('change');
+                                $input.val(object.name).trigger('change');
+                                $select.attr('data-selected', object.id);
+                                $select.trigger('update');
                             })
                         }
                         if(objects.length) {
-                            $menu_list.append(UIHelper.createListDivider());
+                            if(objects.length == 1) {
+                                // if list is exactly 1 object long : auto-select
+                                let object = objects[0];
+                                $input.val(object.name).trigger('change');
+                                $select.attr('data-selected', object.id);
+                                $select.trigger('update');
+                            }
+                            else {
+                                $menu_list.append(UIHelper.createListDivider());
+                            }                            
                         }
                         // advanced search button
                         $link.on('click', openSelectContext);
@@ -153,7 +163,6 @@ export default class WidgetMany2One extends Widget {
                 };
 
                 if(!this.readonly) {
-
                     
                     let $button_reset = UIHelper.createButton('m2o-actions-reset-'+this.id, '', 'icon', 'close').css({'position': 'absolute', 'right': '45px', 'top': '5px', 'z-index': '2'});
 
@@ -189,15 +198,14 @@ export default class WidgetMany2One extends Widget {
                     });
 
                     // upon value change, relay updated value to parent layout
-                    $select.on('change', (event) => {
-                        console.log('WidgetMany2One : received change event');
+                    $select.on('update', (event) => {
+                        console.log('WidgetMany2One : received change event', $select.attr('data-selected'));
                         // m2o relations are always loaded as an object with {id:, name:}
-                        let value = $select.find('input').val();
-                        let object = objects.find( o => o.name == value);
+                        let object:any = objects.find( o => o.id == $select.attr('data-selected'));
                         if(object) {
                             $button_create.hide();
                             $button_open.show();
-                            this.value = {id: object.id, name: value};
+                            this.value = {id: object.id, name: object.name};
                             this.$elem.trigger('_updatedWidget');
                         }
                         else {

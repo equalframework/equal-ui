@@ -135,6 +135,9 @@ body, html {
     height: 100%;
 }
 
+.sb-view .mdc-snackbar {
+    justify-content: left;
+}
 
 .sb-view .mdc-snackbar__action:not(:disabled) {
     color: #ff4081;;
@@ -161,6 +164,10 @@ body, html {
 /* added for WP compliance */
 .sb-view .sb-widget input {
     box-shadow: none;
+}
+
+.sb-view .sb-widget label {
+    user-select: none;
 }
 
 /* added for WP compliance */
@@ -230,6 +237,47 @@ body, html {
 .sb-view-layout-list table tr {
     cursor: pointer;
 }
+
+.sb-view-layout-list .table-operations {
+    display: block;
+}
+
+.sb-view-layout-list .table-operations .operation {
+    min-height: 44px;
+}
+
+.sb-view-layout-list .table-operations .operation .operation-title {
+    text-transform: uppercase;
+    width: 100%;
+    text-align: left;
+    font-weight: 600;
+    padding: 0 12px 0 12px;
+}
+
+.sb-view-layout-list .table-operations .operation .operation-row {
+    display: flex;
+    width: 100%;
+    min-height: 44px;
+}
+
+.sb-view-layout-list .table-operations .operation .operation-row .operation-cell {
+    display: flex;
+    align-items: center;
+    padding: 0 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sb-view-layout-list .table-operations .operation .operation-row .operation-cell input {
+    font-family: roboto;
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.sb-view-layout-list .table-operations .operation .operation-row .operation-cell:first-child {
+    padding-left: 12px;
+}
+
 
 .sb-view-header-list {
     position: relative;
@@ -374,11 +422,26 @@ body, html {
 
 .sb-widget.sb-ui-textarea {
     height: 200px;
+    margin-top: 20px;
 }
 
 .sb-widget-mode-view.sb-ui-textarea {
-    border: solid 1px lightgrey;
+    font-size: 14px;
+    border: solid 1px lightgrey;    
+}
+
+.sb-widget.sb-ui-textarea .textarea-content {
     overflow-y: auto;
+}
+
+.sb-widget.sb-ui-textarea .textarea-title {
+    position: absolute;
+    top: -24px;
+    left: 4px;
+    color: rgba(0,0,0,0.8) !important;
+    font-weight: 600;
+    transform: scale(75%);
+    font-size: 16px;    
 }
 
 .sb-widget-mode-view.sb-ui-textarea p {
@@ -405,6 +468,7 @@ body, html {
 
 .sb-view-header-form-actions .sb-view-header-form-actions-std {
     flex: 0 1 50%;
+    display: flex;
 }
 
 .sb-view-header-form-actions .sb-view-header-form-actions-std button {
@@ -552,7 +616,6 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     width: 6px;
     overflow-y: scroll;
     background: transparent;
-
 }
 
 .sb-view-layout-form::-webkit-scrollbar-thumb {
@@ -568,6 +631,11 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     padding-left: 16px;
 }
 
+.sb-view-layout-list .sb-widget.sb-widget-type-boolean {
+    height: 44px;
+    padding-top: 14px;
+}
+
 /* added for WP compliance */ 
 .sb-widget.sb-widget-type-boolean .mdc-switch__native-control {
     opacity: 0 !important;
@@ -580,8 +648,27 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
 }
 
 .sb-widget-cell .sb-widget.sb-image-thumbnail {
-    height: 45px;
-    width: 45px;
+    height: 35px;
+    width: 35px;
+    border-radius: 0;
+}
+
+.sb-view-layout-list .sb-group-row {
+    background-color: rgba(0,0,0,0.03);
+}
+
+.sb-view-layout-list .sb-group-cell-label span {
+    text-transform: uppercase;
+    font-weight: 500;
+}
+
+.sb-view-layout-list .sb-group-row .sb-toggle-button, .sb-view-layout-list th.sb-group-cell .sb-toggle-button {
+    user-select: none;
+    transform: rotate(90deg); 
+}
+
+.sb-view-layout-list .sb-group-row.folded .sb-toggle-button, .sb-view-layout-list th.sb-group-cell.folded .sb-toggle-button {
+    transform: rotate(0deg); 
 }
 
 .sb-widget.sb-dropable {
@@ -693,6 +780,61 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
 }
 
 
+.mdc-data-table__table-container .table-loader {
+    display: none;
+    width: 100%;
+    height: calc(100% - 44px);
+    top: 44px;
+    position: absolute;
+    z-index: 4;
+}
+    
+        
+.mdc-data-table__table-container .table-loader .table-overlay {
+    position: absolute;
+    opacity: 0.5;
+    background-color: white;
+    width: 100%;
+    height: 100%;
+}
+    
+.mdc-data-table__table-container .table-loader .table-spinner {
+    width: calc(100% + 2px);
+    position: absolute;
+    height: 4px;
+    z-index: 4;
+    left: -1px;
+    box-sizing: border-box;
+    border: 0;
+    background-color: white;
+	overflow: hidden;
+    display: flex;
+    align-items: center;
+    align-content: center; 
+    justify-content: flex-start;  
+}
+
+.mdc-data-table__table-container .table-loader .table-spinner .spinner__element {
+	height: 100%;
+	width: 100%;
+	background: var(--mdc-theme-primary-outline);
+}
+
+.mdc-data-table__table-container .table-loader .table-spinner .spinner__element::before {
+	content: '';
+	display: block;
+	background-color: var(--mdc-theme-primary);
+	height: 4px;
+	width: 0;
+    animation: tableSpinnerGetWidth 2s ease-in infinite;
+}
+
+@keyframes tableSpinnerGetWidth {
+	100% { width: 100%; }
+}
+
+
+
 .mdc-data-table__pagination {
     border-top: 0;
 }
@@ -704,6 +846,7 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
 
 
 .mdc-data-table__header-cell {
+    height: 44px;
     padding: 0 2px;
 }
 
@@ -735,6 +878,43 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     width: 36px;
 }
 
+
+/* custom style for split button (with dropdown) */
+.mdc-button-split_button {
+    margin-right: 0 !important;
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    box-shadow: rgb(0 0 0 / 20%) 4px 3px 1px -2px, rgb(0 0 0 / 14%) 0px 2px 2px 0px, rgb(0 0 0 / 12%) 0px 1px 5px 0px;    
+}
+
+.mdc-button-split_button.mdc-button.mdc-ripple-upgraded--background-focused .mdc-button__ripple::before {
+    opacity: 0 !important;
+}
+
+.mdc-button-split_drop {
+    margin-left: 0 !important;
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    max-width: 30px;
+    min-width: 30px;
+    z-index: 2;
+}
+
+.mdc-button-split_drop .mdc-button__ripple {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+}
+
+.mdc-button-split_drop i.mdc-button__icon {
+    margin: 0;
+}
+
+.mdc-button-split_drop .mdc-menu {
+    left: unset !important;
+    right: 0 !important;
+    margin-top: 37px !important;
+    min-width: 100px !important;
+}
 
 
 .mdc-menu {
@@ -848,6 +1028,10 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     top: 100%;
 }
 
+.mdc-select--filled.mdc-select--disabled .mdc-select__anchor {
+    background-color: transparent !important;
+}
+
 .mdc-tab {
     max-width: 280px;
 }
@@ -882,6 +1066,7 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     margin-left: -16px;
     margin-top: 6px;
     font-size: 14px;
+    z-index: 2 !important;
 }
 
 .ui-datepicker .ui-datepicker-title {

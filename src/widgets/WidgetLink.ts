@@ -54,7 +54,11 @@ export default class WidgetLink extends Widget {
                 this.$elem = $('<div />');
 
                 if(this.config.layout == 'list') {
-                    this.$elem.append('<a target="_blank" href="'+value+'">'+value+'</a>');
+                    let $link = $('<a target="_blank" href="'+value+'">'+value+'</a>');
+                    $link.on('click', (event) => {
+                        event.stopPropagation();
+                    })
+                    this.$elem.append($link);
                 }
                 else {
                     let $input = UIHelper.createInputView('', this.label, value).css({"width": "calc(100% - 48px)", "display": "inline-block"});
@@ -64,7 +68,7 @@ export default class WidgetLink extends Widget {
                 break;
         }
 
-        if(this.config.hasOwnProperty('header') && this.config.layout == 'form') {
+        if(this.config.hasOwnProperty('heading') && this.config.layout == 'form') {
             this.$elem.addClass('title');
         }
 

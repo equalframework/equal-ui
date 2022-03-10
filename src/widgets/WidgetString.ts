@@ -4,7 +4,7 @@ import Layout from "../Layout";
 import { UIHelper } from '../material-lib';
 
 export default class WidgetString extends Widget {
-        
+
     constructor(layout: Layout, label: string, value: any, config: {}) {
         super(layout, 'string', label, value, config);
     }
@@ -27,20 +27,23 @@ export default class WidgetString extends Widget {
                     this.value = $this.val();
                     if(this.value != value) {
                         this.$elem.trigger('_updatedWidget', [false]);
-                    }                    
+                    }
                 });
                 break;
             case 'view':
             default:
+                if(this.config.layout == 'list') {
+                    value = $('<div>'+value+'</div>').text();
+                }
                 this.$elem = UIHelper.createInputView('', this.label, value);
                 break;
         }
 
-        if(this.config.hasOwnProperty('header') && this.config.layout == 'form') {
+        if(this.config.hasOwnProperty('heading') && this.config.layout == 'form') {
             this.$elem.addClass('title');
         }
-                
-        return this.$elem.addClass('sb-widget').addClass('sb-widget-mode-'+this.mode).addClass('sb-widget-mode-'+this.mode).attr('id', this.getId());
+
+        return this.$elem.addClass('sb-widget').addClass('sb-widget-mode-'+this.mode).attr('id', this.getId());
     }
-    
+
 }

@@ -14,14 +14,19 @@ export default class WidgetFloat extends WidgetString {
 
     public setValue(value: any) {
         console.log('WidgetFloat::setValue', value);
-        var power = Math.pow(10, 2);
-        this.value = String( (Math.round(value * power) / power).toFixed(2) );
+        this.value = Number.parseFloat(value);
         return this;
     }
 
     public render():JQuery {
         this.$elem = super.render();
-        this.$elem.find('input').attr( "type", "number" );
+        let $input = this.$elem.find('input');
+        $input.attr( "type", "number" );
+        if(this.mode == 'view') {
+            // in view mode, display 2 decimal digits
+            let value = String( (Math.round(this.value * 100) / 100).toFixed(2) );
+            $input.val(value);
+        }
         return this.$elem;
     }
 
