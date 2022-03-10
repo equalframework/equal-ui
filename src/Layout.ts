@@ -1030,7 +1030,7 @@ export class Layout {
                         parent[key] = {'_id': parent_id+key, '_parent_id': parent_id, '_key': key, '_label': label, '_data': []};
                     }
                 }
-                parent_id = key;
+                parent_id = parent_id+key;
                 parent = parent[key];
             }
             if( parent.hasOwnProperty('_data') && Array.isArray(parent['_data']) ) {
