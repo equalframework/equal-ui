@@ -35,7 +35,7 @@ export default class WidgetString extends Widget {
                 if(this.config.layout == 'list') {
                     value = $('<div>'+value+'</div>').text();
                 }
-                this.$elem = UIHelper.createInputView('', this.label, value);
+                this.$elem = UIHelper.createInputView('', this.label, value, this.config.description);
                 break;
         }
 

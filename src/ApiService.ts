@@ -71,7 +71,7 @@ export class _ApiService {
             }
             this.schemas[package_name][class_name] = $.Deferred();
 
-            EnvService.getEnv().then( environment => {
+            EnvService.getEnv().then( (environment:any) => {
                 $.get({
                     url: environment.backend_url+'/?get=model_schema&entity='+entity
                 })

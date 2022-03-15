@@ -33,7 +33,7 @@ export default class WidgetSelect extends Widget {
             case 'view':
             default:
                 let val:string = Array.isArray(this.config.values)?value:this.config.values[value];
-                this.$elem = UIHelper.createInputView('', this.label, val);
+                this.$elem = UIHelper.createInputView('', this.label, val, this.config.description);
                 break;
         }
 

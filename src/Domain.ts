@@ -132,11 +132,11 @@ export class Domain {
                         }
                         else {
                             continue;
-                        } 
+                        }
                     }
                     else {
                         value = object[target];
-                    }                    
+                    }
                 }
                 // handle user references as `value` part
                 else if(typeof value === 'string' && value.indexOf('user.') == 0) {
@@ -290,4 +290,51 @@ export class Condition {
     }
 
 }
+
+export class Reference {
+
+    private value: string;
+
+    constructor(value:string) {
+        this.value = value;
+    }
+
+    /**
+     * Update value by replacing any occurence of `object.` and `user.` notations with related attributes of given objects.
+     *
+     * @param any   object  An entity object to serve as reference.
+     * @param any   user    A user object to serve as reference.
+     * @returns string      The result of the parsing.
+     */
+    public parse(object: any, user: any = {}) {
+        let result = this.value;
+        if(this.value.indexOf('object.') == 0 ) {
+            let target = this.value.substring('object.'.length);
+            if(object && object.hasOwnProperty(target)) {
+                let tmp = object[target];
+                // target points to an object with subfields
+                if(typeof tmp === 'object' && !Array.isArray(tmp)) {
+                    if(tmp.hasOwnProperty('id')) {
+                        result = tmp.id;
+                    }
+                    else if(tmp.hasOwnProperty('name')) {
+                        result = tmp.name;
+                    }
+                }
+                else {
+                    result  = object[target];
+                }
+            }
+        }
+        // handle user references as `value` part
+        else if(this.value.indexOf('user.') == 0) {
+            let target = this.value.substring('user.'.length);
+            if(user && user.hasOwnProperty(target)) {
+                result = user[target];
+            }
+        }
+        return result;
+    }
+}
+
 export default Domain;

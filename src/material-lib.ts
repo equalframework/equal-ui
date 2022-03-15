@@ -195,7 +195,7 @@ class UIHelper {
         return $elem;
     }
 
-    public static createInputView(id:string, label:string, value:string) {
+    public static createInputView(id:string, label:string, value:string, helper:string) {
         let $elem = $('\
         <div> \
         <label class="mdc-text-field mdc-text-field--filled"> \
@@ -203,6 +203,9 @@ class UIHelper {
             <input disabled class="mdc-text-field__input" type="text" value="'+value+'"> \
             <span class="mdc-line-ripple"></span>\
         </label> \
+        <div class="mdc-text-field-helper-line"> \
+            <div class="mdc-text-field-helper-text" aria-hidden="true" title="'+helper+'">'+helper+'</div> \
+        </div> \
         </div>');
         new MDCTextField($elem[0]);
         return $elem;

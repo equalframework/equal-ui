@@ -110,7 +110,7 @@ export class Model {
     public getOperators(type:string) {
         let operators:any = {
             'boolean':      ['=', '<>'],
-            'integer':      ['in', 'not in', '=', '<>', '<', '>', '<=', '>='],
+            'integer':      ['=', 'in', 'not in', '<>', '<', '>', '<=', '>='],
             'float':        ['=', '<>', '<', '>', '<=', '>='],
             'string':       ['like', 'in', '=', '<>'],
             'text':         ['like', '='],
@@ -176,7 +176,7 @@ export class Model {
             if( 'many2one' == schema[field]['type'] ) {
                 fields.push(field + '.name');
             }
-            // we do not load relational fields resulting in potentially long lists (those are handled by the Widgets)
+            // we do not load relational fields, these can result in potentially long lists and are handled by the Widgets
             else if(['one2many', 'many2many'].indexOf(schema[field]['type']) > -1) {
                 delete fields[i];
             }

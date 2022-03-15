@@ -5,7 +5,7 @@ import { UIHelper } from './material-lib';
 
 import { TranslationService, ApiService } from "./equal-services";
 
-import { Domain, Clause, Condition } from "./Domain";
+import { Domain, Clause, Condition, Reference } from "./Domain";
 import View from "./View";
 import moment from 'moment/moment.js';
 
@@ -257,144 +257,7 @@ export class Layout {
         }
     }
 
-    /**
-     * Generate a widget config based on a layout item (from View schema)
-     * @param field_name
-     */
-    private getWidgetConfig(item: any) {
-        let config:any = {};
 
-        let translation = this.view.getTranslation();
-        let model_fields = this.view.getModelFields();
-
-        let field = item.value;
-
-        if(!model_fields || !model_fields.hasOwnProperty(field)) {
-            return null;
-        }
-
-        let def = model_fields[field];
-
-        let label = (item.hasOwnProperty('label'))?item.label:field;
-        // #todo - handle help and relay to Context
-        let helper = (item.hasOwnProperty('help'))?item.help:(def.hasOwnProperty('help'))?def['help']:'';
-        let description = (item.hasOwnProperty('description'))?item.description:(def.hasOwnProperty('description'))?def['description']:'';
-
-        if(def.hasOwnProperty('type')) {
-            let type = def['type'];
-            if(def.hasOwnProperty('result_type')) {
-                type = def['result_type'];
-            }
-            if(def.hasOwnProperty('usage')) {
-                switch(def.usage) {
-                    // #todo - complete the list
-                    case 'markup/html':
-                        type = 'text';
-                        break;
-                    case 'uri/url:http':
-                    case 'uri/url':
-                        type = 'link';
-                        break;
-                    case 'image/gif':
-                    case 'image/png':
-                    case 'image/jpeg':
-                        // binary alt
-                        type = 'file';
-                        break;
-                }
-            }
-            config.type = type;
-        }
-        else {
-            // we shouldn't end up here : malformed schema
-            console.log('ERROR - malformed schema for field '+field);
-            return config;
-        }
-
-        if(def.hasOwnProperty('usage')) {
-            config.usage = def.usage;
-        }
-
-        if(def.hasOwnProperty('foreign_object')) {
-            config.foreign_object = def.foreign_object;
-        }
-
-        if(def.hasOwnProperty('foreign_field')) {
-            config.foreign_field = def.foreign_field;
-        }
-
-        if(def.hasOwnProperty('selection')) {
-            config.selection = def.selection;
-            config.type = 'select';
-            let translated = TranslationService.resolve(translation, 'model', [], field, config.selection, 'selection');
-            let values = translated;
-            if(Array.isArray(translated)) {
-                // convert array to a Map (original values as keys and translations as values)
-                values = {};
-                for(let i = 0, n = config.selection.length; i < n; ++i) {
-                    values[config.selection[i]] = translated[i];
-                }
-            }
-            config.values = values;
-        }
-        // ready property is set to true during the 'feed' phase
-        config.visible = true;
-        config.ready = false;
-        config.title = TranslationService.resolve(translation, 'model', [], field, label, 'label');
-        config.description = TranslationService.resolve(translation, 'model', [], field, description, 'description');
-        config.readonly = (def.hasOwnProperty('readonly'))?def.readonly:(item.hasOwnProperty('readonly'))?item['readonly']:false;
-        config.align = (item.hasOwnProperty('align'))?item.align:'left';
-        config.sortable = (item.hasOwnProperty('sortable') && item.sortable);
-        config.layout = this.view.getType();
-        config.lang = this.view.getLang();
-        config.locale = this.view.getLocale();
-
-        if(item.hasOwnProperty('widget')) {
-            // overload config with widget config, if any
-            config = {...config, ...item.widget};
-        }
-
-        if(def.hasOwnProperty('visible')) {
-            config.visible = def.visible;
-        }
-
-        if(item.hasOwnProperty('visible')) {
-            config.visible = item.visible;
-        }
-
-        // convert visible property to JSON
-        config.visible = eval(config.visible);
-
-        // for relational fields, we need to check if the Model has been fetched al
-        if(['one2many', 'many2one', 'many2many'].indexOf(config.type) > -1) {
-            // defined config for Widget's view with a custom domain according to object values
-            let view_id = (config.hasOwnProperty('view'))?config.view:'list.default';
-            let parts = view_id.split(".", 2);
-            let view_type = (parts.length > 1)?parts[0]:'list';
-            let view_name = (parts.length > 1)?parts[1]:parts[0];
-
-            let def_domain = (def.hasOwnProperty('domain'))?def['domain']:[];
-            let view_domain = (config.hasOwnProperty('domain'))?config['domain']:[];
-
-            let domain = new Domain(def_domain);
-            domain.merge(new Domain(view_domain));
-
-            // add join condition for limiting list to the current object
-            if(['one2many', 'many2many'].indexOf(config.type) > -1 && def.hasOwnProperty('foreign_field')) {
-                domain.merge(new Domain([def['foreign_field'], 'contains', 'object.id']));
-            }
-
-            config = {...config,
-                entity: def['foreign_object'],
-                view_type: view_type,
-                view_name: view_name,
-                original_domain: domain.toArray()
-            };
-
-        }
-
-        return config;
-    }
 
     /**
      *
@@ -406,7 +269,10 @@ export class Layout {
         let $elem = $('<div/>').css({"width": "100%"});
 
         let view_schema = this.view.getViewSchema();
+
+        let view_fields = this.view.getViewFields();
         let model_fields = this.view.getModelFields();
+
         let translation = this.view.getTranslation();
         let view_config = this.view.getConfig();
 
@@ -490,7 +356,7 @@ export class Layout {
                             if(item.hasOwnProperty('type') && item.hasOwnProperty('value')) {
                                 if(item.type == 'field') {
 
-                                    let config = this.getWidgetConfig(item);
+                                    let config = WidgetFactory.getWidgetConfig(this.view, item.value, translation, model_fields, view_fields);
 
                                     if(config) {
                                         let widget:Widget = WidgetFactory.getWidget(this, config.type, config.title, '', config);
@@ -518,7 +384,6 @@ export class Layout {
             });
             UIHelper.decorateTabBar($tabs);
         });
-
 
         this.$layout.append($elem);
     }
@@ -551,16 +416,16 @@ export class Layout {
         if(group_by.length > 0) {
             let $fold_toggle = $('<th />').addClass('sb-group-cell folded').css({'width': '44px', 'cursor': 'pointer'}).append( $('<i/>').addClass('material-icons sb-toggle-button').text('chevron_right') );
             $hrow.append( $fold_toggle );
-            
+
             $fold_toggle.on('click', () => {
                 console.log('fold click');
                 let $tbody = this.$layout.find('tbody');
                 let folded = $fold_toggle.hasClass('folded');
                 if(folded) {
-                    $fold_toggle.removeClass('folded');                    
+                    $fold_toggle.removeClass('folded');
                 }
                 else {
-                    $fold_toggle.addClass('folded');                    
+                    $fold_toggle.addClass('folded');
                 }
                 folded = !folded;
                 $tbody.find('.sb-group-row').each( (index:number, elem:any) => {
@@ -574,13 +439,17 @@ export class Layout {
         }
 
         // create other columns, based on the col_model given in the configuration
-        let schema = this.view.getViewSchema();
+        let view_schema = this.view.getViewSchema();
+        let translation = this.view.getTranslation();
+
+        let model_fields = this.view.getModelFields();
+        let view_fields = this.view.getViewFields();
 
         // pre-processing: check columns width consistency
         let item_width_total = 0;
 
         // 1) sum total width and items with null width
-        for(let item of schema.layout.items) {
+        for(let item of view_schema.layout.items) {
             if(!item.hasOwnProperty('visible') || item.visible == true) {
                 // set minimum width to 10%
                 let width = 10;
@@ -595,15 +464,15 @@ export class Layout {
         // 2) normalize columns widths (to be exactly 100%)
         if(item_width_total != 100) {
             let ratio = 100.0 / item_width_total;
-            for(let item of schema.layout.items) {
+            for(let item of view_schema.layout.items) {
                 if( (!item.hasOwnProperty('visible') || item.visible == true) && item.hasOwnProperty('width')) {
                     item.width *= ratio;
                 }
             }
         }
 
-        for(let item of schema.layout.items) {
-            let config = this.getWidgetConfig(item);
+        for(let item of view_schema.layout.items) {
+            let config = WidgetFactory.getWidgetConfig(this.view, item.value, translation, model_fields, view_fields);
 
             if(config.visible) {
                 let width = Math.floor(10 * item.width) / 10;
@@ -642,10 +511,10 @@ export class Layout {
 
         this.$layout.append($elem);
 
-        if(schema.hasOwnProperty('operations')) {
+        if(view_schema.hasOwnProperty('operations')) {
             let $operations = $('<div>').addClass('table-operations');
-            for(let operation in schema.operations) {
-                let op_descriptor = schema.operations[operation];
+            for(let operation in view_schema.operations) {
+                let op_descriptor = view_schema.operations[operation];
 
                 let $op_div = $('<div>').addClass('operation');
                 let $title = $('<div>').addClass('operation-title').text(operation);
@@ -653,7 +522,7 @@ export class Layout {
                 // $op_div.append($title);
                 let $op_row = $('<div>').addClass('operation-row').appendTo($op_div);
                 let pos = 0;
-                for(let item of schema.layout.items) {
+                for(let item of view_schema.layout.items) {
                     if(!item.hasOwnProperty('visible') || item.visible == true) {
                         let width = Math.ceil(10 * item.width) / 10;
                         let $cell = $('<div>').addClass('operation-cell').css({width: width+'%'});
@@ -676,6 +545,100 @@ export class Layout {
         }
 
         UIHelper.decorateTable($elem);
+
+        if(view_schema.hasOwnProperty('actions') && this.view.getPurpose() != 'widget') {
+            let $view_actions = this.view.getContainer().find('.sb-view-header-actions-view');
+
+            for(let action of view_schema.actions) {
+
+                let action_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, action.label);
+                let $button = UIHelper.createButton('action-view-'+action.id, action_title, 'outlined')
+                .on('click', async () => {
+                    // mark action button as loading
+                    $button.addClass('mdc-button--spinner').attr('disabled', 'disabled');
+
+                    let resulting_params:any = {};
+                    let missing_params:any = {};
+                    let user = this.view.getUser();
+
+                    // pre-feed with params from the action, if any
+                    if(action.hasOwnProperty('params')) {
+                        for(let param of Object.keys(action.params)) {
+                            let ref = new Reference(action.params[param]);
+                            resulting_params[param] = ref.parse({}, user);
+                        }
+                    }
+
+                    // retrieve announcement from the target action controller
+                    const result = await ApiService.fetch("/", {do: action.controller, announce: true});
+                    let params: any = {};
+                    if(result.hasOwnProperty('announcement')) {
+                        if(result.announcement.hasOwnProperty('params')) {
+                            params = result.announcement.params;
+                        }
+                        for(let param of Object.keys(params)) {
+                            if(Object.keys(resulting_params).indexOf(param) < 0) {
+                                missing_params[param] = params[param];
+                            }
+                        }
+                    }
+
+                    // restore action button
+                    $button.removeClass('mdc-button--spinner').removeAttr('disabled');
+
+
+                    let defer = $.Deferred();
+
+                    if(action.hasOwnProperty('confirm') && action.confirm) {
+                        // params dialog 
+                        if(Object.keys(missing_params).length) {
+                            let $dialog = UIHelper.createDialog(this.view.getUUID()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
+                            await this.decorateViewActionDialog($dialog, action, missing_params);
+                            $dialog.addClass('sb-view-dialog').appendTo(this.view.getContainer());
+                            $dialog
+                            .on('_accept', () => defer.resolve($dialog.data('result')))
+                            .on('_reject', () => defer.reject() );
+                            $dialog.trigger('_open');        
+                        }
+                        // confirm dialog 
+                        else {
+                            // display confirmation dialog with checkbox for archive
+                            let $dialog = UIHelper.createDialog(this.view.getUUID()+'_'+action.id+'_confirm-action-dialog', TranslationService.instant('SB_ACTIONS_CONFIRM'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
+                            $dialog.appendTo(this.view.getContainer());
+                            // inject component as dialog content
+                            $dialog.find('.mdc-dialog__content').append($('<p />').text( TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, action.description, 'description') ));
+                            $dialog
+                            .on('_accept', () => defer.resolve())
+                            .on('_reject', () => defer.reject() );
+                            $dialog.trigger('_open');
+                        }
+                    }
+                    else {
+                        // params dialog 
+                        if(Object.keys(missing_params).length) {
+                            let $dialog = UIHelper.createDialog(this.view.getUUID()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
+                            await this.decorateViewActionDialog($dialog, action, missing_params);
+                            $dialog.addClass('sb-view-dialog').appendTo(this.view.getContainer());
+                            $dialog
+                            .on('_accept', () => defer.resolve($dialog.data('result')))
+                            .on('_reject', () => defer.reject() );
+                            $dialog.trigger('_open');
+                        }
+                        // perform action
+                        else {
+                            defer.resolve()
+                        }
+                    }
+
+                    defer.promise().then( async (result:any) => {
+                        this.performViewAction(action, {...resulting_params, ...result});
+                    });
+
+
+                });
+                $view_actions.append($button);
+            }
+        }
     }
 
 
@@ -718,7 +681,7 @@ export class Layout {
                 }
             }
             else if(group.hasOwnProperty('_is_group')) {
-                let $row = this.feedListCreateGroupRow(group, $tbody);            
+                let $row = this.feedListCreateGroupRow(group, $tbody);
                 $tbody.append($row);
             }
             else {
@@ -783,20 +746,23 @@ export class Layout {
         // display the first object from the collection
 
         let fields = Object.keys(this.view.getViewFields());
-        let model_schema = this.view.getModelFields();
+        let model_fields = this.view.getModelFields();
 
         // remember which element has focus (DOM is going to be modified)
         let focused_widget_id = $("input:focus").closest('.sb-widget').attr('id');
 
         if(objects.length > 0) {
-// #todo : keep internal index of the object to display (with a prev/next navigation in the header)
+            // #todo - keep internal index of the object to display (with a prev/next navigation in the header)
             let object:any = objects[0];
+            let user = this.view.getUser();
 
             // update actions in view header
             let view_schema = this.view.getViewSchema();
 
+
+// #todo : same as for lists (but with object as ref)
             if(view_schema.hasOwnProperty('actions')) {
-                let $view_actions = this.view.getContainer().find('.sb-view-header-form-actions-view');
+                let $view_actions = this.view.getContainer().find('.sb-view-header-actions-view');
                 $view_actions.empty();
                 for(let action of view_schema.actions) {
                     let visible = true;
@@ -887,7 +853,7 @@ export class Layout {
 
                 let $parent = this.$layout.find('#'+widget.getId()).parent();
 
-                let model_def = model_schema[field];
+                let model_def = model_fields[field];
                 let type = model_def['type'];
 
                 if(model_def.hasOwnProperty('result_type')) {
@@ -998,7 +964,7 @@ export class Layout {
 
     private feedListGroupObjects(objects:any[], group_by:string[]) {
         let groups: any = {};
-        let model_schema = this.view.getModelFields();
+        let model_fields = this.view.getModelFields();
 
         // group objects
         for (let object of objects) {
@@ -1008,7 +974,7 @@ export class Layout {
 
             for(let i = 0; i < n; ++i) {
                 let field = group_by[i];
-                let model_def = model_schema[field];
+                let model_def = model_fields[field];
                 let key = object[field];
                 let label = key;
 
@@ -1042,6 +1008,11 @@ export class Layout {
 
     private feedListCreateObjectRow(object:any, parent_group_id:string) {
         let schema = this.view.getViewSchema();
+
+        let view_fields = this.view.getViewFields();
+        let model_fields = this.view.getModelFields();
+        let translation = this.view.getTranslation();
+
         let group_by = this.view.getGroupBy();
 
         let $row = $('<tr/>')
@@ -1119,7 +1090,9 @@ export class Layout {
         // for each field, create a widget, append to a cell, and append cell to row
         for(let item of schema.layout.items) {
 
-            let config = this.getWidgetConfig(item);
+            let config = WidgetFactory.getWidgetConfig(this.view, item.value, translation, model_fields, view_fields);
+            // form form layout
+            config.layout = 'form';
 
             // unknown or invisible field
             if(config === null || (config.hasOwnProperty('visible') && !config.visible)) continue;
@@ -1207,36 +1180,39 @@ export class Layout {
         .attr('data-children-count', children_count)
         .attr('id', UIHelper.getUUID());
 
-        let $checkbox = UIHelper.createTableCellCheckbox().addClass('sb-view-layout-list-row-checkbox');
-        $checkbox.find('input').on('click', (event:any) => {
-            event.stopPropagation();
+        if(this.view.getPurpose() != 'widget' || this.view.getMode() == 'edit') {
+            let $checkbox = UIHelper.createTableCellCheckbox().addClass('sb-view-layout-list-row-checkbox');
+            $checkbox.find('input').on('click', (event:any) => {
+                event.stopPropagation();
 
-            let $tbody = this.$layout.find('tbody');
-            let checked = $checkbox.find('input').prop('checked');
+                let $tbody = this.$layout.find('tbody');
+                let checked = $checkbox.find('input').prop('checked');
 
-            let selection:any[] = [];
+                let selection:any[] = [];
 
-            $tbody.find("[data-parent-id='" + group['_id'] + "']").each( (index:number, elem:any) => {
-                let $this = $(elem);
-                if($this.hasClass('sb-group-row')) {
-                    let subchecked = $this.children().first().find('input').prop('checked');
-                    if(checked != subchecked) {
-                        $this.children().first().find('input').trigger('click');
+                $tbody.find("[data-parent-id='" + group['_id'] + "']").each( (index:number, elem:any) => {
+                    let $this = $(elem);
+                    if($this.hasClass('sb-group-row')) {
+                        let subchecked = $this.children().first().find('input').prop('checked');
+                        if(checked != subchecked) {
+                            $this.children().first().find('input').trigger('click');
+                        }
                     }
+                    else {
+                        selection.push(parseInt(<string>$this.children().first().find('input').attr('data-id'), 10));
+                    }
+                });
+
+                if(checked) {
+                    this.addToSelection(selection);
                 }
                 else {
-                    selection.push(parseInt(<string>$this.children().first().find('input').attr('data-id'), 10));
+                    this.removeFromSelection(selection);
                 }
             });
-            
-            if(checked) {
-                this.addToSelection(selection);
-            }
-            else {
-                this.removeFromSelection(selection);
-            }
-        });
-        $row.append($checkbox);
+            $row.append($checkbox);
+        }
+
         $row.append( $('<td />').addClass('sb-group-cell').append( $('<i/>').addClass('material-icons sb-toggle-button').text('chevron_right') ) );
         $row.append( $('<td/>').attr('title', prefix + label).attr('colspan', schema.layout.items.length).addClass('sb-group-cell sb-group-cell-label').append(prefix + ' <span>'+label+'</span>'+' '+suffix) );
 
@@ -1271,19 +1247,20 @@ export class Layout {
 
         $row.on('show', () => {
             let $tbody = this.$layout.find('tbody');
-    
+
             let group_id = $row.attr('data-id');
             $row.show();
             $tbody.find("[data-parent-id='" + group_id + "']").each( (index:number, elem:any) => {
                 let $this = $(elem);
                 if($this.hasClass('sb-group-row')) {
-                    $this.trigger('show');
+                    // $this.trigger('show');
                 }
                 else if(!$row.hasClass('folded')) {
                     $this.show();
                 }
             });
         });
+
         $row.on('hide', () => {
             let $tbody = this.$layout.find('tbody');
             let group_id = $row.attr('data-id');
@@ -1305,6 +1282,77 @@ export class Layout {
 
         return $row;
     }
+
+
+    private async decorateViewActionDialog($dialog: JQuery, action: any, params: any) {
+        let $elem = $('<div />'); 
+
+        let widgets:any = {};
+
+        // load model schema and translation for target entity
+        // let model_fields = this.view.getModelFields();
+        let translation = this.view.getTranslation();
+
+        for(let field of Object.keys(params)) {
+
+            let def = params[field];
+
+            let model_fields:any = {};
+            model_fields[field] = def;
+
+            let view_fields:any = {};
+            view_fields[field] =  {
+                "type": "field",
+                "value": field
+            };
+
+            let config = WidgetFactory.getWidgetConfig(this.view, field, translation, model_fields, view_fields);
+
+            let widget:Widget = WidgetFactory.getWidget(this, config.type, config.title, '', config);
+            widget.setMode('edit');
+            widget.setReadonly(config.readonly);
+
+            let $node = widget.render();
+            $node.css({'margin-bottom': '24px'});
+            $elem.append($node);
+            widgets[field] = widget;
+        }
+
+        $dialog.find('.mdc-dialog__content').append($elem);
+
+        $dialog.on('_accept', () => {
+            let result:any = {};
+            // send payload to target controller
+
+            // read result :
+            // if no error refresh view
+            // otherwise display error
+            for(let field of Object.keys(widgets)) {
+                let widget = widgets[field];
+                result[field] = widget.getValue();
+            }
+            $dialog.data('result', result);
+        });
+
+    }
+
+
+    private async performViewAction(action:any, params:any) {
+
+        try {
+            const result = await ApiService.fetch("/", {do: action.controller, ...params});
+            console.log(result);
+            await this.view.onchangeView();
+            // await this.view.getModel().refresh();
+            // await this.refresh();
+        }
+        catch(response) {
+            console.log('error', response);
+            await this.view.displayErrorFeedback(response);
+        }
+    }
+
+
 }
 
 export default Layout;

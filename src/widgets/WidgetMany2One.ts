@@ -222,7 +222,7 @@ export default class WidgetMany2One extends Widget {
             case 'view':
             default:
                 this.$elem = $('<div />');
-                let $input = UIHelper.createInputView('', this.label, value.toString());
+                let $input = UIHelper.createInputView('', this.label, value.toString(), this.config.description);
 
                 switch(this.config.layout) {
                     case 'form':

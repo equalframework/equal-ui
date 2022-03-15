@@ -156,7 +156,7 @@ export class View {
                     handler: async (selection:any) => {
                         // display confirmation dialog with checkbox for archive
                         let $dialog = UIHelper.createDialog('confirm_archive_dialog', TranslationService.instant('SB_ACTIONS_ARCHIVE_CONFIRM'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
-                        $dialog.appendTo(this.$container);
+                        $dialog.addClass('sb-view-dialog').appendTo(this.$container);
                         // inject component as dialog content
                         this.decorateDialogArchiveConfirm($dialog);
 
@@ -184,8 +184,8 @@ export class View {
                     primary: true,
                     handler: async (selection:any) => {
                         // display confirmation dialog with checkbox for permanent deletion
-                        let $dialog = UIHelper.createDialog('confirm_deletion_dialog', TranslationService.instant('SB_ACTIONS_DELETION_CONFIRM'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
-                        $dialog.appendTo(this.$container);
+                        let $dialog = UIHelper.createDialog(this.uuid+'_confirm-deletion-dialog', TranslationService.instant('SB_ACTIONS_DELETION_CONFIRM'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
+                        $dialog.addClass('sb-view-dialog').appendTo(this.$container);
                         // inject component as dialog content
                         this.decorateDialogDeletionConfirm($dialog);
 
@@ -287,6 +287,10 @@ export class View {
 
             if(this.view_schema.hasOwnProperty("sort")) {
                 this.sort = this.view_schema.sort;
+            }
+
+            if(this.view_schema.hasOwnProperty("limit")) {
+                this.limit = +this.view_schema.limit;
             }
 
             if(this.view_schema.hasOwnProperty("group_by")) {
@@ -397,8 +401,16 @@ export class View {
         return this.context.getUser();
     }
 
+    /**
+     * 
+     * @returns Returns the identifier of the view (i.e. {type.name})
+     */
     public getId() {
         return this.type + '.' + this.name;
+    }
+
+    public getUUID() {
+        return this.uuid;
     }
 
     public getCustomActions() {
@@ -538,14 +550,14 @@ export class View {
     }
 
     /**
-     * Returns a Map of layout fields items mapping names with their definition
+     * Returns an associative array mapping fields names with their layout definition
      */
     public getViewFields() {
         return this.view_fields;
     }
 
     /**
-     * Returns a Map of model fields items mapping names with their definition
+     * Returns an associative array mapping fields names with their model definition
      */
     public getModelFields() {
         return this.model_fields;
@@ -586,6 +598,7 @@ export class View {
                 }
             }
         }
+        console.log(this.view_fields);
     }
 
     /**
@@ -608,24 +621,25 @@ export class View {
         // apend header structure
         this.$headerContainer.append(' \
             <div class="sb-view-header-list"> \
-                <div class="sb-view-header-list-actions"> \
-                    <div class="sb-view-header-list-actions-set"></div> \
-                </div> \
+                <div class="sb-view-header-actions"></div> \
                 <div class="sb-view-header-list-navigation"></div> \
             </div>'
         );
 
         let $elem = this.$headerContainer.find('.sb-view-header-list');
 
-        let $level1 = $elem.find('.sb-view-header-list-actions');
+        let $actions_set = $elem.find('.sb-view-header-actions');
         let $level2 = $elem.find('.sb-view-header-list-navigation');
 
-        let $actions_set = $level1.find('.sb-view-header-list-actions-set');
+        // left side : standard actions for views
+        let $std_actions = $('<div />').addClass('sb-view-header-actions-std').appendTo($actions_set);
+        // right side : the actions specific to the view, and depenging on object status
+        let $view_actions = $('<div />').addClass('sb-view-header-actions-view').appendTo($actions_set);
 
         if(this.config.show_actions) {
             switch(this.purpose) {
                 case 'view':
-                    $actions_set
+                    $std_actions
                     .prepend(
                         UIHelper.createButton(this.uuid+'_action-edit', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'raised')
                         .on('click', async () => {
@@ -657,7 +671,7 @@ export class View {
                     );
                     break;
                 case 'select':
-                    $actions_set
+                    $std_actions
                     .prepend(
                         UIHelper.createButton(this.uuid+'_action-create', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'text')
                         .on('click', async () => {
@@ -686,7 +700,7 @@ export class View {
                     );
                     break;
                 case 'add':
-                    $actions_set
+                    $std_actions
                     .prepend(
                         UIHelper.createButton(this.uuid+'_action-create', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'text')
                         .on('click', async () => {
@@ -721,7 +735,7 @@ export class View {
 
         //  bulk assign action
         let $bulk_assign_dialog = UIHelper.createDialog(this.uuid+'_bulk-assign-dialog', TranslationService.instant('SB_ACTIONS_BUTTON_BULK_ASSIGN'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
-        $bulk_assign_dialog.appendTo(this.$container);
+        $bulk_assign_dialog.addClass('sb-view-dialog').appendTo(this.$container);
         // inject component as dialog content
         this.decorateBulkAssignDialog($bulk_assign_dialog);
 
@@ -733,7 +747,7 @@ export class View {
         let $filters_search = $('<div />').addClass('sb-view-header-list-filters-search');
         let $search_input = UIHelper.createInput('sb-view-header-search', TranslationService.instant('SB_FILTERS_SEARCH'), '', '', '', false, 'outlined', 'close').appendTo($filters_search);
 
-        $search_input.find('.mdc-text-field__icon').on('click', async (e) => {
+        $search_input.addClass('dialog-select').find('.mdc-text-field__icon').on('click', async (e) => {
             // reset input value
             $search_input.find('input').val('').trigger('focus').trigger('blur');
             // unapply related filter
@@ -784,8 +798,8 @@ export class View {
             UIHelper.createListDivider().appendTo($filters_list);
         }
 
-        let $custom_filter_dialog = UIHelper.createDialog('custom_filter_dialog', TranslationService.instant('SB_FILTERS_ADD_CUSTOM_FILTER'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
-        $custom_filter_dialog.appendTo(this.$container);
+        let $custom_filter_dialog = UIHelper.createDialog(this.uuid+'_custom-filter-dialog', TranslationService.instant('SB_FILTERS_ADD_CUSTOM_FILTER'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
+        $custom_filter_dialog.addClass('sb-view-dialog').appendTo(this.$container);
         // inject component as dialog content
         this.decorateCustomFilterDialog($custom_filter_dialog);
 
@@ -874,7 +888,7 @@ export class View {
             })
         );
 
-        let $select = UIHelper.createPaginationSelect('', '', [5, 10, 25, 50, 100], 25).addClass('sb-view-header-list-pagination-limit_select');
+        let $select = UIHelper.createPaginationSelect('', '', [5, 10, 25, 50, 100], this.limit).addClass('sb-view-header-list-pagination-limit_select');
 
         $pagination.find('.pagination-rows-per-page')
         .append($select);
@@ -920,7 +934,8 @@ export class View {
         this.$headerContainer.find('.sb-view-header-list-pagination-last_page').prop('disabled', !(start <= total-limit));
 
 
-        let $action_set = this.$headerContainer.find('.sb-view-header-list-actions-set');
+        let $action_set = this.$headerContainer.find('.sb-view-header-actions');
+        let $std_actions = $action_set.find('.sb-view-header-actions-std');
 
         // abort any pending edition
         let $actions_selected_edit = $action_set.find('.sb-view-header-list-actions-selected-edit');
@@ -938,7 +953,7 @@ export class View {
                 // create export menu (always visible: no selection means "export all")
                 let $export_actions_menu_button = $('<div/>').addClass('sb-view-header-list-actions-export mdc-menu-surface--anchor')
                 .append(UIHelper.createButton('selection-action-'+'SB_ACTIONS_BUTTON_EXPORT', 'export', 'icon', 'file_download'))
-                .appendTo($action_set);
+                .appendTo($std_actions);
 
                 let $export_actions_menu = UIHelper.createMenu('export-actions-menu').addClass('sb-view-header-list-export-menu').appendTo($export_actions_menu_button);
                 let $export_actions_list = UIHelper.createList('export-actions-list').appendTo($export_actions_menu);
@@ -967,7 +982,7 @@ export class View {
 
             // create buttons with actions to apply on current selection
             if(this.selected_ids.length > 0) {
-                let $container = $('<div/>').addClass('sb-view-header-list-actions-selected').appendTo($action_set);
+                let $container = $('<div/>').addClass('sb-view-header-list-actions-selected').appendTo($std_actions);
                 let count = this.selected_ids.length;
 
                 let $fields_toggle_button = $('<div/>').addClass('mdc-menu-surface--anchor')
@@ -1012,12 +1027,12 @@ export class View {
         let $elem = $('<div />').addClass('sb-view-header-form');
 
         // container for holding chips of currently applied filters
-        let $actions_set = $('<div />').addClass('sb-view-header-form-actions').appendTo($elem);
+        let $actions_set = $('<div />').addClass('sb-view-header-actions').appendTo($elem);
 
         // left side : standard actions for views
-        let $std_actions = $('<div />').addClass('sb-view-header-form-actions-std').appendTo($actions_set);
+        let $std_actions = $('<div />').addClass('sb-view-header-actions-std').appendTo($actions_set);
         // right side : the actions specific to the view, and depenging on object status
-        let $view_actions = $('<div />').addClass('sb-view-header-form-actions-view').appendTo($actions_set);
+        let $view_actions = $('<div />').addClass('sb-view-header-actions-view').appendTo($actions_set);
 
         // possible values for header.actions
         /*
@@ -1143,7 +1158,7 @@ export class View {
                         if(res) {
                             // relay new object_id to parent view
                             await this.closeContext(res);
-                            if( this.context.getParent().getView().getMode() == "view" && this.purpose == 'update') {
+                            if(this.context.getParent().getView().getMode() == "view" && this.purpose == 'update') {
                                 await this.closeContext();
                             }
                         }
@@ -1343,26 +1358,29 @@ export class View {
             }
         }
 
-        $select_field = UIHelper.createSelect('custom_filter_select_field', TranslationService.instant('SB_FILTERS_DIALOG_FIELD'), fields, Object.keys(fields)[0]).appendTo($elem);
+        $select_field = UIHelper.createSelect(this.uuid+'_custom-filter-select-field', TranslationService.instant('SB_FILTERS_DIALOG_FIELD'), fields, Object.keys(fields)[0]).appendTo($elem);
         // setup handler for relaying value update to parent layout
-        $select_field.find('input')
+        $select_field.addClass('dialog-select').find('input')
         .on('change', (event) => {
             let $this = $(event.currentTarget);
             selected_field = <string> $this.val();
 
-            $elem.find('#custom_filter_select_operator').remove();
+            $elem.find('#'+this.uuid+'_custom-filter-select-operator').remove();
             $elem.find('.sb-widget').remove();
 
             let field_type = this.model.getFinalType(selected_field);
-            let operators:[] = this.model.getOperators(field_type);
-            $select_operator = UIHelper.createSelect('custom_filter_select_operator', TranslationService.instant('SB_FILTERS_DIALOG_OPERATOR'), operators);
+            let operators: any[] = this.model.getOperators(field_type);
+            selected_operator = operators[0];
+            $select_operator = UIHelper.createSelect(this.uuid+'_custom-filter-select-operator', TranslationService.instant('SB_FILTERS_DIALOG_OPERATOR'), operators, operators[0]);
             // setup handler for relaying value update to parent layout
-            $select_operator.find('input').on('change', (event) => {
+            $select_operator.addClass('dialog-select').find('input').on('change', (event) => {
                 let $this = $(event.currentTarget);
                 selected_operator = <string> $this.val();
             });
 
-            let config = this.getWidgetConfig(selected_field);
+            let config = WidgetFactory.getWidgetConfig(this, selected_field, this.translation, this.model_fields, this.view_fields);
+            // form form layout
+            config.layout = 'form';
 
             let value:any = '';
             if(['date', 'datetime'].indexOf(config.type) >= 0) {
@@ -1441,105 +1459,6 @@ export class View {
 
     }
 
-
-    // #todo - move this method (and similar on in layout.ts to WidgetFactory class)
-    /**
-     *
-     */
-    private getWidgetConfig(field:string) {
-        let config:any = {};
-
-        let translation = this.getTranslation();
-        let model_fields = this.getModelFields();
-
-        if(!model_fields || !model_fields.hasOwnProperty(field)) {
-            return null;
-        }
-
-        let def = model_fields[field];
-
-        let label = field;
-
-        if(def.hasOwnProperty('type')) {
-            let type = def['type'];
-            if(def.hasOwnProperty('result_type')) {
-                type = def['result_type'];
-            }
-            config.type = type;
-        }
-        else {
-            // we shouldn't end up here : malformed schema
-            console.log('ERROR - malformed schema for field '+field);
-            return config;
-        }
-
-        if(def.hasOwnProperty('usage')) {
-            config.usage = def.usage;
-        }
-
-        if(def.hasOwnProperty('foreign_object')) {
-            config.foreign_object = def.foreign_object;
-        }
-
-        if(def.hasOwnProperty('foreign_field')) {
-            config.foreign_field = def.foreign_field;
-        }
-
-        if(def.hasOwnProperty('selection')) {
-            config.selection = def.selection;
-            config.type = 'select';
-            let translated = TranslationService.resolve(translation, 'model', [], field, config.selection, 'selection');
-            let values = translated;
-            if(Array.isArray(translated)) {
-                // convert array to a Map (original values as keys and translations as values)
-                values = {};
-                for(let i = 0, n = config.selection.length; i < n; ++i) {
-                    values[config.selection[i]] = translated[i];
-                }
-            }
-            config.values = values;
-        }
-        // ready property is set to true during the 'feed' phase
-        config.visible = true;
-        config.ready = false;
-        config.title = TranslationService.resolve(translation, 'model', [], field, label, 'label');
-        config.description = TranslationService.resolve(translation, 'model', [], field, '', 'description');
-        config.readonly = (def.hasOwnProperty('readonly'))?def.readonly:false;
-        config.align = 'left';
-        config.sortable = false;
-        config.layout = this.getType();
-        config.lang = this.getLang();
-        config.locale = this.getLocale();
-
-        // for relational fields, we need to check if the Model has been fetched al
-        if(['one2many', 'many2one', 'many2many'].indexOf(config.type) > -1) {
-            // defined config for Widget's view with a custom domain according to object values
-            let view_id = (config.hasOwnProperty('view'))?config.view:'list.default';
-            let parts = view_id.split(".", 2);
-            let view_type = (parts.length > 1)?parts[0]:'list';
-            let view_name = (parts.length > 1)?parts[1]:parts[0];
-
-            let def_domain = (def.hasOwnProperty('domain'))?def['domain']:[];
-            let view_domain = (config.hasOwnProperty('domain'))?config['domain']:[];
-
-            let domain = new Domain(def_domain);
-            domain.merge(new Domain(view_domain));
-
-            // add join condition for limiting list to the current object
-            if(['one2many', 'many2many'].indexOf(config.type) > -1 && def.hasOwnProperty('foreign_field')) {
-                domain.merge(new Domain([def['foreign_field'], 'contains', 'object.id']));
-            }
-
-            config = {...config,
-                entity: def['foreign_object'],
-                view_type: view_type,
-                view_name: view_name,
-                original_domain: domain.toArray()
-            };
-        }
-
-        return config;
-    }
 
     private decorateDialogDeletionConfirm($dialog: JQuery) {
         let $elem = $('<div />');
@@ -1666,7 +1585,7 @@ export class View {
 
     private async actionBulkAssign(selection: any) {
         console.log('opening bulk assign dialog');
-        this.$container.find('#bulk_assign_dialog').trigger('_open');
+        this.$container.find('#'+this.uuid+'_bulk-assign-dialog').trigger('_open');
     }
 
     private async actionListInlineEdit(selection: any) {
@@ -1674,7 +1593,7 @@ export class View {
             this.$headerContainer.find('#'+'SB_ACTION_ITEM-'+'SB_ACTIONS_BUTTON_INLINE_UPDATE').hide();
             this.$headerContainer.find('#'+'SB_ACTION_ITEM-'+'SB_ACTIONS_BUTTON_BULK_ASSIGN').show();
 
-            let $action_set = this.$container.find('.sb-view-header-list-actions-set');
+            let $action_set = this.$container.find('.sb-view-header-actions-std');
 
             let $action_set_selected_edit_actions = $('<div/>').addClass('sb-view-header-list-actions-selected-edit');
 
@@ -1798,9 +1717,10 @@ export class View {
      *
      * This method can be invoked by methods from the Layout class.
      *
-     * @param response
-     * @param object
-     * @param snack
+     * @param Object    response
+     * @param Object    object
+     * @param bool      snack
+     * 
      * @returns
      */
     public async displayErrorFeedback(response:any, object:any = null, snack:boolean = true) {
@@ -1809,7 +1729,7 @@ export class View {
 
             if(errors.hasOwnProperty('INVALID_PARAM')) {
                 let delay = 4000;
-                let i = 0, count = Object.keys(errors['INVALID_PARAM']).length;
+                let i = 0;
                 // stack snackbars (LIFO: decreasing timeout)
                 for(let field in errors['INVALID_PARAM']) {
                     // for each field, we handle one error at a time (the first one)
@@ -1820,38 +1740,42 @@ export class View {
                     if(object) {
                         this.layout.markFieldAsInvalid(object['id'], field, msg);
                     }
-                    if(snack) {
-                        let title = TranslationService.resolve(this.translation, 'model', [], field, field, 'label');
-                        let $snack = UIHelper.createSnackbar(title+': '+msg, 'Error', '', delay * (count-i));
-                        this.$container.append($snack);
+                    if(snack) {                        
+                        setTimeout( () => {
+                            let title = TranslationService.resolve(this.translation, 'model', [], field, field, 'label');
+                            let $snack = UIHelper.createSnackbar(title+': '+msg, TranslationService.instant('SB_ERROR_ERROR'), '', delay);
+                            this.$container.append($snack);
+                        }, delay * i );
                     }
                     ++i;
                 }
             }
             else if(errors.hasOwnProperty('MISSING_PARAM')) {
                 let msg = TranslationService.instant('SB_ERROR_CONFIG_MISSING_PARAM');
-                let $snack = UIHelper.createSnackbar(msg + ' ' + errors['MISSING_PARAM'], 'Error', '', 4000);
+                let $snack = UIHelper.createSnackbar(msg + ' \'' + errors['MISSING_PARAM'] + '\'', TranslationService.instant('SB_ERROR_ERROR'), '', 4000);
                 this.$container.append($snack);
             }
             else if(errors.hasOwnProperty('NOT_ALLOWED')) {
                 let msg = TranslationService.instant('SB_ERROR_NOT_ALLOWED');
-                let $snack = UIHelper.createSnackbar(msg, 'Error', '', 4000);
+                let $snack = UIHelper.createSnackbar(msg, TranslationService.instant('SB_ERROR_ERROR'), '', 4000);
                 this.$container.append($snack);
             }
             else if(errors.hasOwnProperty('CONFLICT_OBJECT')) {
                 // one or more fields violate a unique constraint
                 if(typeof errors['CONFLICT_OBJECT'] == 'object') {
                     let delay = 4000;
-                    let i = 0, count = Object.keys(errors['CONFLICT_OBJECT']).length;
+                    let i = 0;
                     for(let field in errors['CONFLICT_OBJECT']) {
                         let msg = TranslationService.instant('SB_ERROR_DUPLICATE_VALUE');
                         if(object) {
                             this.layout.markFieldAsInvalid(object['id'], field, msg);
                         }
-                        if(snack) {
-                            let title = TranslationService.resolve(this.translation, 'model', [], field, field, 'label');
-                            let $snack = UIHelper.createSnackbar(title+': '+msg, 'Error', '', delay * (count-i));
-                            this.$container.append($snack);
+                        if(snack) {                            
+                            setTimeout( () => {
+                                let title = TranslationService.resolve(this.translation, 'model', [], field, field, 'label');
+                                let $snack = UIHelper.createSnackbar(title+': '+msg, TranslationService.instant('SB_ERROR_ERROR'), '', delay);
+                                this.$container.append($snack);    
+                            }, delay * i);
                         }
                         ++i;
                     }
@@ -1875,10 +1799,10 @@ export class View {
                 // errors['CONFLICT_OBJECT'] is a string
                 else {
                     if(snack) {
-                        let title = TranslationService.instant('SB_ERROR_CONFLICT');
+                        let title = TranslationService.instant('SB_ERROR_CONFLICT_OBJECT');
                         // try to resolve the error message
                         let msg = TranslationService.resolve(this.translation, 'error', [], 'errors', errors['CONFLICT_OBJECT'], errors['CONFLICT_OBJECT']);
-                        let $snack = UIHelper.createSnackbar(title+': '+msg, 'Error', '', 4000);
+                        let $snack = UIHelper.createSnackbar(title+': '+msg, TranslationService.instant('SB_ERROR_ERROR'), '', 4000);
                         this.$container.append($snack);
                     }
                 }

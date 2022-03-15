@@ -86,7 +86,7 @@ export default class WidgetDateTime extends Widget {
             case 'view':
             default:
                 value = moment(date).format('LLL');
-                this.$elem = UIHelper.createInputView('', this.label, value);
+                this.$elem = UIHelper.createInputView('', this.label, value, this.config.description);
                 break;
         }
         this.$elem.addClass('sb-widget').addClass('sb-widget-mode-'+this.mode).attr('id', this.getId());
