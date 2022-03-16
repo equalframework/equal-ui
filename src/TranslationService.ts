@@ -86,11 +86,12 @@ export class _TranslationService {
     /**
      * Helper method for resolution from a `translation` object (as provided by the ApiService)
      * 
-     * @param translation   Object holding the translations values (as returned by `ApiService::getTranslation()`)
-     * @param type          Kind of terms we want to perform ('model','view','error')
-     * @param id            The identifier of the item we want to translate
-     * @param value         The default value, if any, to fall back to in case translation fails 
-     * @param property      The translation section we're looking for, for the considered value ('label', 'help', ...)
+     * @param translation   Object holding the translations values (as returned by `ApiService::getTranslation()`).
+     * @param type          Kind of terms we want to perform ('model','view','error').
+     * @param path          An array describing the path to follow within the translation map, if any.
+     * @param id            The identifier of the item we want to translate.
+     * @param value         Default value, if any, to fall back to in case translation fails.
+     * @param property      The translation section we're looking for, for the considered value ('label', 'help', ...).
      * 
      * @returns The translated value, or the original value if translation fails.
      */ 

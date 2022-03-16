@@ -1291,7 +1291,10 @@ export class Layout {
 
         // load model schema and translation for target entity
         // let model_fields = this.view.getModelFields();
-        let translation = this.view.getTranslation();
+        // let translation = this.view.getTranslation();
+
+        // #todo - load translation related to controller   
+        let translation = await ApiService.getTranslation('lodging\\payments\\import', this.view.getLocale());
 
         for(let field of Object.keys(params)) {
 
