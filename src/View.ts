@@ -76,7 +76,7 @@ export class View {
      * @param entity    entity (package\Class) to be loaded: should be set only once (depend on the related view)
      * @param type      type of the view ('list', 'form', ...)
      * @param name      name of the view (eg. 'default')
-     * @param domain
+     * @param domain    Array of conditions (disjunctions clauses of conjonctions conditions).
      * @param mode
      * @param purpose   (view, select, add, create, update, widget)
      * @param lang
@@ -142,7 +142,7 @@ export class View {
                         catch(response) {
                             console.log('unexpected error', response);
                             try {
-                                await this.displayErrorFeedback(response);
+                                await this.displayErrorFeedback(this.translation, response);
                             }
                             catch(error) {
                             }
@@ -169,7 +169,7 @@ export class View {
                                 }
                             catch(response) {
                                 try {
-                                    await this.displayErrorFeedback(response);
+                                    await this.displayErrorFeedback(this.translation, response);
                                 }
                                 catch(error) {
 
@@ -199,7 +199,7 @@ export class View {
                                 }
                                 catch(response) {
                                     try {
-                                        await this.displayErrorFeedback(response);
+                                        await this.displayErrorFeedback(this.translation, response);
                                     }
                                     catch(error) {
 
@@ -402,7 +402,7 @@ export class View {
     }
 
     /**
-     * 
+     *
      * @returns Returns the identifier of the view (i.e. {type.name})
      */
     public getId() {
@@ -636,96 +636,120 @@ export class View {
         // right side : the actions specific to the view, and depenging on object status
         let $view_actions = $('<div />').addClass('sb-view-header-actions-view').appendTo($actions_set);
 
+        let has_action_create = true;
+        let has_action_select = true;
+
+        if(this.config.hasOwnProperty('header') && this.config.header.hasOwnProperty('actions')) {
+            if(this.config.header.actions.hasOwnProperty('ACTION.SELECT')) {
+                has_action_select = (this.config.header.actions['ACTION.SELECT'])?true:false;
+            }
+            if(this.config.header.actions.hasOwnProperty('ACTION.CREATE')) {
+                has_action_create = (this.config.header.actions['ACTION.CREATE'])?true:false;
+            }
+        }
+
         if(this.config.show_actions) {
             switch(this.purpose) {
-                case 'view':
-                    $std_actions
-                    .prepend(
-                        UIHelper.createButton(this.uuid+'_action-edit', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'raised')
-                        .on('click', async () => {
-                            try {
-                                let view_type = 'form';
-                                let view_name = this.name;
-                                if(this.custom_actions.hasOwnProperty('ACTION.CREATE')) {
-                                    if(Array.isArray(this.custom_actions['ACTION.CREATE']) && this.custom_actions['ACTION.CREATE'].length) {
-                                        let custom_action_create = this.custom_actions['ACTION.CREATE'][0];
-                                        if(custom_action_create.hasOwnProperty('view')) {
-                                            let parts = custom_action_create.view.split('.');
-                                            if(parts.length) view_type = <string>parts.shift();
-                                            if(parts.length) view_name = <string>parts.shift();
+                case 'view':                    
+                    if(has_action_create) {
+                        $std_actions
+                        .prepend(
+                            UIHelper.createButton(this.uuid+'_action-edit', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'raised')
+                            .on('click', async () => {
+                                try {
+                                    let view_type = 'form';
+                                    let view_name = this.name;
+                                    if(this.custom_actions.hasOwnProperty('ACTION.CREATE')) {
+                                        if(Array.isArray(this.custom_actions['ACTION.CREATE']) && this.custom_actions['ACTION.CREATE'].length) {
+                                            let custom_action_create = this.custom_actions['ACTION.CREATE'][0];
+                                            if(custom_action_create.hasOwnProperty('view')) {
+                                                let parts = custom_action_create.view.split('.');
+                                                if(parts.length) view_type = <string>parts.shift();
+                                                if(parts.length) view_name = <string>parts.shift();
+                                            }
                                         }
                                     }
+                                    // request a new Context for editing a new object
+                                    await this.openContext({entity: this.entity, type: view_type, name: view_name, domain: this.domain, mode: 'edit', purpose: 'create'});
                                 }
-                                // request a new Context for editing a new object
-                                await this.openContext({entity: this.entity, type: view_type, name: view_name, domain: this.domain, mode: 'edit', purpose: 'create'});
-                            }
-                            catch(response) {
-                                try {
-                                    await this.displayErrorFeedback(response);
-                                }
-                                catch(error) {
+                                catch(response) {
+                                    try {
+                                        await this.displayErrorFeedback(this.translation, response);
+                                    }
+                                    catch(error) {
 
+                                    }
                                 }
-                            }
-                        })
-                    );
+                            })
+                        );
+                    }
                     break;
                 case 'select':
-                    $std_actions
-                    .prepend(
-                        UIHelper.createButton(this.uuid+'_action-create', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'text')
-                        .on('click', async () => {
-                            try {
-                                // request a new Context for editing a new object
-                                await this.openContext({entity: this.entity, type: 'form', name: this.name, domain: this.domain, mode: 'edit', purpose: 'create'});
-                            }
-                            catch(response) {
+                    if(has_action_create) {
+                        $std_actions
+                        .prepend(
+                            UIHelper.createButton(this.uuid+'_action-create', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'text')
+                            .on('click', async () => {
                                 try {
-                                    await this.displayErrorFeedback(response);
+                                    // request a new Context for editing a new object
+                                    await this.openContext({entity: this.entity, type: 'form', name: this.name, domain: this.domain, mode: 'edit', purpose: 'create'});
                                 }
-                                catch(error) {
+                                catch(response) {
+                                    try {
+                                        await this.displayErrorFeedback(this.translation, response);
+                                    }
+                                    catch(error) {
 
+                                    }
                                 }
-                            }
-                        })
-                    )
-                    .prepend(
-                        UIHelper.createButton(this.uuid+'_action-select', TranslationService.instant('SB_ACTIONS_BUTTON_SELECT'), 'raised', 'check')
-                        .on('click', async () => {
-                            // close context and relay selection, if any (mark the view as changed to force parent context update)
-                            // #todo : user should not be able to select more thant one id
-                            let objects = await this.model.get(this.selected_ids);
-                            this.closeContext({selection: this.selected_ids, objects: objects});
-                        })
-                    );
+                            })
+                        );
+                    }
+                    if(has_action_select) {
+                        $std_actions
+                        .prepend(
+                            UIHelper.createButton(this.uuid+'_action-select', TranslationService.instant('SB_ACTIONS_BUTTON_SELECT'), 'raised', 'check')
+                            .on('click', async () => {
+                                // close context and relay selection, if any (mark the view as changed to force parent context update)
+                                // #todo : user should not be able to select more thant one id
+                                let objects = await this.model.get(this.selected_ids);
+                                this.closeContext({selection: this.selected_ids, objects: objects});
+                            })
+                        );
+                    }
                     break;
                 case 'add':
-                    $std_actions
-                    .prepend(
-                        UIHelper.createButton(this.uuid+'_action-create', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'text')
-                        .on('click', async () => {
-                            try {
-                                // request a new Context for editing a new object
-                                await this.openContext({entity: this.entity, type: 'form', name: this.name, domain: this.domain, mode: 'edit', purpose: 'create'});
-                            }
-                            catch(response) {
+                    if(has_action_create) {
+                        $std_actions
+                        .prepend(
+                            UIHelper.createButton(this.uuid+'_action-create', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'text')
+                            .on('click', async () => {
                                 try {
-                                    await this.displayErrorFeedback(response);
+                                    // request a new Context for editing a new object
+                                    await this.openContext({entity: this.entity, type: 'form', name: this.name, domain: this.domain, mode: 'edit', purpose: 'create'});
                                 }
-                                catch(error) {
+                                catch(response) {
+                                    try {
+                                        await this.displayErrorFeedback(this.translation, response);
+                                    }
+                                    catch(error) {
 
+                                    }
                                 }
-                            }
-                        })
-                    )
-                    .prepend(
-                        UIHelper.createButton(this.uuid+'_action-add', TranslationService.instant('SB_ACTIONS_BUTTON_ADD'), 'raised', 'check')
-                        .on('click', async () => {
-                            // close context and relay selection, if any (mark the view as changed to force parent context update)
-                            let objects = await this.model.get(this.selected_ids);
-                            this.closeContext({selection: this.selected_ids, objects: objects});
-                        })
-                    );
+                            })
+                        );
+                    }
+                    if(has_action_select) {
+                        $std_actions
+                        .prepend(
+                            UIHelper.createButton(this.uuid+'_action-add', TranslationService.instant('SB_ACTIONS_BUTTON_ADD'), 'raised', 'check')
+                            .on('click', async () => {
+                                // close context and relay selection, if any (mark the view as changed to force parent context update)
+                                let objects = await this.model.get(this.selected_ids);
+                                this.closeContext({selection: this.selected_ids, objects: objects});
+                            })
+                        );
+                    }
                     break;
                 case 'widget':
                 default:
@@ -1075,21 +1099,30 @@ export class View {
             }
         }
 
+        let has_action_update = true;
+
+        if(this.config.hasOwnProperty('header') && this.config.header.hasOwnProperty('actions')) {
+            if(this.config.header.actions.hasOwnProperty('ACTION.EDIT')) {
+                has_action_update = (this.config.header.actions['ACTION.EDIT'])?true:false;
+            }
+        }        
 
         switch(this.mode) {
             case 'view':
-                $std_actions
-                .append(
-                    UIHelper.createButton(this.uuid+'_action-edit', TranslationService.instant('SB_ACTIONS_BUTTON_UPDATE'), 'raised')
-                    .on('click', async () => {
-                        // #todo - allow overloading default action ('ACTION.UPDATE')
-                        await this.openContext({
-                            entity: this.entity, type: this.type, name: this.name, domain: this.domain, mode: 'edit', purpose: 'update',
-                            // for UX consistency, inject current view widget context (currently selected tabs, ...)
-                            selected_sections: this.layout.getSelectedSections()
-                        });
-                    })
-                );
+                if(has_action_update) {
+                    $std_actions
+                    .append(
+                        UIHelper.createButton(this.uuid+'_action-edit', TranslationService.instant('SB_ACTIONS_BUTTON_UPDATE'), 'raised')
+                        .on('click', async () => {
+                            // #todo - allow overloading default action ('ACTION.UPDATE')
+                            await this.openContext({
+                                entity: this.entity, type: this.type, name: this.name, domain: this.domain, mode: 'edit', purpose: 'update',
+                                // for UX consistency, inject current view widget context (currently selected tabs, ...)
+                                selected_sections: this.layout.getSelectedSections()
+                            });
+                        })
+                    );    
+                }
                 break;
             case 'edit':
 
@@ -1208,7 +1241,7 @@ export class View {
                                 }
                             })
                         );
-                    }                    
+                    }
                 }
 
                 // assign action on base button
@@ -1717,13 +1750,16 @@ export class View {
      *
      * This method can be invoked by methods from the Layout class.
      *
-     * @param Object    response
-     * @param Object    object
-     * @param bool      snack
-     * 
+     * @param translation   Associative array mapping transaltions sections with their values (@see http://doc.equal.run/usage/i18n/)
+     * @param response      HttpResponse holding the error description.
+     * @param object        Object involved in the HTTP request that returned with an error status.
+     * @param snack         Flag to request a snack showing the error message. BY default, no snack is created.
+     *
      * @returns
      */
-    public async displayErrorFeedback(response:any, object:any = null, snack:boolean = true) {
+    // #todo injecter le fichier de traduction à la demande (translation)
+    public async displayErrorFeedback(translation: any, response:any, object:any = null, snack:boolean = true) {
+        console.log('displayErrorFeedback', translation, response, object, snack);
         if(response && response.hasOwnProperty('errors')) {
             let errors = response['errors'];
 
@@ -1735,15 +1771,22 @@ export class View {
                     // for each field, we handle one error at a time (the first one)
                     let error_id:string = <string>(Object.keys(errors['INVALID_PARAM'][field]))[0];
                     let msg:string = <string>(Object.values(errors['INVALID_PARAM'][field]))[0];
-                    // translate error message
-                    msg = TranslationService.resolve(this.translation, 'error', [], field, msg, error_id);
-                    if(object) {
-                        this.layout.markFieldAsInvalid(object['id'], field, msg);
+                    let translated_msg = TranslationService.resolve(translation, 'error', [], field, msg, error_id);
+                    if(translated_msg == msg) {
+                        let translated_error = TranslationService.instant('SB_ERROR_'+error_id.toUpperCase());
+                        if(translated_error.length) {
+                            translated_msg = translated_error;
+                        }
                     }
-                    if(snack) {                        
+                    // update widget to provide feedback (as error hint)
+                    if(object) {
+                        this.layout.markFieldAsInvalid(object['id'], field, translated_msg);
+                    }
+                    // generate snack, if required
+                    if(snack) {
                         setTimeout( () => {
-                            let title = TranslationService.resolve(this.translation, 'model', [], field, field, 'label');
-                            let $snack = UIHelper.createSnackbar(title+': '+msg, TranslationService.instant('SB_ERROR_ERROR'), '', delay);
+                            let title = TranslationService.resolve(translation, 'model', [], field, field, 'label');
+                            let $snack = UIHelper.createSnackbar(title+': '+translated_msg, TranslationService.instant('SB_ERROR_ERROR'), '', delay);
                             this.$container.append($snack);
                         }, delay * i );
                     }
@@ -1770,11 +1813,11 @@ export class View {
                         if(object) {
                             this.layout.markFieldAsInvalid(object['id'], field, msg);
                         }
-                        if(snack) {                            
+                        if(snack) {
                             setTimeout( () => {
-                                let title = TranslationService.resolve(this.translation, 'model', [], field, field, 'label');
+                                let title = TranslationService.resolve(translation, 'model', [], field, field, 'label');
                                 let $snack = UIHelper.createSnackbar(title+': '+msg, TranslationService.instant('SB_ERROR_ERROR'), '', delay);
-                                this.$container.append($snack);    
+                                this.$container.append($snack);
                             }, delay * i);
                         }
                         ++i;
@@ -1801,8 +1844,8 @@ export class View {
                     if(snack) {
                         let title = TranslationService.instant('SB_ERROR_CONFLICT_OBJECT');
                         // try to resolve the error message
-                        let msg = TranslationService.resolve(this.translation, 'error', [], 'errors', errors['CONFLICT_OBJECT'], errors['CONFLICT_OBJECT']);
-                        let $snack = UIHelper.createSnackbar(title+': '+msg, TranslationService.instant('SB_ERROR_ERROR'), '', 4000);
+                        let msg = TranslationService.resolve(translation, 'error', [], 'errors', errors['CONFLICT_OBJECT'], errors['CONFLICT_OBJECT']);
+                        let $snack = UIHelper.createSnackbar(title+' '+msg, TranslationService.instant('SB_ERROR_ERROR'), '', 4000);
                         this.$container.append($snack);
                     }
                 }

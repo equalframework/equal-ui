@@ -70,7 +70,7 @@ export default class WidgetMany2Many extends Widget {
                         }
                     }
 
-                    let $actions_set = $container.find('.sb-view-header-list-actions-set');
+                    let $actions_set = $container.find('.sb-view-header-actions-std');
 
                     if(has_action_select) {
                         let button_label = TranslationService.instant((this.rel_type == 'many2many')?'SB_ACTIONS_BUTTON_ADD':'SB_ACTIONS_BUTTON_SELECT');
@@ -114,7 +114,6 @@ export default class WidgetMany2Many extends Widget {
                         .append(
                             UIHelper.createButton(this.getId()+'_action-create', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'raised')
                             .on('click', async () => {
-                                // retrieve view_type and view_name from parent view
                                 let view_type = 'form';
                                 let view_name = view.getName();
                                 let custom_actions = view.getCustomActions();

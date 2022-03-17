@@ -72,8 +72,8 @@ export class _TranslationService {
      * @param   value   string   
      * @returns string
      */
-    public instant(value:string) {
-        let translation: string = value;
+    public instant(value:string, _default:string = '') : string {
+        let translation: string = (_default.length)?_default:value;
         if(this.resolved) {
             if(this.resolved.hasOwnProperty(value)) {
                 translation = this.resolved[value];
@@ -87,7 +87,7 @@ export class _TranslationService {
      * Helper method for resolution from a `translation` object (as provided by the ApiService)
      * 
      * @param translation   Object holding the translations values (as returned by `ApiService::getTranslation()`).
-     * @param type          Kind of terms we want to perform ('model','view','error').
+     * @param type          Kind of terms we want to perform (''<root>, 'model','view','error').
      * @param path          An array describing the path to follow within the translation map, if any.
      * @param id            The identifier of the item we want to translate.
      * @param value         Default value, if any, to fall back to in case translation fails.
@@ -102,21 +102,28 @@ export class _TranslationService {
             result = value.charAt(0).toUpperCase() + value.replace(/_/g, ' ').slice(1);
         }
         
-        if(translation.hasOwnProperty(type)) {
-            let map = translation[type];
-            for(let elem of path) {
-                if(map && map.hasOwnProperty(elem)) {
-                    map = map[elem];
+        if(type.length) {
+            if(translation.hasOwnProperty(type)) {
+                let map = translation[type];
+                for(let elem of path) {
+                    if(map && map.hasOwnProperty(elem)) {
+                        map = map[elem];
+                    }
+                    else {
+                        break;
+                    }                
                 }
-                else {
-                    break;
-                }                
-            }
-
-            if(map && map.hasOwnProperty(id)) {
-                if(map[id].hasOwnProperty(property)) {
-                    result = map[id][property];
+    
+                if(map && map.hasOwnProperty(id)) {
+                    if(map[id].hasOwnProperty(property)) {
+                        result = map[id][property];
+                    }
                 }
+            }    
+        }
+        else {
+            if(translation.hasOwnProperty(property)) {
+                result = translation[property];                
             }
         }
         return result;
