@@ -316,6 +316,13 @@ export class View {
                 }
             }
 
+            // some custom actions might have been defined in the parent view, if so, override the view schema
+            if(this.config.hasOwnProperty("header") && this.config.header.hasOwnProperty("actions")) {
+                for (const [id, item] of Object.entries(this.config.header.actions)) {
+                    this.custom_actions[id] = item;
+                }
+            }
+
             // if view schema specifies a domain, merge it with domain given in constructor
             if(this.view_schema.hasOwnProperty("domain")) {
                 // domain attribute is either a string or an array
@@ -423,6 +430,7 @@ export class View {
      * @param config
      */
     public async openContext(config: any) {
+        console.log('View::openContext', config);
         await this.context.openContext(config);
     }
 
@@ -639,18 +647,16 @@ export class View {
         let has_action_create = true;
         let has_action_select = true;
 
-        if(this.config.hasOwnProperty('header') && this.config.header.hasOwnProperty('actions')) {
-            if(this.config.header.actions.hasOwnProperty('ACTION.SELECT')) {
-                has_action_select = (this.config.header.actions['ACTION.SELECT'])?true:false;
-            }
-            if(this.config.header.actions.hasOwnProperty('ACTION.CREATE')) {
-                has_action_create = (this.config.header.actions['ACTION.CREATE'])?true:false;
-            }
+        if(this.custom_actions.hasOwnProperty('ACTION.SELECT')) {
+            has_action_select = (this.custom_actions['ACTION.SELECT'])?true:false;
+        }
+        if(this.custom_actions.hasOwnProperty('ACTION.CREATE')) {
+            has_action_create = (this.custom_actions['ACTION.CREATE'])?true:false;
         }
 
         if(this.config.show_actions) {
             switch(this.purpose) {
-                case 'view':                    
+                case 'view':
                     if(has_action_create) {
                         $std_actions
                         .prepend(
@@ -659,6 +665,7 @@ export class View {
                                 try {
                                     let view_type = 'form';
                                     let view_name = this.name;
+                                    let domain = this.domain;
                                     if(this.custom_actions.hasOwnProperty('ACTION.CREATE')) {
                                         if(Array.isArray(this.custom_actions['ACTION.CREATE']) && this.custom_actions['ACTION.CREATE'].length) {
                                             let custom_action_create = this.custom_actions['ACTION.CREATE'][0];
@@ -667,10 +674,15 @@ export class View {
                                                 if(parts.length) view_type = <string>parts.shift();
                                                 if(parts.length) view_name = <string>parts.shift();
                                             }
+                                            if(custom_action_create.hasOwnProperty('domain')) {
+                                                let tmpDomain = new Domain(domain);
+                                                tmpDomain.merge(new Domain(custom_action_create['domain']));
+                                                domain = tmpDomain.toArray();
+                                            }
                                         }
                                     }
                                     // request a new Context for editing a new object
-                                    await this.openContext({entity: this.entity, type: view_type, name: view_name, domain: this.domain, mode: 'edit', purpose: 'create'});
+                                    await this.openContext({entity: this.entity, type: view_type, name: view_name, domain: domain, mode: 'edit', purpose: 'create'});
                                 }
                                 catch(response) {
                                     try {
@@ -752,6 +764,7 @@ export class View {
                     }
                     break;
                 case 'widget':
+                    // no buttons are displayed for widgets : these are handled at the widget level, since a callback must be set to fetch the resulting value
                 default:
                     break;
             }
@@ -1105,7 +1118,7 @@ export class View {
             if(this.config.header.actions.hasOwnProperty('ACTION.EDIT')) {
                 has_action_update = (this.config.header.actions['ACTION.EDIT'])?true:false;
             }
-        }        
+        }
 
         switch(this.mode) {
             case 'view':
@@ -1121,7 +1134,7 @@ export class View {
                                 selected_sections: this.layout.getSelectedSections()
                             });
                         })
-                    );    
+                    );
                 }
                 break;
             case 'edit':

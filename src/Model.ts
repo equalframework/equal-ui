@@ -143,7 +143,7 @@ export class Model {
                 }                
             }
             else if(['one2many', 'many2many'].indexOf(schema[field]['type']) > -1) {
-// #todo
+                // #todo
                 result[field] = object[field];
             }
             else {

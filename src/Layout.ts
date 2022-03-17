@@ -742,15 +742,28 @@ export class Layout {
 
                 // for relational fields, we need to check if the Model has been fetched
                 if(['one2many', 'many2one', 'many2many'].indexOf(type) > -1) {
+                    let user = this.view.getUser();
 
                     // if widget has a domain, parse it using current object and user
                     if(config.hasOwnProperty('original_domain')) {
-                        let user = this.view.getUser();
                         let tmpDomain = new Domain(config.original_domain);
                         config.domain = tmpDomain.parse(object, user).toArray();
                     }
                     else {
                         config.domain = [];
+                    }
+
+                    // if widget has a custom header defintion, parse subsequent domains, if any
+                    if(config.hasOwnProperty('header') && config.header.hasOwnProperty('actions') ) {
+                        for (const [id, items] of Object.entries(config.header.actions)) {
+                            for(let index in (<Array<any>>items)) {
+                                let item = (<Array<any>>items)[<any>index];
+                                if(item.hasOwnProperty('domain')) {
+                                    let tmpDomain = new Domain(item.domain);
+                                    config.header.actions[id][index].domain = tmpDomain.parse(object, user).toArray();
+                                }
+                            }
+                        }
                     }
 
                     // by convention, `name` subfield is always loaded for relational fields
@@ -777,7 +790,7 @@ export class Layout {
                         // we need the current object id for new objects creation
                         config.object_id = object.id;
 
-                        // domain is updated based on user actions: an additional clause for + (accept thos whatever the other conditions) and addtional conditions for - (prevent theses whatever the other conditions)
+                        // domain is updated based on user actions: an additional clause for + (accept these whatever the other conditions) and addtional conditions for - (prevent these whatever the other conditions)
                         let tmpDomain = new Domain(config.domain);
                         if(ids_to_add.length) {
                             tmpDomain.addClause(new Clause([new Condition("id", "in", ids_to_add)]));
@@ -819,12 +832,23 @@ export class Layout {
                 else {
                     let $widget = widget.render();
                     // Handle Widget update handler
-                    $widget.on('_updatedWidget', (event:any, refresh: boolean = true) => {
+                    $widget.on('_updatedWidget', async (event:any, refresh: boolean = true) => {
                         console.log("Layout::feedForm : received _updatedWidget", field, widget.getValue(), refresh);
                         // update object with new value
-                        let value:any = {};
-                        value[field] = widget.getValue();
-                        this.view.onchangeViewModel([object.id], value, refresh);
+                        let values:any = {};
+                        values[field] = widget.getValue();
+                        // relay the change to back-end through onupdate
+                        try {
+                            const result = await ApiService.fetch("/", {do: 'model_onchange', entity: this.view.getEntity(), changes: this.view.getModel().export(values), values: this.view.getModel().export(object), lang: this.view.getLang()} );
+                            for(let field of Object.keys(result)) {
+                                // if some changes are returned from the back-end, append them to the view model update
+                                values[field] = result[field];
+                            }
+                        }
+                        catch(response) {
+                            // ignore faulty responses
+                        }
+                        this.view.onchangeViewModel([object.id], values, refresh);
                     });
                     // prevent refreshing objects that haven't changed
                     if(has_changed) {
@@ -1198,18 +1222,18 @@ export class Layout {
             let $description = $('<p />').text( TranslationService.resolve(translation, '', [], '', action.description, 'description'));
 
             if(action.hasOwnProperty('confirm') && action.confirm) {
-                // params dialog 
+                // params dialog
                 if(Object.keys(missing_params).length) {
                     let $dialog = UIHelper.createDialog(this.view.getUUID()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
-                    $dialog.find('.mdc-dialog__content').append($description);                    
+                    $dialog.find('.mdc-dialog__content').append($description);
                     await this.decorateViewActionDialog($dialog, action, missing_params);
                     $dialog.addClass('sb-view-dialog').appendTo(this.view.getContainer());
                     $dialog
                     .on('_accept', () => defer.resolve($dialog.data('result')))
                     .on('_reject', () => defer.reject() );
-                    $dialog.trigger('_open');        
+                    $dialog.trigger('_open');
                 }
-                // confirm dialog 
+                // confirm dialog
                 else {
                     // display confirmation dialog with checkbox for archive
                     let $dialog = UIHelper.createDialog(this.view.getUUID()+'_'+action.id+'_confirm-action-dialog', TranslationService.instant('SB_ACTIONS_CONFIRM'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
@@ -1222,10 +1246,10 @@ export class Layout {
                 }
             }
             else {
-                // params dialog 
+                // params dialog
                 if(Object.keys(missing_params).length) {
                     let $dialog = UIHelper.createDialog(this.view.getUUID()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
-                    $dialog.find('.mdc-dialog__content').append($description);                    
+                    $dialog.find('.mdc-dialog__content').append($description);
                     await this.decorateViewActionDialog($dialog, action, missing_params);
                     $dialog.addClass('sb-view-dialog').appendTo(this.view.getContainer());
                     $dialog
@@ -1249,11 +1273,11 @@ export class Layout {
     }
 
     private async decorateViewActionDialog($dialog: JQuery, action: any, params: any) {
-        let $elem = $('<div />'); 
+        let $elem = $('<div />');
 
         let widgets:any = {};
 
-        // load translation related to controller   
+        // load translation related to controller
         let translation = await ApiService.getTranslation(action.controller.replaceAll('_', '\\'), this.view.getLocale());
 
         for(let field of Object.keys(params)) {
