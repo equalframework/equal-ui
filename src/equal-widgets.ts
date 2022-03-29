@@ -114,137 +114,143 @@ config: {
      * @return {}       Returns a widget configuration object.
      */
     public static getWidgetConfig(view: View, field: string, translation: any, model_fields: any, view_fields: any) :any {
-    let config:any = {};
+        let config:any = {};
 
-    let item = view_fields[field];
+        let item = view_fields[field];
 
-    if(!model_fields || !model_fields.hasOwnProperty(field)) {
-        return null;
-    }
-
-    let def = model_fields[field];
-
-    let label = (item.hasOwnProperty('label'))?item.label:field;
-    // #todo - handle help and relay to Context
-    let helper = (item.hasOwnProperty('help'))?item.help:(def.hasOwnProperty('help'))?def['help']:'';
-    let description = (item.hasOwnProperty('description'))?item.description:(def.hasOwnProperty('description'))?def['description']:'';
-
-    if(def.hasOwnProperty('type')) {
-        let type = def['type'];
-        if(def.hasOwnProperty('result_type')) {
-            type = def['result_type'];
+        if(!model_fields || !model_fields.hasOwnProperty(field)) {
+            return null;
         }
-        if(def.hasOwnProperty('usage')) {
-            switch(def.usage) {
-                // #todo - complete the list
-                case 'markup/html':
-                    type = 'text';
-                    break;
-                case 'uri/url:http':
-                case 'uri/url':
-                    type = 'link';
-                    break;
-                case 'image/gif':
-                case 'image/png':
-                case 'image/jpeg':
-                    // binary alt
-                    type = 'file';
-                    break;
+
+        let def = model_fields[field];
+
+        let label = (item.hasOwnProperty('label'))?item.label:field;
+        // #todo - handle help and relay to Context
+        let helper = (item.hasOwnProperty('help'))?item.help:(def.hasOwnProperty('help'))?def['help']:'';
+        let description = (item.hasOwnProperty('description'))?item.description:(def.hasOwnProperty('description'))?def['description']:'';
+
+        if(def.hasOwnProperty('type')) {
+            let type = def['type'];
+            if(def.hasOwnProperty('result_type')) {
+                type = def['result_type'];
             }
+            if(def.hasOwnProperty('usage')) {
+                switch(def.usage) {
+                    // #todo - complete the list
+                    case 'text/plain':
+                    case 'markup/html':
+                        type = 'text';
+                        break;
+                    case 'uri/url:http':
+                    case 'uri/url':
+                        type = 'link';
+                        break;
+                    case 'image/gif':
+                    case 'image/png':
+                    case 'image/jpeg':
+                        // binary alt
+                        type = 'file';
+                        break;
+                }
+            }
+            config.type = type;
         }
-        config.type = type;
-    }
-    else {
-        // we shouldn't end up here : malformed schema
-        console.log('ERROR - malformed schema for field '+field);
+        else {
+            // we shouldn't end up here : malformed schema
+            console.log('ERROR - malformed schema for field '+field);
+            return config;
+        }
+
+        if(def.hasOwnProperty('usage')) {
+            config.usage = def.usage;
+        }
+
+        if(def.hasOwnProperty('foreign_object')) {
+            config.foreign_object = def.foreign_object;
+        }
+
+        if(def.hasOwnProperty('foreign_field')) {
+            config.foreign_field = def.foreign_field;
+        }
+
+        if(def.hasOwnProperty('selection')) {
+            config.selection = def.selection;
+            config.type = 'select';
+            let translated = TranslationService.resolve(translation, 'model', [], field, config.selection, 'selection');
+            let values = translated;
+            if(Array.isArray(translated)) {
+                // convert array to a Map (original values as keys and translations as values)
+                values = {};
+                for(let i = 0, n = config.selection.length; i < n; ++i) {
+                    values[config.selection[i]] = translated[i];
+                }
+            }
+            config.values = values;
+        }
+        // ready property is set to true during the 'feed' phase
+        config.visible = true;
+        config.ready = false;
+        config.title = TranslationService.resolve(translation, 'model', [], field, label, 'label');
+        config.description = TranslationService.resolve(translation, 'model', [], field, description, 'description');
+        config.readonly = (def.hasOwnProperty('readonly'))?def.readonly:(item.hasOwnProperty('readonly'))?item['readonly']:false;
+        config.align = (item.hasOwnProperty('align'))?item.align:'left';
+        config.sortable = (item.hasOwnProperty('sortable') && item.sortable);
+
+        config.layout = view.getType();
+        config.lang = view.getLang();
+        config.locale = view.getLocale();
+
+        if(item.hasOwnProperty('widget')) {
+            // overload config with widget config, if any
+            config = {...config, ...item.widget};
+        }
+
+        if(def.hasOwnProperty('visible')) {
+            config.visible = def.visible;
+        }
+
+        if(item.hasOwnProperty('visible')) {
+            config.visible = item.visible;
+        }
+
+        // convert visible property to JSON
+        config.visible = eval(config.visible);
+
+        // for relational fields, we need to check if the Model has been fetched al
+        if(['one2many', 'many2one', 'many2many'].indexOf(config.type) > -1) {
+            // defined config for Widget's view with a custom domain according to object values
+            let view_id = (config.hasOwnProperty('view'))?config.view:'list.default';
+            let parts = view_id.split(".", 2);
+            let view_type = (parts.length > 1)?parts[0]:'list';
+            let view_name = (parts.length > 1)?parts[1]:parts[0];
+
+            let def_domain = (def.hasOwnProperty('domain'))?def['domain']:[];
+            let view_domain = (config.hasOwnProperty('domain'))?config['domain']:[];
+
+            let domain = new Domain(def_domain);
+            domain.merge(new Domain(view_domain));
+
+            // add join condition for limiting list to the current object
+            if(['one2many', 'many2many'].indexOf(config.type) > -1 && def.hasOwnProperty('foreign_field')) {
+                if(config.type == 'one2many') {
+                    domain.merge(new Domain([def['foreign_field'], '=', 'object.id']));
+                }
+                else {
+                    domain.merge(new Domain([def['foreign_field'], 'contains', 'object.id']));
+                }
+            }
+
+            config = {...config,
+                entity: def['foreign_object'],
+                view_type: view_type,
+                view_name: view_name,
+                original_domain: domain.toArray()
+            };
+
+        }
+
         return config;
     }
-
-    if(def.hasOwnProperty('usage')) {
-        config.usage = def.usage;
-    }
-
-    if(def.hasOwnProperty('foreign_object')) {
-        config.foreign_object = def.foreign_object;
-    }
-
-    if(def.hasOwnProperty('foreign_field')) {
-        config.foreign_field = def.foreign_field;
-    }
-
-    if(def.hasOwnProperty('selection')) {
-        config.selection = def.selection;
-        config.type = 'select';
-        let translated = TranslationService.resolve(translation, 'model', [], field, config.selection, 'selection');
-        let values = translated;
-        if(Array.isArray(translated)) {
-            // convert array to a Map (original values as keys and translations as values)
-            values = {};
-            for(let i = 0, n = config.selection.length; i < n; ++i) {
-                values[config.selection[i]] = translated[i];
-            }
-        }
-        config.values = values;
-    }
-    // ready property is set to true during the 'feed' phase
-    config.visible = true;
-    config.ready = false;
-    config.title = TranslationService.resolve(translation, 'model', [], field, label, 'label');
-    config.description = TranslationService.resolve(translation, 'model', [], field, description, 'description');
-    config.readonly = (def.hasOwnProperty('readonly'))?def.readonly:(item.hasOwnProperty('readonly'))?item['readonly']:false;
-    config.align = (item.hasOwnProperty('align'))?item.align:'left';
-    config.sortable = (item.hasOwnProperty('sortable') && item.sortable);
-
-    config.layout = view.getType();
-    config.lang = view.getLang();
-    config.locale = view.getLocale();
-
-    if(item.hasOwnProperty('widget')) {
-        // overload config with widget config, if any
-        config = {...config, ...item.widget};
-    }
-
-    if(def.hasOwnProperty('visible')) {
-        config.visible = def.visible;
-    }
-
-    if(item.hasOwnProperty('visible')) {
-        config.visible = item.visible;
-    }
-
-    // convert visible property to JSON
-    config.visible = eval(config.visible);
-
-    // for relational fields, we need to check if the Model has been fetched al
-    if(['one2many', 'many2one', 'many2many'].indexOf(config.type) > -1) {
-        // defined config for Widget's view with a custom domain according to object values
-        let view_id = (config.hasOwnProperty('view'))?config.view:'list.default';
-        let parts = view_id.split(".", 2);
-        let view_type = (parts.length > 1)?parts[0]:'list';
-        let view_name = (parts.length > 1)?parts[1]:parts[0];
-
-        let def_domain = (def.hasOwnProperty('domain'))?def['domain']:[];
-        let view_domain = (config.hasOwnProperty('domain'))?config['domain']:[];
-
-        let domain = new Domain(def_domain);
-        domain.merge(new Domain(view_domain));
-
-        // add join condition for limiting list to the current object
-        if(['one2many', 'many2many'].indexOf(config.type) > -1 && def.hasOwnProperty('foreign_field')) {
-            domain.merge(new Domain([def['foreign_field'], 'contains', 'object.id']));
-        }
-
-        config = {...config,
-            entity: def['foreign_object'],
-            view_type: view_type,
-            view_name: view_name,
-            original_domain: domain.toArray()
-        };
-
-    }
-
-    return config;
-}
 
 }
 

@@ -70,11 +70,11 @@ body, html {
 .sb-popup {
     position: absolute;
     left: 10%;
-    top: 15%;
+    top: 10%;
     width: 80%;
-    height: 70%;
+    height: 80%;
     background-color: white;
-    border: solid 1px black;
+    border: solid 1px #c8ced3;
     border-radius: 10px;
     padding: 10px;
 }
@@ -114,6 +114,10 @@ body, html {
     position: absolute;
     top: 0;
     right: 0;
+}
+
+.sb-popup .sb-container-header .lang-selector {
+    right: 50px;
 }
 
 .sb-container-header .lang-selector .mdc-select__anchor {
@@ -544,8 +548,13 @@ body, html {
     position: relative;
 }
 
-.sb-ui-checkbox {
+.sb-widget .sb-ui-checkbox {
     position: relative;
+}
+
+.sb-widget .sb-ui-switch {
+    height: 56px;
+    line-height: 56px;
 }
 
 /* Material Components customizations */
@@ -635,9 +644,8 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
 
 .sb-view-layout-form .sb-widget.sb-widget-type-boolean {
     height: 56px;
-    vertical-align: middle;
-    display: table-cell;
     padding-left: 16px;
+    width: 100%;
 }
 
 .sb-view-layout-list .sb-widget.sb-widget-type-boolean {

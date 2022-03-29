@@ -18,7 +18,7 @@ export default class WidgetSelect extends Widget {
         let value:string = this.value?this.value:'';
         switch(this.mode) {
             case 'edit':
-                this.$elem = UIHelper.createSelect('', this.label, this.config.values, value, this.readonly);
+                this.$elem = UIHelper.createSelect('', this.label, this.config.values, value, this.config.description, this.readonly);
                 if(this.config.layout == 'list') {
                     this.$elem.css({"width": "calc(100% - 10px)"});
                 }

@@ -1,5 +1,5 @@
 /**
- * This service centrilizes environment vars
+ * This service centralizes environment vars
  */
 export class _EnvService {
 
@@ -18,12 +18,12 @@ export class _EnvService {
   constructor() {}
 
   /**
-   * 
+   *
    * @returns Promise
    */
   public getEnv() {
     if(!this.promise) {
-      this.promise = new Promise( async (resolve, reject) => {        
+      this.promise = new Promise( async (resolve, reject) => {
         try {
           const response:Response = await fetch('/assets/env/config.json');
           const env = await response.json();
@@ -33,7 +33,7 @@ export class _EnvService {
         catch(response) {
           this.environment = {...this.default};
           resolve(this.environment);
-        }  
+        }
       });
     }
     return this.promise;
@@ -43,6 +43,40 @@ export class _EnvService {
     if(this.environment) {
       this.environment[property] = value;
     }
+  }
+
+  public formatNumber(value:number, scale:number = 0, thousand_sep:string=',', decimal_sep:string='.') {
+    if(this.environment) {
+        if(this.environment.hasOwnProperty('core.locale.currency.decimal_precision')) {
+            scale = this.environment['core.locale.currency.decimal_precision'];
+        }
+        if(this.environment.hasOwnProperty('core.locale.numbers.decimal_separator')) {
+            decimal_sep = this.environment['core.locale.numbers.decimal_separator'];
+        }
+        if(this.environment.hasOwnProperty('core.locale.numbers.thousands_separator')) {
+            thousand_sep = this.environment['core.locale.numbers.thousands_separator'];
+        }
+        let parts:any = value.toFixed(scale).split(".");
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, thousand_sep);
+        return parts.join(decimal_sep);
+    }
+    return value.toLocaleString();
+  }
+
+  public formatCurrency(value:number, scale:number = 0, thousand_sep:string=',', decimal_sep:string='.') {
+    let result = this.formatNumber(value, scale, thousand_sep, decimal_sep);
+    if(this.environment.hasOwnProperty('core.units.currency')) {
+        if(this.environment.hasOwnProperty('core.locale.currency.symbol_position') && this.environment['core.locale.currency.symbol_position'] == 'before') {
+            result = this.environment['core.units.currency'] + ' ' + result;
+        }
+        else {
+            result = result + ' ' + this.environment['core.units.currency'];
+        }
+    }
+    else {
+        result = '$ ' + value;
+    }
+    return result;
   }
 
 }

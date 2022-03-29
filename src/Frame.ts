@@ -406,7 +406,7 @@ export class Frame {
 
         // create a draft object if required: Edition is based on asynchronous creation: a draft is created (or recylcled) and is turned into an instance if 'update' action is triggered.
         if(config.purpose == 'create') {
-            console.log('requesting dratf object');
+            console.log('requesting draft object');
             let defaults    = await this.getNewObjectDefaults(config.entity, config.domain);
             let object      = await ApiService.create(config.entity, defaults);
             config.domain   = [['id', '=', object.id], ['state', '=', 'draft']];

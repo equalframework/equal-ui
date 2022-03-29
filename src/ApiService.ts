@@ -1,5 +1,6 @@
 import { $ } from "./jquery-lib";
 import { EnvService, TranslationService } from "./equal-services";
+import { saveAs } from 'file-saver';
 
 /**
  * This service acts as an interface between client and server and caches view objects to lower the traffic
@@ -113,7 +114,7 @@ export class _ApiService {
                 .catch( (response:any) => {
                     console.log('ApiService::loadView error', response.responseJSON);
                     this.views[package_name][class_name][view_id].resolve({});
-                });    
+                });
             });
         }
         return this.views[package_name][class_name][view_id];
@@ -179,11 +180,7 @@ export class _ApiService {
             const response = await $.get({
                 url: environment.backend_url+'/userinfo'
             });
-            result = response; 
-            if(result.hasOwnProperty('language')) {
-                EnvService.setEnv('locale', result.language);
-                TranslationService.init();
-            }
+            result = response;
         }
         catch(response:any) {
             throw response.responseJSON;
@@ -191,15 +188,12 @@ export class _ApiService {
         return result;
     }
 
-    public async fetch(route:string, body:any = {}) {
+    public async getSettings() {
         let result: any;
         try {
             const environment = await EnvService.getEnv();
             const response = await $.get({
-                url: environment.backend_url+route,
-                dataType: 'json',
-                data: body,
-                contentType: 'application/x-www-form-urlencoded; charset=utf-8'
+                url: environment.backend_url+'/appinfo'
             });
             result = response;
         }
@@ -207,6 +201,38 @@ export class _ApiService {
             throw response.responseJSON;
         }
         return result;
+    }
+
+    public fetch(route:string, body:any = {}, content_type:string = 'application/json') {
+        return new Promise<any>( async (resolve, reject) => {
+            try {
+                const environment = await EnvService.getEnv();
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', environment.backend_url+route+'?'+jQuery.param(body), true);
+
+                if(content_type == 'application/json') {
+                    xhr.responseType = "json";
+                }
+                else {
+                    xhr.responseType = "arraybuffer";
+                }
+                
+                xhr.withCredentials = true;
+                xhr.send(null);
+
+                xhr.onload = () => {
+                    if(xhr.status < 200 || xhr.status > 299) {
+                        reject(xhr.response)
+                    }
+                    else {
+                        resolve(xhr.response);
+                    }
+                };
+            }
+            catch(error:any) {
+                reject(error);
+            }
+        });
     }
 
     public async create(entity:string, fields:any = {}) {

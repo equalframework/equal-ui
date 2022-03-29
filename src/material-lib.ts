@@ -131,15 +131,20 @@ class UIHelper {
 
     public static createSwitch(id:string, label:string, value:boolean, helper:string = '', icon: string = '', disabled: boolean = false) {
         let $elem = $('\
-        <div> \
-            <div class="mdc-switch '+ ((disabled)?'mdc-switch--disabled':'') + '"> \
-                <div class="mdc-switch__track"></div> \
-                <div class="mdc-switch__thumb-underlay"> \
-                    <div class="mdc-switch__thumb"></div> \
-                    <input type="checkbox" class="mdc-switch__native-control" role="switch" '+ ((value)?'checked':'') + ' ' + ((disabled)?'disabled':'') +'> \
+        <div id="'+id+'"> \
+            <div class="sb-ui-switch" > \
+                <div class="mdc-switch '+ ((disabled)?'mdc-switch--disabled':'') + '"> \
+                    <div class="mdc-switch__track"></div> \
+                    <div class="mdc-switch__thumb-underlay"> \
+                        <div class="mdc-switch__thumb"></div> \
+                        <input type="checkbox" class="mdc-switch__native-control" role="switch" '+ ((value)?'checked':'') + ' ' + ((disabled)?'disabled':'') +'> \
+                    </div> \
                 </div> \
+                <label for="basic-switch">'+label+'</label> \
             </div> \
-            <label for="basic-switch">'+label+'</label> \
+            <div class="mdc-text-field-helper-line"> \
+                <div class="mdc-text-field-helper-text" aria-hidden="true" title="'+helper+'">'+helper+'</div> \
+            </div> \
         </div>');
         new MDCSwitch($elem.find('.mdc-switch')[0]);
         return $elem;
@@ -156,7 +161,7 @@ class UIHelper {
                 <span class="mdc-text-field__ripple"></span> \
                 <span class="mdc-floating-label">'+label+'</span> \
                 '+((icon.length)?'<i aria-hidden="true" class="material-icons mdc-text-field__icon">'+icon+'</i>':'')+'\
-                <input '+( (disabled)?'disabled':'' )+' class="mdc-text-field__input" type="text" autocorrect="off" autocomplete="off" spellcheck="false" value="'+value+'"> \
+                <input '+( (disabled)?'disabled':'' )+' class="mdc-text-field__input" type="text" role="presentation" autocorrect="off" autocomplete="off" spellcheck="false" value="'+value+'"> \
                 '+((trailing_icon.length)?'<i class="material-icons mdc-text-field__icon mdc-text-field__icon--trailing" tabindex="0" role="button">'+trailing_icon+'</i>':'')+'\
                 <span class="mdc-line-ripple"></span> \
             </label> \
@@ -335,7 +340,7 @@ class UIHelper {
         return $elem;
     }
 
-    public static createSelect(id: string, label: string, values: any, selected: any='', disabled: boolean=false) {
+    public static createSelect(id: string, label: string, values: any, selected: any='', helper:string = '', disabled: boolean=false) {
         let $elem = $('\
         <div id="'+id+'" class="mdc-select mdc-select--filled '+( (label.length)?'':'mdc-select--no-label' )+' '+ ( (disabled)?'mdc-select--disabled':'' ) +'"> \
             <div class="mdc-select__anchor" role="button" tabindex="0"> \
@@ -357,7 +362,7 @@ class UIHelper {
                 <ul class="mdc-list"></ul> \
             </div> \
             <div class="mdc-text-field-helper-line"> \
-                <div class="mdc-text-field-helper-text" aria-hidden="true" title=""></div> \
+                <div class="mdc-text-field-helper-text" aria-hidden="true" title="'+helper+'">'+helper+'</div> \
             </div> \
         </div>');
 

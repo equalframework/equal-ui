@@ -102,6 +102,7 @@ export default class WidgetMany2One extends Widget {
                         domain: domain,
                         mode: 'view',
                         purpose: 'select',
+                        limit: 25,
                         callback: (data:any) => {
                             if(data && data.selection && data.objects) {
                                 // m2o relations are always loaded as an object with {id:, name:}
@@ -216,8 +217,11 @@ export default class WidgetMany2One extends Widget {
                     });
                 }
 
-                // #memo - do not load on init (to prevent burst requests when view is displayed in edit mode)
-                // feedObjects();
+                // #memo - we condition load on init to fields with empty values AND having a domain set
+                // (to prevent burst requests when view is displayed in edit mode)
+                if( (!value || !value.length) && domain.length) {
+                    setTimeout( () => feedObjects(), 250);
+                }
 
                 break;
             case 'view':

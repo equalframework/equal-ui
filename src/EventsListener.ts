@@ -2,7 +2,7 @@ import { $ } from "./jquery-lib";
 import { Frame, Context, Domain } from "./equal-lib";
 
 import { UIHelper } from './material-lib';
-import { ApiService, EnvService } from "./equal-services";
+import { ApiService, EnvService, TranslationService} from "./equal-services";
 
 import moment from 'moment/moment.js';
 
@@ -83,10 +83,21 @@ class EventsListener {
 
     private async init() {
         try {
-            // get default config
+            // get default (static) config
             await EnvService.getEnv();
             // attempt to retrieve user
             this.user = await ApiService.getUser();
+
+            if(this.user.hasOwnProperty('language')) {
+                EnvService.setEnv('locale', this.user.language);
+                TranslationService.init();
+            }
+            // attempt to retrieve app config
+            const settings = await ApiService.getSettings();
+
+            for(let key in settings) {
+                EnvService.setEnv(key, settings[key]);
+            }
         }
         catch(err) {
             console.warn('unable to retrieve user info, fallback to guest');
@@ -237,7 +248,7 @@ class EventsListener {
 
         EnvService.getEnv().then( (environment:any) => {
             // extend default params with received config
-            context = {...{
+            let target_context = {...{
                 entity:     '',
                 type:       'list',
                 name:       'default',
@@ -254,15 +265,22 @@ class EventsListener {
 
             if( context.hasOwnProperty('view') ) {
                 let parts = context.view.split('.');
-                if(parts.length) context.type = <string>parts.shift();
-                if(parts.length) context.name = <string>parts.shift();
+                let view_type = 'list', view_name = 'default'; 
+                if(parts.length) view_type = <string>parts.shift();
+                if(parts.length) view_name = <string>parts.shift();
+                if(!context.hasOwnProperty('type')) {
+                    target_context.type = view_type;
+                }
+                if(!context.hasOwnProperty('name')) {
+                    target_context.name = view_name;
+                }
             }
 
             // make context available to the outside
-            window.context = context;
+            window.context = target_context;
 
             // ContextService uses 'window' global object to store the arguments (context parameters)
-            this.$sbEvents.trigger('_openContext', [context, context.reset]);
+            this.$sbEvents.trigger('_openContext', [target_context, target_context.reset]);
         });
     }
 

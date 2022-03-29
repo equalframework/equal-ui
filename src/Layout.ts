@@ -3,11 +3,12 @@ import { $ } from "./jquery-lib";
 import { Widget, WidgetFactory } from "./equal-widgets";
 import { UIHelper } from './material-lib';
 
-import { TranslationService, ApiService } from "./equal-services";
+import { TranslationService, ApiService, EnvService } from "./equal-services";
 
 import { Domain, Clause, Condition, Reference } from "./Domain";
 import View from "./View";
 import moment from 'moment/moment.js';
+import { saveAs } from 'file-saver';
 
 /*
     There are two main branches of Layouts depending on what is to be displayed:
@@ -104,16 +105,12 @@ export class Layout {
         if(!model_fields || !model_fields.hasOwnProperty(field)) {
             return null;
         }
+    
+        let type = this.view.getModel().getFinalType(field);
 
-        let def = model_fields[field];
-        let type = def.type;
-        if(def.hasOwnProperty('result_type')) {
-            type = def.result_type;
-        }
-
-        if(['one2many', 'many2one', 'many2many'].indexOf(def.type) > -1) {
+        if(['one2many', 'many2one', 'many2many'].indexOf(type) > -1) {
             // by convention, `name` subfield is always loaded for relational fields
-            if(def.type == 'many2one') {
+            if(type == 'many2one') {
                 value = value['name'];
             }
             else {
@@ -275,6 +272,11 @@ export class Layout {
 
         let translation = this.view.getTranslation();
         let view_config = this.view.getConfig();
+
+        if(!view_schema.hasOwnProperty('layout') || !view_schema.layout.hasOwnProperty('groups')) {
+            console.warn("invalid layout, stop processing");
+            return;
+        }
 
         $.each(view_schema.layout.groups, (i:number, group) => {
             let group_id = 'group-'+i;
@@ -499,6 +501,9 @@ export class Layout {
                     }
                 });
 
+                if(['float', 'integer'].indexOf(config.type) >= 0) {
+                    $cell.css({"text-align": "right", "padding-right": "16px"});
+                }
                 if(config.sortable) {
                     $cell.addClass('sortable').attr('data-sort', '');
                 }
@@ -527,12 +532,15 @@ export class Layout {
                         let width = Math.ceil(10 * item.width) / 10;
                         let $cell = $('<div>').addClass('operation-cell').css({width: width+'%'});
                         if(op_descriptor.hasOwnProperty(item.value)) {
-                            $cell.append( $('<input>').attr('type', 'number').attr('data-id', 'operation-'+operation+'-'+item.value) );
+                            let $input = $('<input>').attr('data-id', 'operation-'+operation+'-'+item.value);
+                            let type = this.view.getModel().getFinalType(item.value);
+                            if(['float', 'integer'].indexOf(type) >= 0) {
+                                $input.css({'text-align': 'right', 'width': '100%', 'padding-right': '16px'});                                
+                            }    
+                            $cell.append( $input );
                         }
-                        else {
-                            if(pos == 0) {
-                                $cell.append($title);
-                            }
+                        else if(pos == 0) {
+                            $cell.append($title);
                         }
                         $op_row.append($cell);
                     }
@@ -650,7 +658,19 @@ export class Layout {
                                         break;
                                 }
                             }
-                            let value = String( (Math.round(result * 100) / 100).toFixed(2) );
+                            let value:any = result;
+                            if(descriptor[item.value].hasOwnProperty('usage')) {
+                                let usage = descriptor[item.value]['usage'];
+                                if(usage.indexOf('amount/percent') >= 0) {                    
+                                    value = (value * 100).toFixed(0) + '%';
+                                }
+                                else if(usage.indexOf('amount/money') >= 0) {
+                                    value = EnvService.formatCurrency(value);
+                                }                                    
+                            }
+                            else {
+                                value = EnvService.formatNumber(value);
+                            }
                             this.$layout.find('[data-id="'+'operation-'+operation+'-'+item.value+'"]').val(value);
                         }
                     }
@@ -729,12 +749,7 @@ export class Layout {
 
                 let $parent = this.$layout.find('#'+widget.getId()).parent();
 
-                let model_def = model_fields[field];
-                let type = model_def['type'];
-
-                if(model_def.hasOwnProperty('result_type')) {
-                    type = model_def['result_type'];
-                }
+                let type = this.view.getModel().getFinalType(field);
 
                 let has_changed = false;
                 let value = (object.hasOwnProperty(field))?object[field]:undefined;
@@ -768,8 +783,10 @@ export class Layout {
 
                     // by convention, `name` subfield is always loaded for relational fields
                     if(type == 'many2one') {
-                        value = object[field]['name'];
-                        config.object_id = object[field]['id'];
+                        if(object[field]) {
+                            value = object[field]['name'];
+                            config.object_id = object[field]['id'];    
+                        }
                     }
                     else if(type == 'many2many' || type == 'one2many') {
                         // init field if not present yet (o2m and m2m are not loaded by Model)
@@ -799,6 +816,7 @@ export class Layout {
                             tmpDomain.addCondition(new Condition("id", "not in", ids_to_del));
                         }
                         config.domain = tmpDomain.toArray();
+
                     }
                 }
 
@@ -847,6 +865,7 @@ export class Layout {
                         }
                         catch(response) {
                             // ignore faulty responses
+                            console.warn('unable to send onupdate request', response);
                         }
                         this.view.onchangeViewModel([object.id], values, refresh);
                     });
@@ -1037,7 +1056,7 @@ export class Layout {
             this.model_widgets[object.id][item.value] = widget;
 
             let $cell = $('<td/>').addClass('sb-widget-cell').attr('data-field', item.value).append(widget.render());
-
+            
             $row.append($cell);
         }
         if(parent_group_id.length) {
@@ -1183,6 +1202,8 @@ export class Layout {
 
     private async decorateActionButton($button: JQuery, action: any, object: any = {}) {
         $button.on('click', async () => {
+            console.log("click action button ", object);
+
             // mark action button as loading
             $button.addClass('mdc-button--spinner').attr('disabled', 'disabled');
 
@@ -1190,17 +1211,26 @@ export class Layout {
             let missing_params:any = {};
             let user = this.view.getUser();
 
-            // pre-feed with params from the action, if any
-            if(action.hasOwnProperty('params')) {
-                for(let param of Object.keys(action.params)) {
-                    let ref = new Reference(action.params[param]);
-                    resulting_params[param] = ref.parse(object, user);
-                }
+            // 1) pre-feed with params from the action, if any
+
+            if(!action.hasOwnProperty('params')) {
+                action['params'] = {};
+            }
+            // by convention, add current object id as reference            
+            if(object.hasOwnProperty('id') && !action.params.hasOwnProperty('id')) {
+                action.params['id'] = 'object.id';
+            }
+                
+            for(let param of Object.keys(action.params)) {
+                let ref = new Reference(action.params[param]);
+                resulting_params[param] = ref.parse(object, user);
             }
 
-            // retrieve announcement from the target action controller
+            // 2) retrieve announcement from the target action controller
             const result = await ApiService.fetch("/", {do: action.controller, announce: true});
             let params: any = {};
+            let response_descr:any = {};
+
             if(result.hasOwnProperty('announcement')) {
                 if(result.announcement.hasOwnProperty('params')) {
                     params = result.announcement.params;
@@ -1210,8 +1240,12 @@ export class Layout {
                         missing_params[param] = params[param];
                     }
                 }
+                if(result.announcement.hasOwnProperty('response')) {
+                    response_descr = result.announcement.response;
+                }    
             }
-            // retrieve translation related to action, if any
+
+            // 3) retrieve translation related to action, if any
             let translation = await ApiService.getTranslation(action.controller.replaceAll('_', '\\'), this.view.getLocale());
 
             // restore action button
@@ -1264,7 +1298,7 @@ export class Layout {
             }
 
             defer.promise().then( async (result:any) => {
-                this.performViewAction(action, {...resulting_params, ...result}, translation);
+                this.performViewAction(action, {...resulting_params, ...result}, translation, response_descr);
             });
 
 
@@ -1324,17 +1358,34 @@ export class Layout {
     }
 
 
-    private async performViewAction(action:any, params:any, translation: any) {
+    private async performViewAction(action:any, params:any, translation: any, response_descr: any = {}) {
 
         try {
-            const result = await ApiService.fetch("/", {do: action.controller, ...params});
-            console.log(result);
+            let content_type:string = 'application/json';
+
+            if(response_descr.hasOwnProperty('content-type')) {
+                content_type = response_descr['content-type'];
+            }
+
+            const result = await ApiService.fetch("/", {do: action.controller, ...params}, content_type);
+
+            if(content_type != 'application/json') {
+                let blob = new Blob([result], {type: content_type});
+                let filename = "file.download";                
+                if(response_descr.hasOwnProperty('content-disposition')) {
+                    const parts = response_descr['content-disposition'].split('=');
+                    if(parts.length > 1) {
+                        filename = parts[1].slice(1, -1);
+                    }
+                }
+                saveAs(blob, filename);
+            }
+
             await this.view.onchangeView();
             // await this.view.getModel().refresh();
             // await this.refresh();
         }
         catch(response) {
-            console.log('error', response);
             await this.view.displayErrorFeedback(translation, response);
         }
     }

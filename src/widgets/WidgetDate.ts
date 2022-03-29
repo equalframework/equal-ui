@@ -24,7 +24,7 @@ export default class WidgetDate extends Widget {
         switch(this.mode) {
             case 'edit':
                 value = moment(date).format('L');
-                this.$elem = UIHelper.createInput('', this.label, value, this.config.description, 'calendar_today');
+                this.$elem = UIHelper.createInput('', this.label, value, this.config.description, 'calendar_today', this.readonly);
                 if(this.config.layout == 'list') {
                     this.$elem.css({"width": "calc(100% - 10px)"});
                 }

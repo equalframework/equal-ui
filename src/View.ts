@@ -269,15 +269,28 @@ export class View {
         console.log('View::init');
         try {
 
-            this.translation = await ApiService.getTranslation(this.entity, this.getLocale());
-            try {
-                this.view_schema = await ApiService.getView(this.entity, this.type + '.' + this.name);
-            }
-            catch(response) {
+            // assign schemas by copy
+            
+            const translation = await ApiService.getTranslation(this.entity, this.getLocale());
+            this.translation = this.deepCopy(translation);
+            
+            const model = await ApiService.getSchema(this.entity);
+            this.model_schema = this.deepCopy(model);
+
+
+            let view = await ApiService.getView(this.entity, this.type + '.' + this.name);
+            if(!Object.keys(view).length) {
                 // fallback to default view
-                this.view_schema = await ApiService.getView(this.entity, this.type + '.default');
+                view = await ApiService.getView(this.entity, this.type + '.default');
+                if(!Object.keys(view).length) {
+                    console.warn("invalid view, stop processing");
+                    return;
+                }
+                this.name = 'default';
             }
-            this.model_schema = await ApiService.getSchema(this.entity);
+            this.view_schema = this.deepCopy(view);
+            
+
             this.loadViewFields(this.view_schema);
             this.loadModelFields(this.model_schema);
 
@@ -1074,6 +1087,7 @@ export class View {
         // possible values for header.actions
         /*
             "ACTION.CREATE":   [],
+            "ACTION.SELECT":   [],            
             "ACTION.EDIT":     [],
             "ACTION.SAVE":     [
                 {"id": "SAVE_AND_CLOSE"},       // save and go back to list [edit] or parent context [create] (default)
@@ -1167,7 +1181,8 @@ export class View {
                         }
                         catch(response) {
                             try {
-                                const res = await this.displayErrorFeedback(response, object, false);
+                                // #memo - we must display snack for situations where onupdate fails
+                                const res = await this.displayErrorFeedback(this.translation, response, object, true);
                                 if(res !== false) {
                                     return {selection: [object.id], objects: [object]};
                                 }
@@ -1678,7 +1693,7 @@ export class View {
                                 }
                                 catch(response) {
                                     try {
-                                        const res = await this.displayErrorFeedback(response, object, true);
+                                        const res = await this.displayErrorFeedback(this.translation, response, object, true);
                                         if(res === false ) {
                                             reject();
                                         }
@@ -1770,56 +1785,80 @@ export class View {
      *
      * @returns
      */
-    // #todo injecter le fichier de traduction à la demande (translation)
     public async displayErrorFeedback(translation: any, response:any, object:any = null, snack:boolean = true) {
         console.log('displayErrorFeedback', translation, response, object, snack);
+        let delay = 4000;
         if(response && response.hasOwnProperty('errors')) {
             let errors = response['errors'];
 
             if(errors.hasOwnProperty('INVALID_PARAM')) {
-                let delay = 4000;
-                let i = 0;
-                // stack snackbars (LIFO: decreasing timeout)
-                for(let field in errors['INVALID_PARAM']) {
-                    // for each field, we handle one error at a time (the first one)
-                    let error_id:string = <string>(Object.keys(errors['INVALID_PARAM'][field]))[0];
-                    let msg:string = <string>(Object.values(errors['INVALID_PARAM'][field]))[0];
-                    let translated_msg = TranslationService.resolve(translation, 'error', [], field, msg, error_id);
-                    if(translated_msg == msg) {
-                        let translated_error = TranslationService.instant('SB_ERROR_'+error_id.toUpperCase());
-                        if(translated_error.length) {
-                            translated_msg = translated_error;
+                if(typeof errors['INVALID_PARAM'] == 'object') {
+                    let i = 0;
+                    // stack snackbars (LIFO: decreasing timeout)
+                    for(let field in errors['INVALID_PARAM']) {
+                        // for each field, we handle one error at a time (the first one)
+                        let error_id:string = <string> String((Object.keys(errors['INVALID_PARAM'][field]))[0]);
+                        let msg:string = <string>(Object.values(errors['INVALID_PARAM'][field]))[0];
+                        let translated_msg = TranslationService.resolve(translation, 'error', [], field, msg, error_id);
+                        if(translated_msg == msg) {
+                            let translated_error = TranslationService.instant('SB_ERROR_'+error_id.toUpperCase());
+                            if(translated_error.length) {
+                                translated_msg = translated_error;
+                            }
                         }
+                        // update widget to provide feedback (as error hint)
+                        if(object) {
+                            this.layout.markFieldAsInvalid(object['id'], field, translated_msg);
+                        }
+                        // generate snack, if required
+                        if(snack) {
+                            setTimeout( () => {
+                                let title = TranslationService.resolve(translation, 'model', [], field, field, 'label');
+                                let $snack = UIHelper.createSnackbar(title+': '+translated_msg, TranslationService.instant('SB_ERROR_ERROR'), '', delay);
+                                this.$container.append($snack);
+                            }, delay * i );
+                        }
+                        ++i;
                     }
-                    // update widget to provide feedback (as error hint)
-                    if(object) {
-                        this.layout.markFieldAsInvalid(object['id'], field, translated_msg);
-                    }
-                    // generate snack, if required
+                }
+                // errors['INVALID_PARAM'] is a string
+                else {
                     if(snack) {
-                        setTimeout( () => {
-                            let title = TranslationService.resolve(translation, 'model', [], field, field, 'label');
-                            let $snack = UIHelper.createSnackbar(title+': '+translated_msg, TranslationService.instant('SB_ERROR_ERROR'), '', delay);
-                            this.$container.append($snack);
-                        }, delay * i );
+                        let error_id:string = <string> String(errors['INVALID_PARAM']);
+                        // try to resolve the error message
+                        let msg:string = TranslationService.instant('SB_ERROR_INVALID_PARAM');
+                        let translated_msg = TranslationService.resolve(translation, 'error', [], 'errors', error_id, error_id);
+                        if(translated_msg == error_id) {
+                            let translated_error = TranslationService.instant('SB_ERROR_'+error_id.toUpperCase());
+                            if(translated_error.length) {
+                                msg = translated_error;
+                            }
+                        }
+                        else {
+                            msg = translated_msg;
+                        }
+                        let $snack = UIHelper.createSnackbar(msg, TranslationService.instant('SB_ERROR_ERROR'), '', 4000);
+                        this.$container.append($snack);
                     }
-                    ++i;
                 }
             }
             else if(errors.hasOwnProperty('MISSING_PARAM')) {
                 let msg = TranslationService.instant('SB_ERROR_CONFIG_MISSING_PARAM');
-                let $snack = UIHelper.createSnackbar(msg + ' \'' + errors['MISSING_PARAM'] + '\'', TranslationService.instant('SB_ERROR_ERROR'), '', 4000);
+                let $snack = UIHelper.createSnackbar(msg + ' \'' + errors['MISSING_PARAM'] + '\'', TranslationService.instant('SB_ERROR_ERROR'), '', delay);
                 this.$container.append($snack);
             }
             else if(errors.hasOwnProperty('NOT_ALLOWED')) {
                 let msg = TranslationService.instant('SB_ERROR_NOT_ALLOWED');
-                let $snack = UIHelper.createSnackbar(msg, TranslationService.instant('SB_ERROR_ERROR'), '', 4000);
-                this.$container.append($snack);
+                // generate snack, if required
+                if(snack) {
+                    let $snack = UIHelper.createSnackbar(msg, TranslationService.instant('SB_ERROR_ERROR'), '', delay);
+                    this.$container.append($snack);
+                }
             }
             else if(errors.hasOwnProperty('CONFLICT_OBJECT')) {
                 // one or more fields violate a unique constraint
                 if(typeof errors['CONFLICT_OBJECT'] == 'object') {
-                    let delay = 4000;
+
                     let i = 0;
                     for(let field in errors['CONFLICT_OBJECT']) {
                         let msg = TranslationService.instant('SB_ERROR_DUPLICATE_VALUE');

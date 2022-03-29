@@ -13,7 +13,13 @@ export default class WidgetInteger extends WidgetString {
     public render():JQuery {
         this.$elem = super.render();
         let $input = this.$elem.find('input');
-        $input.attr( "type", "number" );
+
+        // numeric fields are aligned right
+        $input.css({'text-align': 'right'});
+        
+        if(this.mode == 'edit') {
+            $input.attr( "type", "number" );
+        }
         if(this.config.hasOwnProperty('min')) {
             $input.attr( "min", this.config.min );
         }

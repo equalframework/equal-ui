@@ -106,12 +106,10 @@ export default class WidgetMany2Many extends Widget {
                     }
 
                     if(has_action_create) {
-                        // generate domain for object creation
-                        // #memo - this is done in Layout
-                        // let domain = new Domain(this.config.domain);
-                        // domain.merge(new Domain([this.config.foreign_field, '=', this.config.object_id]));
+                        // generate domain for object creation                    
 
                         let domain = this.config.domain;
+
                         $actions_set
                         .append(
                             UIHelper.createButton(this.getId()+'_action-create', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'raised')
@@ -128,12 +126,13 @@ export default class WidgetMany2Many extends Widget {
                                             if(parts.length) view_name = <string>parts.shift();
                                         }
                                         if(custom_action_create.hasOwnProperty('domain')) {
-                                            let tmpDomain = new Domain(this.config.domain);
+                                            let tmpDomain = new Domain(domain);
                                             tmpDomain.merge(new Domain(custom_action_create['domain']));
                                             domain = tmpDomain.toArray();
                                         }
                                     }    
                                 }
+
                                 // request a new Context for selecting an existing object to add to current selection
                                 this.getLayout().openContext({
                                     entity: this.config.entity,

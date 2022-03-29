@@ -119,7 +119,7 @@ export class Model {
             'datetime':     ['=', '<=', '>='],
             'file':         ['like', '='],
             'binary':       ['like', '='],
-            'many2one':     ['=', 'is', 'in', 'not in'],
+            'many2one':     ['=', '<>'],
             'one2many':     ['contains'],
             'many2many':    ['contains']
         };
@@ -131,18 +131,21 @@ export class Model {
     }
 
     public export(object:any) {
+        console.log('Model::export', object);
         let result:any = {};
         let schema = this.view.getModelFields();
         for(let field in schema) {
-            if(schema[field]['type'] == 'many2one') {
-                if(typeof object[field] == 'object') {
+            if(!object.hasOwnProperty(field)) continue;
+            let type = this.getFinalType(field);
+            if(type == 'many2one') {
+                if(typeof object[field] == 'object' && object[field]) {
                     result[field] = object[field].id;
                 }
                 else {
                     result[field] = object[field];
                 }                
             }
-            else if(['one2many', 'many2many'].indexOf(schema[field]['type']) > -1) {
+            else if(['one2many', 'many2many'].indexOf(type) > -1) {
                 // #todo
                 result[field] = object[field];
             }
