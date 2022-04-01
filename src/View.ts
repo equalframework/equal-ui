@@ -1203,8 +1203,9 @@ export class View {
                             // reset domain (drop state=draft condition)
                             let tmpDomain = new Domain(["id", "=", object_id]);
                             this.domain = tmpDomain.toArray();
-                            this.onchangeView(true);
-                            // feedback kthe user (since we're not closing the context)
+                            // #memo - we don't want to refresh the view (would lose the current tab)
+                            // this.onchangeView(true);
+                            // feedback the user (since we're not closing the context)
                             let $snack = UIHelper.createSnackbar('Modifications enregistrées', '', '', 4000);
                             this.$container.append($snack);
                         }

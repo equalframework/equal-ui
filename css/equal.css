@@ -270,6 +270,8 @@ body, html {
     font-family: roboto;
     font-size: 15px;
     font-weight: 500;
+    border: 0;
+    width: 100%;
 }
 
 .sb-view-layout-list .table-operations .operation .operation-row .operation-cell:first-child {
@@ -650,7 +652,8 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
 
 .sb-view-layout-list .sb-widget.sb-widget-type-boolean {
     height: 44px;
-    padding-top: 14px;
+    /* cannot identify the reason why this was necessary at some point */
+    /* padding-top: 14px; */
 }
 
 /* added for WP compliance */ 
@@ -755,6 +758,11 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
 
 .sb-widget.sb-widget-mode-edit .sb-ui-menu.mdc-menu-surface--is-open-below {
     margin-top: 80px !important;
+}
+
+.sb-widget.sb-widget-mode-edit input[type=number]::-webkit-outer-spin-button,
+.sb-widget.sb-widget-mode-edit input[type=number]::-webkit-inner-spin-button{
+    margin-left: 20px;
 }
 
 .sb-widget-cell .sb-widget-mode-edit .sb-ui-menu.mdc-menu-surface--is-open-below {

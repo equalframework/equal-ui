@@ -105,7 +105,7 @@ export class Layout {
         if(!model_fields || !model_fields.hasOwnProperty(field)) {
             return null;
         }
-    
+
         let type = this.view.getModel().getFinalType(field);
 
         if(['one2many', 'many2one', 'many2many'].indexOf(type) > -1) {
@@ -420,7 +420,6 @@ export class Layout {
             $hrow.append( $fold_toggle );
 
             $fold_toggle.on('click', () => {
-                console.log('fold click');
                 let $tbody = this.$layout.find('tbody');
                 let folded = $fold_toggle.hasClass('folded');
                 if(folded) {
@@ -474,11 +473,12 @@ export class Layout {
         }
 
         for(let item of view_schema.layout.items) {
-            let config = WidgetFactory.getWidgetConfig(this.view, item.value, translation, model_fields, view_fields);
+            let field = item.value;
+            let config = WidgetFactory.getWidgetConfig(this.view, field, translation, model_fields, view_fields);
 
             if(config.visible) {
                 let width = Math.floor(10 * item.width) / 10;
-                let $cell = $('<th/>').attr('name', item.value)
+                let $cell = $('<th/>').attr('name', field)
                 // .attr('width', width+'%')
                 .css({width: width+'%'})
                 .append(config.title)
@@ -501,8 +501,8 @@ export class Layout {
                     }
                 });
 
-                if(['float', 'integer'].indexOf(config.type) >= 0) {
-                    $cell.css({"text-align": "right", "padding-right": "16px"});
+                if(['float', 'integer'].indexOf(config.type) >= 0 && field != 'id') {
+                    $cell.css({'text-align': 'right', 'padding-right': '16px'});
                 }
                 if(config.sortable) {
                     $cell.addClass('sortable').attr('data-sort', '');
@@ -531,12 +531,13 @@ export class Layout {
                     if(!item.hasOwnProperty('visible') || item.visible == true) {
                         let width = Math.ceil(10 * item.width) / 10;
                         let $cell = $('<div>').addClass('operation-cell').css({width: width+'%'});
-                        if(op_descriptor.hasOwnProperty(item.value)) {
-                            let $input = $('<input>').attr('data-id', 'operation-'+operation+'-'+item.value);
-                            let type = this.view.getModel().getFinalType(item.value);
-                            if(['float', 'integer'].indexOf(type) >= 0) {
-                                $input.css({'text-align': 'right', 'width': '100%', 'padding-right': '16px'});                                
-                            }    
+                        let field = item.value;
+                        if(op_descriptor.hasOwnProperty(field)) {
+                            let $input = $('<input>').attr('data-id', 'operation-'+operation+'-'+field);
+                            let type = this.view.getModel().getFinalType(field);
+                            if(['float', 'integer'].indexOf(type) >= 0 && field != 'id') {
+                                $input.css({'text-align': 'right', 'padding-right': '16px'});
+                            }
                             $cell.append( $input );
                         }
                         else if(pos == 0) {
@@ -601,7 +602,6 @@ export class Layout {
                 if($previous && $previous.hasClass('sb-group-row')) {
                     parent_group_id = <string> $previous.attr('data-id');
                 }
-
                 // group is an array of objects: render a row for each object
                 for (let object of group) {
                     let $row = this.feedListCreateObjectRow(object, parent_group_id);
@@ -613,6 +613,7 @@ export class Layout {
                 $tbody.append($row);
             }
             else {
+                // #memo - keys must be strings
                 let keys = Object.keys(group).sort().reverse();
                 for(let key of keys) {
                     if(['_id', '_parent_id', '_key', '_label'].indexOf(key) >= 0) continue;
@@ -661,12 +662,12 @@ export class Layout {
                             let value:any = result;
                             if(descriptor[item.value].hasOwnProperty('usage')) {
                                 let usage = descriptor[item.value]['usage'];
-                                if(usage.indexOf('amount/percent') >= 0) {                    
+                                if(usage.indexOf('amount/percent') >= 0) {
                                     value = (value * 100).toFixed(0) + '%';
                                 }
                                 else if(usage.indexOf('amount/money') >= 0) {
                                     value = EnvService.formatCurrency(value);
-                                }                                    
+                                }
                             }
                             else {
                                 value = EnvService.formatNumber(value);
@@ -785,7 +786,7 @@ export class Layout {
                     if(type == 'many2one') {
                         if(object[field]) {
                             value = object[field]['name'];
-                            config.object_id = object[field]['id'];    
+                            config.object_id = object[field]['id'];
                         }
                     }
                     else if(type == 'many2many' || type == 'one2many') {
@@ -904,7 +905,15 @@ export class Layout {
 
                 if(['date', 'datetime'].indexOf(model_def['type']) >= 0) {
                     label = moment(key).format(moment.localeData().longDateFormat('L'));
-                    key = moment(key).format('YYYY-MM-DD')
+                    key = moment(key).format('YYYY-MM-DD');
+                }
+                else if(model_def.hasOwnProperty('usage')) {
+                    if(model_def.usage == 'date/month') {
+                        // convert ISO8601 month (1-12) to js month  (0-11)
+                        key = parseInt(key) - 1;
+                        label = moment().month(key).format('MMMM');
+                        key = String(key).padStart(2, '0');
+                    }
                 }
 
                 if(!parent.hasOwnProperty(key)) {
@@ -1056,7 +1065,7 @@ export class Layout {
             this.model_widgets[object.id][item.value] = widget;
 
             let $cell = $('<td/>').addClass('sb-widget-cell').attr('data-field', item.value).append(widget.render());
-            
+
             $row.append($cell);
         }
         if(parent_group_id.length) {
@@ -1094,6 +1103,8 @@ export class Layout {
         .addClass('sb-view-layout-list-row sb-group-row folded')
         .attr('data-parent-id', parent_group_id)
         .attr('data-id', group['_id'])
+        .attr('data-key', group['_key'])
+        .attr('data-label', group['_label'])
         .attr('data-children-count', children_count)
         .attr('id', UIHelper.getUUID());
 
@@ -1216,11 +1227,11 @@ export class Layout {
             if(!action.hasOwnProperty('params')) {
                 action['params'] = {};
             }
-            // by convention, add current object id as reference            
+            // by convention, add current object id as reference
             if(object.hasOwnProperty('id') && !action.params.hasOwnProperty('id')) {
                 action.params['id'] = 'object.id';
             }
-                
+
             for(let param of Object.keys(action.params)) {
                 let ref = new Reference(action.params[param]);
                 resulting_params[param] = ref.parse(object, user);
@@ -1230,6 +1241,7 @@ export class Layout {
             const result = await ApiService.fetch("/", {do: action.controller, announce: true});
             let params: any = {};
             let response_descr:any = {};
+            let description:string = '';
 
             if(result.hasOwnProperty('announcement')) {
                 if(result.announcement.hasOwnProperty('params')) {
@@ -1242,7 +1254,10 @@ export class Layout {
                 }
                 if(result.announcement.hasOwnProperty('response')) {
                     response_descr = result.announcement.response;
-                }    
+                }
+                if(result.announcement.hasOwnProperty('description')) {
+                    description = result.announcement.description;
+                }
             }
 
             // 3) retrieve translation related to action, if any
@@ -1251,9 +1266,23 @@ export class Layout {
             // restore action button
             $button.removeClass('mdc-button--spinner').removeAttr('disabled');
 
+            // check presence of description and fallback to controller description
+            if(action.hasOwnProperty('description')) {
+                description = action.description;
+            }
+
+            let translated_description = TranslationService.resolve(translation, '', [], '', description, 'description');
+            // no translation was found for controller
+            if(translated_description == description) {
+                // fallback to current view translation
+                description = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, description, 'description');
+            }
+            else {
+                description = translated_description;
+            }
 
             let defer = $.Deferred();
-            let $description = $('<p />').text( TranslationService.resolve(translation, '', [], '', action.description, 'description'));
+            let $description = $('<p />').text(description);
 
             if(action.hasOwnProperty('confirm') && action.confirm) {
                 // params dialog
@@ -1371,7 +1400,7 @@ export class Layout {
 
             if(content_type != 'application/json') {
                 let blob = new Blob([result], {type: content_type});
-                let filename = "file.download";                
+                let filename = "file.download";
                 if(response_descr.hasOwnProperty('content-disposition')) {
                     const parts = response_descr['content-disposition'].split('=');
                     if(parts.length > 1) {

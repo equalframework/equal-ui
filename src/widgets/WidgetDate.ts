@@ -54,9 +54,12 @@ export default class WidgetDate extends Widget {
                 this.$elem = UIHelper.createInputView('', this.label, value, this.config.description);
                 break;
         }
-        this.$elem.addClass('sb-widget').addClass('sb-widget-mode-'+this.mode).attr('id', this.getId());
 
-        return this.$elem;
+        if(this.config.hasOwnProperty('heading') && this.config.layout == 'form') {
+            this.$elem.addClass('title');
+        }
+
+        return this.$elem.addClass('sb-widget').addClass('sb-widget-mode-'+this.mode).attr('id', this.getId());
     }
 
 }

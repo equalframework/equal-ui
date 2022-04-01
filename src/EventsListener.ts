@@ -38,6 +38,8 @@ class EventsListener {
     // User (requested as instanciation of the View). This value can be applied on subsequent Domain objects.
     private user: any = {id: 0};
 
+    // global environment object
+    private env: any = {};
 
     private subscribers: any = {};
 
@@ -81,10 +83,14 @@ class EventsListener {
         }
     }
 
+    /** 
+     * Asynchronous initialisation of the eQ instance.
+     * 
+     */
     private async init() {
         try {
             // get default (static) config
-            await EnvService.getEnv();
+            this.env = await EnvService.getEnv();
             // attempt to retrieve user
             this.user = await ApiService.getUser();
 
@@ -244,7 +250,7 @@ class EventsListener {
      * @param context
      */
     public open(context: any) {
-        console.log("eQ::open");
+        console.log("eQ::open", context);
 
         EnvService.getEnv().then( (environment:any) => {
             // extend default params with received config
@@ -285,7 +291,7 @@ class EventsListener {
     }
 
     /**
-     * Open the requested context inside a new popup (no target container required)
+     * Open the requested context inside a new popup (no target container required).
      *
      * @param config
      */
@@ -323,6 +329,21 @@ class EventsListener {
 
     public getUser() {
         return this.user;
+    }
+
+    public getEnv() {
+        return this.env;
+    }
+
+    /** 
+     * Return global instance of the API service, for using by external tools.
+     */
+    public getApiService() {
+        return ApiService;
+    }
+
+    public getTranslationService() {
+        return TranslationService;
     }
 
     /**

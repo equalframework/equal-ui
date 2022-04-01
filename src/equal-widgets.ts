@@ -187,8 +187,9 @@ config: {
             }
             config.values = values;
         }
-        // ready property is set to true during the 'feed' phase
+        config.field = field;
         config.visible = true;
+        // #memo - ready property is set to true during the 'feed' phase        
         config.ready = false;
         config.title = TranslationService.resolve(translation, 'model', [], field, label, 'label');
         config.description = TranslationService.resolve(translation, 'model', [], field, description, 'description');
