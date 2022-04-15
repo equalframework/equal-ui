@@ -83,9 +83,9 @@ class EventsListener {
         }
     }
 
-    /** 
+    /**
      * Asynchronous initialisation of the eQ instance.
-     * 
+     *
      */
     private async init() {
         try {
@@ -271,7 +271,7 @@ class EventsListener {
 
             if( context.hasOwnProperty('view') ) {
                 let parts = context.view.split('.');
-                let view_type = 'list', view_name = 'default'; 
+                let view_type = 'list', view_name = 'default';
                 if(parts.length) view_type = <string>parts.shift();
                 if(parts.length) view_name = <string>parts.shift();
                 if(!context.hasOwnProperty('type')) {
@@ -312,13 +312,20 @@ class EventsListener {
         $popup.css('z-index', 9000 + popup_id);
         $popup.find('.sb-popup').append($inner);
 
+        let original_target = (config.target)?config.target:'';
         config.target = $inner;
         let frame = new Frame(this, config.target);
 
         config.display_mode = 'popup';
         await frame._openContext(config);
 
-        $('body').append($popup);
+        if(original_target.length) {
+            $(original_target).append($popup);
+        }
+        else {
+            $('body').append($popup);
+        }
+
         this.popups.push(frame);
     }
 
@@ -335,7 +342,7 @@ class EventsListener {
         return this.env;
     }
 
-    /** 
+    /**
      * Return global instance of the API service, for using by external tools.
      */
     public getApiService() {
