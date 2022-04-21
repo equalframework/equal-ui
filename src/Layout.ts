@@ -641,7 +641,7 @@ export class Layout {
                     if(!item.hasOwnProperty('visible') || item.visible == true) {
 
                         if(descriptor.hasOwnProperty(item.value)) {
-                            let type = descriptor[item.value].type;
+                            let type = descriptor[item.value]['operation'];
                             let result:number = 0.0;
                             for (let object of objects) {
                                 switch(type) {
@@ -660,19 +660,31 @@ export class Layout {
                                 }
                             }
                             let value:any = result;
+                            let prefix = '';
+                            let suffix = '';
                             if(descriptor[item.value].hasOwnProperty('usage')) {
                                 let usage = descriptor[item.value]['usage'];
                                 if(usage.indexOf('amount/percent') >= 0) {
-                                    value = (value * 100).toFixed(0) + '%';
+                                    suffix = '%';
+                                    value = (value * 100).toFixed(0);
                                 }
                                 else if(usage.indexOf('amount/money') >= 0) {
                                     value = EnvService.formatCurrency(value);
+                                }
+                                else if(usage.indexOf('numeric/integer') >= 0) {
+                                    value = value.toFixed(0);
                                 }
                             }
                             else {
                                 value = EnvService.formatNumber(value);
                             }
-                            this.$layout.find('[data-id="'+'operation-'+operation+'-'+item.value+'"]').val(value);
+                            if(descriptor[item.value].hasOwnProperty('prefix')) {
+                                prefix = descriptor[item.value]['prefix'];
+                            }
+                            if(descriptor[item.value].hasOwnProperty('suffix')) {
+                                suffix = descriptor[item.value]['suffix'];
+                            }
+                            this.$layout.find('[data-id="'+'operation-'+operation+'-'+item.value+'"]').val(prefix+value+suffix);
                         }
                     }
                 }

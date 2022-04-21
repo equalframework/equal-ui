@@ -83,9 +83,7 @@ export class View {
      * @param config    extra parameters related to contexts communications
      */
     constructor(context: Context, entity: string, type: string, name: string, domain: any[], mode: string, purpose: string, lang: string, config: any = null) {
-        // assign a UUID
-        var S4 = () => (((1+Math.random())*0x10000)|0).toString(16).substring(1);
-        // generate a random guid
+        // generate a random UUID
         this.uuid = UIHelper.getUUID();
 
         this.context = context;

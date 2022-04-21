@@ -262,9 +262,9 @@ export class Frame {
             $('<span> › </span>').css({'margin': '0 10px'}).appendTo($elem);
         }
         $('<span>'+current_purpose_string+'</span>').appendTo($elem);
-        // if(this.stack.length > 1) {
-        // for integration, we need to let user close any context
-        if(true) {
+        if(this.stack.length > 1 || this.display_mode == 'popup') {
+        // #memo - check this: for integration, we need to let user close any context
+        // if(true) {
             UIHelper.createButton('context-close', '', 'mini-fab', 'close')
             .css({'transform': 'scale(0.5)', 'margin-top': '3px', 'background': '#bababa', 'box-shadow': 'none'})
             .appendTo($elem)
@@ -336,7 +336,7 @@ export class Frame {
     }
 
     /**
-     * This method can be called by any child or sub-child (view, layout, widgets)
+     * This method can be called by any child or sub-child (view, layout, widgets) (bottom-up).
      *
      * @param config
      */
@@ -372,7 +372,7 @@ export class Frame {
     }
 
     /**
-     * Instanciate a new context and push it on the contexts stack.
+     * Instanciate a new context and push it on the contexts stack (top-down).
      *
      * This method is meant to be called by the eventListener only (eQ object).
      *
@@ -414,15 +414,17 @@ export class Frame {
 
         let context: Context = new Context(this, config.entity, config.type, config.name, config.domain, config.mode, config.purpose, config.lang, config.callback, config);
 
-        // stack current context
+        // stack current (previous) context
         this.stack.push(this.context);
 
         this.context = context;
 
-        this.context.isReady().then( () => {
+        try {
+            await this.context.isReady();
+            console.log('context ready');
             for(let ctx of this.stack) {
                 if(ctx && typeof ctx.getContainer === 'function') {
-                    // conainers are hidden and not detached in order to maintain the listeners
+                    // containers are hidden and not detached in order to maintain the listeners
                     ctx.getContainer().hide();
                 }
             }
@@ -430,10 +432,11 @@ export class Frame {
             // relay event to the outside
             $(this.domContainerSelector).show().trigger('_open', [{context: config}]);
             this.updateHeader();
-        });
-
+        }
+        catch(error) {
+            console.warn('unexpected error', error);
+        }
     }
-
 
     public closeAll() {
         // close all contexts silently
@@ -477,6 +480,10 @@ export class Frame {
                 $(this.domContainerSelector).hide().trigger('_close', [ data ]);
             }
         }
+    }
+
+    public getDomContainer() {
+        return $(this.domContainerSelector);
     }
 
 }

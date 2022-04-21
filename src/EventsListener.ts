@@ -83,6 +83,92 @@ class EventsListener {
         }
     }
 
+    private async _openContext(config:any, reset: boolean = false) {
+
+        if(!config) {
+            config = window.context;
+        }
+
+        const environment = await EnvService.getEnv();
+
+        // extend default params with received config
+        config = {...{
+            entity:     '',
+            type:       'list',
+            name:       'default',
+            domain:     [],
+            mode:       'view',             // view, edit
+            purpose:    'view',             // view, select, add
+            lang:       environment.lang,
+            locale:     environment.locale,
+            callback:   null,
+            target:     '#sb-container'
+        }, ...config};
+
+        console.log('eQ: received _openContext', config);
+
+        if(!this.frames.hasOwnProperty(config.target)) {
+            this.frames[config.target] = new Frame(this, config.target);
+        }
+        else if(reset) {
+            this.frames[config.target].closeAll();
+        }
+
+        await this.frames[config.target]._openContext(config);
+
+        // run callback of subscribers
+        if(this.subscribers.hasOwnProperty('open') && this.subscribers['open'].length) {
+            for(let callback of this.subscribers['open']) {
+                if( ({}).toString.call(callback) === '[object Function]' ) {
+                    callback(config);
+                }
+            }
+        }
+    }
+
+    /**
+     * Close context non-silently with relayed data
+     * @param params
+     */
+    private async _closeContext(params: any) {
+
+        params = {...{
+            target: '#sb-container',
+            data:   {},
+            silent: false
+        }, ...params};
+
+        if(this.frames.hasOwnProperty(params.target)) {
+            let frame = this.frames[params.target];
+            frame._closeContext(params.data, params.silent);
+
+            // run callback of subscribers
+            if(this.subscribers.hasOwnProperty('close') && this.subscribers['close'].length) {
+                for(let callback of this.subscribers['close']) {
+                    if( ({}).toString.call(callback) === '[object Function]' ) {
+                        let context = frame.getContext();
+                        if(Object.keys(context).length) {
+                            // retrieve raw values of Context object
+                            callback({
+                                entity: context.getEntity(),
+                                type: context.getType(),
+                                name: context.getName(),
+                                domain: context.getDomain(),
+                                mode: context.getMode(),
+                                purpose: context.getPurpose(),
+                                lang: context.getLang()
+                            });
+                        }
+                        else {
+                            // run callback with empty context
+                            callback({});
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * Asynchronous initialisation of the eQ instance.
      *
@@ -127,46 +213,10 @@ class EventsListener {
          * A new context can be requested by ngx (menu or app) or by opening a sub-object
          */
         this.$sbEvents.on('_openContext', async (event:any, config:any, reset: boolean = false) => {
-            if(!config) {
-                config = window.context;
-            }
-
-            const environment = await EnvService.getEnv();
-
-            // extend default params with received config
-            config = {...{
-                entity:     '',
-                type:       'list',
-                name:       'default',
-                domain:     [],
-                mode:       'view',             // view, edit
-                purpose:    'view',             // view, select, add
-                lang:       environment.lang,
-                locale:     environment.locale,
-                callback:   null,
-                target:     '#sb-container'
-            }, ...config};
-
-            console.log('eQ: received _openContext', config);
-
-            if(!this.frames.hasOwnProperty(config.target)) {
-                this.frames[config.target] = new Frame(this, config.target);
-            }
-            else if(reset) {
-                this.frames[config.target].closeAll();
-            }
-
-            await this.frames[config.target]._openContext(config);
-
-            // run callback of subscribers
-            if(this.subscribers.hasOwnProperty('open') && this.subscribers['open'].length) {
-                for(let callback of this.subscribers['open']) {
-                    if( ({}).toString.call(callback) === '[object Function]' ) {
-                        callback(config);
-                    }
-                }
-            }
+            console.log('eQ: received _openContext', event, config, reset);
+            this._openContext(config, reset);
         });
+
 
         /**
          *
@@ -174,43 +224,7 @@ class EventsListener {
          * When closing, a context might transmit some value (its the case, for instance, when selecting one or more records for m2m or o2m fields)
          */
         this.$sbEvents.on('_closeContext', (event:any, params:any = {}) => {
-            // close context non-silently with relayed data
-            params = {...{
-                target: '#sb-container',
-                data:   {},
-                silent: false
-            }, ...params};
-
-            if(this.frames.hasOwnProperty(params.target)) {
-                let frame = this.frames[params.target];
-                frame._closeContext(params.data, params.silent);
-
-                // run callback of subscribers
-                if(this.subscribers.hasOwnProperty('close') && this.subscribers['close'].length) {
-                    for(let callback of this.subscribers['close']) {
-                        if( ({}).toString.call(callback) === '[object Function]' ) {
-                            let context = frame.getContext();
-                            if(Object.keys(context).length) {
-                                // retrieve raw values of Context object
-                                callback({
-                                    entity: context.getEntity(),
-                                    type: context.getType(),
-                                    name: context.getName(),
-                                    domain: context.getDomain(),
-                                    mode: context.getMode(),
-                                    purpose: context.getPurpose(),
-                                    lang: context.getLang()
-                                });
-                            }
-                            else {
-                                // run callback with empty context
-                                callback({});
-                            }
-                        }
-                    }
-                }
-            }
-
+            this._closeContext(params);
         });
 
         this.$sbEvents.on('_closeAll', (event:any, params:any = {}) => {
@@ -249,7 +263,7 @@ class EventsListener {
      * Interface method for integration with external tools.
      * @param context
      */
-    public open(context: any) {
+    public async open(context: any) {
         console.log("eQ::open", context);
 
         EnvService.getEnv().then( (environment:any) => {
@@ -282,11 +296,12 @@ class EventsListener {
                 }
             }
 
+
             // make context available to the outside
             window.context = target_context;
-
             // ContextService uses 'window' global object to store the arguments (context parameters)
-            this.$sbEvents.trigger('_openContext', [target_context, target_context.reset]);
+            // this.$sbEvents.trigger('_openContext', [target_context, target_context.reset]);
+            this._openContext(target_context, target_context.reset);
         });
     }
 
@@ -295,42 +310,46 @@ class EventsListener {
      *
      * @param config
      */
-    public async popup(config: any) {
+    public async popup(config: any, domContainerSelector: string = 'body') {
 
-        let x_offset = window.pageXOffset;
-        let y_offset = window.pageYOffset;
+        let $domContainer  = $(domContainerSelector);
+
+        let $wrapper = $domContainer.find('.sb-popup-wrapper');
+        if(!$wrapper.length) {
+            // origin not found, create container
+            $wrapper = $('<div class="sb-popup-wrapper"></div>')
+            $wrapper.css('left', window.pageXOffset+'px');
+            $wrapper.css('top', window.pageYOffset+'px');
+            $domContainer.append($wrapper);
+        }
+
         let popup_id = this.popups.length + 1;
+        let $popup = $('<div id="sb-popup-'+popup_id+'" class="sb-popup"></div>');
+        $wrapper.append($popup);
+        $popup.css('z-index', 9000 + popup_id);
 
-        let $popup = $('<div class="sb-popup-wrapper" id="eq-popup-'+popup_id+'"><div class="sb-popup"></div></div>');
-
-        let $inner = $('<div class="sb-popup-inner"></div>').on('_close', () => {
+        let $inner = $('<div class="sb-popup-inner" id="sb-popup-inner-'+popup_id+'"></div>').on('_close', () => {
             $popup.remove();
         });
 
-        $popup.css('left', x_offset+'px');
-        $popup.css('top', y_offset+'px');
-        $popup.css('z-index', 9000 + popup_id);
-        $popup.find('.sb-popup').append($inner);
+        $popup.append($inner);
 
-        let original_target = (config.target)?config.target:'';
-        config.target = $inner;
-        let frame = new Frame(this, config.target);
+        let frame = new Frame(this, '#sb-popup-inner-'+popup_id);
 
         config.display_mode = 'popup';
         await frame._openContext(config);
-
-        if(original_target.length) {
-            $(original_target).append($popup);
-        }
-        else {
-            $('body').append($popup);
-        }
 
         this.popups.push(frame);
     }
 
     public popup_close(params: any) {
         let frame = this.popups.pop();
+
+        // if there are no popup left, remove wrapper
+        if(!this.popups.length) {
+            $('body').find('.sb-popup-wrapper').remove();
+        }
+
         frame._closeContext(params.data);
     }
 
