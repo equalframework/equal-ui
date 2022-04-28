@@ -251,16 +251,22 @@ export default class WidgetMany2One extends Widget {
                         break;
                     case 'list':
                     default:
-                        // open targeted object in new context
-                        $input.on('click', async (event: any) => {
-                            this.getLayout().openContext({
-                                entity: this.config.foreign_object,
-                                type: 'form',
-                                name: (this.config.hasOwnProperty('view_name'))?this.config.view_name:'default',
-                                domain: ['id', '=', this.config.object_id]
+                        // by convention, first column of each row opens the object no matter the type of the field
+                        if(this.is_first) {
+                            this.$elem.addClass('is-first');
+                        }
+                        else {                            
+                            // open targeted object in new context
+                            $input.on('click', async (event: any) => {
+                                this.getLayout().openContext({
+                                    entity: this.config.foreign_object,
+                                    type: 'form',
+                                    name: (this.config.hasOwnProperty('view_name'))?this.config.view_name:'default',
+                                    domain: ['id', '=', this.config.object_id]
+                                });
+                                event.stopPropagation();
                             });
-                            event.stopPropagation();
-                        });
+                        }
                         this.$elem.append($input);
                 }
                 break;

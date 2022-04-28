@@ -517,11 +517,11 @@ body, html {
     box-shadow: none;    
 }
 
-.sb-view-layout-list .sb-widget.sb-widget-type-many2one.sb-widget-mode-view input {
+.sb-view-layout-list .sb-widget.sb-widget-type-many2one.sb-widget-mode-view:not(.is-first) input {
     cursor: pointer;
 }
 
-.sb-view-layout-list .sb-widget.sb-widget-type-many2one.sb-widget-mode-view input:hover {
+.sb-view-layout-list .sb-widget.sb-widget-type-many2one.sb-widget-mode-view:not(.is-first) input:hover {
     text-decoration: underline;
 }
 

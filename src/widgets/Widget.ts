@@ -11,7 +11,8 @@ export default class Widget {
     protected value: any;
     protected label: string;    
     protected type: string;
-    
+    protected is_first: boolean;
+
     protected mode: string = ''; 
     protected id: string = ''; 
     
@@ -22,6 +23,7 @@ export default class Widget {
     constructor(layout: Layout, type: string, label: string, value: any, config: any) {
         this.layout = layout;
 
+        this.is_first = false;
         this.value = value;
         this.label = label;
         this.type = type;
@@ -71,7 +73,10 @@ export default class Widget {
     public getConfig() {
         return this.config;
     }
-
+    
+    public setIsFirst(is_first: boolean) {        
+        this.is_first = is_first;
+    }
 
     public setValue(value: any) {
         this.value = value;

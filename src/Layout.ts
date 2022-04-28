@@ -1016,6 +1016,7 @@ export class Layout {
         }
 
         // for each field, create a widget, append to a cell, and append cell to row
+        let is_first:boolean = true;
         for(let item of schema.layout.items) {
 
             let config = WidgetFactory.getWidgetConfig(this.view, item.value, translation, model_fields, view_fields);
@@ -1056,7 +1057,9 @@ export class Layout {
             let widget:Widget = WidgetFactory.getWidget(this, config.type, '', '', config);
             widget.setValue(value);
             widget.setReadonly(config.readonly);
-
+            widget.setIsFirst(is_first);
+            is_first = false;
+            
             // store widget in widgets Map, using widget id as key (there are several rows for each field)
             if(typeof this.model_widgets[object.id] == 'undefined') {
                 this.model_widgets[object.id] = {};

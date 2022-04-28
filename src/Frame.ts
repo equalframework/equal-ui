@@ -34,12 +34,17 @@ export class Frame {
     // interaction mode ('stacked' or 'popup')
     private display_mode: string;
 
+    // allow to force showing close button in any context
+    private close_button: boolean;
+
     constructor(eq:any, domContainerSelector:string='#sb-container') {
         this.eq = eq;
         this.context = <Context>{};
         this.stack = [];
         // default mode : contexts are displayed in the same container
         this.display_mode = 'stacked';
+        // if there is a single context, prevent closing the frame
+        this.close_button = false;
         // As a convention, DOM element referenced by given selector must be present in the document.
         this.domContainerSelector = domContainerSelector;
         this.init();
@@ -263,7 +268,7 @@ export class Frame {
             $('<span> › </span>').css({'margin': '0 10px'}).appendTo($elem);
         }
         $('<span>'+current_purpose_string+'</span>').appendTo($elem);
-        if(this.stack.length > 1 || this.display_mode == 'popup') {
+        if(this.stack.length > 1 || this.display_mode == 'popup' || this.close_button) {
         // #memo - check this: for integration, we need to let user close any context
         // if(true) {
             UIHelper.createButton('context-close', '', 'mini-fab', 'close')
@@ -398,6 +403,10 @@ export class Frame {
 
         if(config.hasOwnProperty('display_mode')) {
             this.display_mode = config.display_mode;
+        }
+
+        if(config.hasOwnProperty('close_button')) {
+            this.close_button = config.close_button;
         }
 
         // if there is a current context, use its lang for the new context
