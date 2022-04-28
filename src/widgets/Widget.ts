@@ -89,7 +89,6 @@ export default class Widget {
     }
 
     public setMode(mode: string) {
-
         this.mode = mode;
         return this;
     }

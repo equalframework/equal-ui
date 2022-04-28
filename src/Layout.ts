@@ -476,7 +476,7 @@ export class Layout {
             let field = item.value;
             let config = WidgetFactory.getWidgetConfig(this.view, field, translation, model_fields, view_fields);
 
-            if(config.visible) {
+            if(config && (!config.hasOwnProperty('visible') || config.visible)) {
                 let width = Math.floor(10 * item.width) / 10;
                 let $cell = $('<th/>').attr('name', field)
                 // .attr('width', width+'%')
@@ -711,7 +711,6 @@ export class Layout {
             // update actions in view header
             let view_schema = this.view.getViewSchema();
 
-
             if(view_schema.hasOwnProperty('actions')) {
                 let $view_actions = this.view.getContainer().find('.sb-view-header-actions-view');
                 $view_actions.empty();
@@ -814,22 +813,11 @@ export class Layout {
                         value = object[field];
 
                         // select ids to load by filtering targeted objects
-                        let ids_to_add = object[field].filter( (id:number) => id > 0 );
-                        let ids_to_del = object[field].filter( (id:number) => id < 0 ).map( (id:number) => -id );
+                        config.ids_to_add = object[field].filter( (id:number) => id > 0 );
+                        config.ids_to_del = object[field].filter( (id:number) => id < 0 ).map( (id:number) => -id );
 
                         // we need the current object id for new objects creation
                         config.object_id = object.id;
-
-                        // domain is updated based on user actions: an additional clause for + (accept these whatever the other conditions) and addtional conditions for - (prevent these whatever the other conditions)
-                        let tmpDomain = new Domain(config.domain);
-                        if(ids_to_add.length) {
-                            tmpDomain.addClause(new Clause([new Condition("id", "in", ids_to_add)]));
-                        }
-                        if(ids_to_del.length) {
-                            tmpDomain.addCondition(new Condition("id", "not in", ids_to_del));
-                        }
-                        config.domain = tmpDomain.toArray();
-
                     }
                 }
 

@@ -41,6 +41,9 @@ class EventsListener {
     // global environment object
     private env: any = {};
 
+    // flag for preventing running callbacks on events
+    private mute: boolean = false;
+
     private subscribers: any = {};
 
     constructor(domListenerId: string = '') {
@@ -76,7 +79,7 @@ class EventsListener {
         // run callback of subscribers
         if(this.subscribers.hasOwnProperty('navigate') && this.subscribers['navigate'].length) {
             for(let callback of this.subscribers['navigate']) {
-                if( ({}).toString.call(callback) === '[object Function]' ) {
+                if( ({}).toString.call(callback) === '[object Function]' && !this.mute) {
                     callback({route: route});
                 }
             }
@@ -105,21 +108,32 @@ class EventsListener {
             target:     '#sb-container'
         }, ...config};
 
-        console.log('eQ: received _openContext', config);
+        console.log('eQ: received _openContext', config, reset, config.entity, config.entity.length);
+
+        // abort invalid entities
+        if(!config.entity.length) {
+            return ;
+        }
+
+        if(this.frames.hasOwnProperty(config.target) && reset) {
+            // prevent running callbacks while we close contexts
+            this.mute = true;
+            // #memo - after closing, the frame is deleted (@see _closeContext())
+            await this.frames[config.target].closeAll();
+            // restore callbacks runs
+            this.mute = false;
+        }
 
         if(!this.frames.hasOwnProperty(config.target)) {
             this.frames[config.target] = new Frame(this, config.target);
         }
-        else if(reset) {
-            this.frames[config.target].closeAll();
-        }
 
         await this.frames[config.target]._openContext(config);
 
-        // run callback of subscribers
-        if(this.subscribers.hasOwnProperty('open') && this.subscribers['open'].length) {
+        // run callback of subscribers 
+        if(this.subscribers.hasOwnProperty('open') && this.subscribers['open'].length && !this.mute) {
             for(let callback of this.subscribers['open']) {
-                if( ({}).toString.call(callback) === '[object Function]' ) {
+                if( ({}).toString.call(callback) === '[object Function]') {
                     callback(config);
                 }
             }
@@ -140,35 +154,57 @@ class EventsListener {
 
         if(this.frames.hasOwnProperty(params.target)) {
             let frame = this.frames[params.target];
-            frame._closeContext(params.data, params.silent);
+            await frame._closeContext(params.data, params.silent);
+
+            let context = frame.getContext();
+            let result = {};
+            if(Object.keys(context).length) {
+                result = {
+                    entity: context.getEntity(),
+                    type: context.getType(),
+                    name: context.getName(),
+                    domain: context.getDomain(),
+                    mode: context.getMode(),
+                    purpose: context.getPurpose(),
+                    lang: context.getLang()
+                };
+            }
 
             // run callback of subscribers
-            if(this.subscribers.hasOwnProperty('close') && this.subscribers['close'].length) {
+            if(this.subscribers.hasOwnProperty('close') && this.subscribers['close'].length && !this.mute && !params.silent) {
+                console.log('eQ::_closeContext - running callbacks', params);
                 for(let callback of this.subscribers['close']) {
-                    if( ({}).toString.call(callback) === '[object Function]' ) {
-                        let context = frame.getContext();
-                        if(Object.keys(context).length) {
-                            // retrieve raw values of Context object
-                            callback({
-                                entity: context.getEntity(),
-                                type: context.getType(),
-                                name: context.getName(),
-                                domain: context.getDomain(),
-                                mode: context.getMode(),
-                                purpose: context.getPurpose(),
-                                lang: context.getLang()
-                            });
-                        }
-                        else {
-                            // run callback with empty context
-                            callback({});
-                        }
+                    if( ({}).toString.call(callback) === '[object Function]') {
+                        // run callback with empty context
+                        callback(result);
                     }
                 }
             }
+
+            if(!Object.keys(context).length) {
+                delete this.frames[params.target];
+            }
+
         }
     }
 
+
+    /**
+     * Close all contexts silently
+     */
+    private async _closeAll(params: any) {            
+        if(params && params.hasOwnProperty('target')) {
+            if(this.frames.hasOwnProperty(params.target)) {
+                await this.frames[params.target]._closeContext(null, params.silent);
+            }
+        }
+        else {
+            for(let target of Object.keys(this.frames)) {
+                await this.frames[target]._closeContext(null, true);
+            }
+        }
+    }
+    
     /**
      * Asynchronous initialisation of the eQ instance.
      *
@@ -228,37 +264,21 @@ class EventsListener {
         });
 
         this.$sbEvents.on('_closeAll', (event:any, params:any = {}) => {
-            // close all contexts silently
-            /*
-            params = {...{
-                target: '#sb-container',
-                silent: true
-            }, ...params};
-            */
-
-            if(params && params.hasOwnProperty('target')) {
-                if(this.frames.hasOwnProperty(params.target)) {
-                    this.frames[params.target]._closeContext(null, params.silent);
-                }
-            }
-            else {
-                for(let target of Object.keys(this.frames)) {
-                    this.frames[target]._closeContext(null, true);
-                }
-            }
+            this._closeAll(params);
         });
 
     }
 
-    public closeAll() {
+    public async closeAll(params:any={}) {
         console.log('eQ:received closeAll');
         this.$sbEvents.trigger('_closeAll');
+        await this._closeAll(params);
     }
 
-
-    public close(params:any) {
-        this.$sbEvents.trigger('_closeContext', [params]);
+    public async close(params:any) {
+        await this._closeContext(params);
     }
+
     /**
      * Interface method for integration with external tools.
      * @param context
@@ -342,15 +362,18 @@ class EventsListener {
         this.popups.push(frame);
     }
 
-    public popup_close(params: any) {
+    public async popup_close(params: any) {
         let frame = this.popups.pop();
 
+        let $wrapper = $('body').find('.sb-popup-wrapper');
+        // pop last child of wrapper
+        $wrapper.find('.sb-popup').last().remove();        
         // if there are no popup left, remove wrapper
         if(!this.popups.length) {
-            $('body').find('.sb-popup-wrapper').remove();
+            $wrapper.remove();
         }
-
-        frame._closeContext(params.data);
+        // close context (update frame header if necessary)
+        await frame._closeContext(params.data);
     }
 
     public getUser() {

@@ -55,6 +55,7 @@ export class Frame {
         if(pos >= 0) {
             return this.stack[pos];
         }
+        // #memo - if stack is empty, current context is an empty object
         return this.context;
     }
 
@@ -358,14 +359,14 @@ export class Frame {
      */
     public async closeContext(data:any = null, silent: boolean = false) {
         if(this.display_mode == 'stacked') {
-            this.eq.close({
+            await this.eq.close({
                 target: this.domContainerSelector,
                 data:   data,
                 silent: silent
             });
         }
         else if(this.display_mode == 'popup') {
-            this.eq.popup_close({
+            await this.eq.popup_close({
                 data:   data,
             });
         }
@@ -438,11 +439,13 @@ export class Frame {
         }
     }
 
-    public closeAll() {
+    public async closeAll() {
         // close all contexts silently
         while(this.stack.length) {
-            this.closeContext(null, true);
+            await this.closeContext(null, true);
         }
+
+        console.log("Frame::closeAll - closed all contexts", this.context, this.stack);
     };
 
     /**
@@ -459,13 +462,13 @@ export class Frame {
             let has_changed:boolean = this.context.hasChanged();
 
             // destroy current context and run callback, if any
-            this.context.close(data);
+            this.context.close({silent: silent, ...data});
 
             // restore previous context
             this.context = <Context>this.stack.pop();
 
             if(!silent) {
-                if( this.context != undefined && this.context.hasOwnProperty('$container') ) {
+                if( this.context && this.context.hasOwnProperty('$container') ) {
                     if(has_changed && this.context.getMode() == 'view') {
                         await this.context.refresh();
                     }
@@ -475,9 +478,10 @@ export class Frame {
             }
 
             // if we closed the lastest Context from the stack, relay data to the outside
+            // #todo - is this still necessary ? since we run callbacks in eventlisteners ?
             if(!this.stack.length) {
-                console.log('stack empty: closing');
-                $(this.domContainerSelector).hide().trigger('_close', [ data ]);
+                // console.log('Frame::_closeContext - stack empty, closing');
+                // $(this.domContainerSelector).hide().trigger('_close', [ data ]);
             }
         }
     }

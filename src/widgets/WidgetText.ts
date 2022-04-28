@@ -58,11 +58,19 @@ export default class WidgetText extends Widget {
 
                     editor.root.innerHTML = value;
 
+                    let timeout: any;
+
                     editor.on('text-change', (delta, source) => {
                         this.value = editor.root.innerHTML;
                         // update value without refreshing the layout
                         if(this.value != value) {
-                            this.$elem.trigger('_updatedWidget', [false]);
+                            // debounce updates
+                            if(timeout) {
+                                clearTimeout(timeout);
+                            }
+                            timeout = setTimeout( () => {
+                                this.$elem.trigger('_updatedWidget', [false]);
+                            }, 1000);                            
                         }                        
                     })
 

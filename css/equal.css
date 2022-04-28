@@ -106,6 +106,9 @@ body, html {
     cursor: pointer;
     text-decoration: none;
     color: var(--mdc-theme-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .sb-container-header .lang-selector {

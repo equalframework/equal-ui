@@ -231,16 +231,6 @@ config: {
             let domain = new Domain(def_domain);
             domain.merge(new Domain(view_domain));
 
-            // add join condition for limiting list to the current object
-            if(['one2many', 'many2many'].indexOf(config.type) > -1 && def.hasOwnProperty('foreign_field')) {
-                if(config.type == 'one2many') {
-                    domain.merge(new Domain([def['foreign_field'], '=', 'object.id']));
-                }
-                else {
-                    domain.merge(new Domain([def['foreign_field'], 'contains', 'object.id']));
-                }
-            }
-
             config = {...config,
                 entity: def['foreign_object'],
                 view_type: view_type,

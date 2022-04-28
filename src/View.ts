@@ -78,7 +78,7 @@ export class View {
      * @param name      name of the view (eg. 'default')
      * @param domain    Array of conditions (disjunctions clauses of conjonctions conditions).
      * @param mode
-     * @param purpose   (view, select, add, create, update, widget)
+     * @param purpose   ('view', 'select', 'add', 'create', 'update', 'widget')
      * @param lang
      * @param config    extra parameters related to contexts communications
      */
@@ -445,8 +445,8 @@ export class View {
         await this.context.openContext(config);
     }
 
-    public async closeContext(data: any = {}) {
-        await this.context.closeContext(data);
+    public async closeContext(data: any = {}, silent: boolean = false) {
+        await this.context.closeContext(data, silent);
     }
 
     public getConfig() {
@@ -617,7 +617,6 @@ export class View {
                 }
             }
         }
-        console.log(this.view_fields);
     }
 
     /**
@@ -1194,7 +1193,7 @@ export class View {
                 };
 
                 const save_actions:any = {
-                    "SAVE_AND_CONTINUE": async () => {
+                    "SAVE_AND_CONTINUE": async (action:any) => {
                         let res:any = await save_method();
                         if(res && res.selection) {
                             let object_id = res.selection.pop();
@@ -1208,17 +1207,52 @@ export class View {
                             this.$container.append($snack);
                         }
                     },
-                    "SAVE_AND_VIEW": async () => {
+                    "SAVE_AND_VIEW": async (action:any) => {
                         let res:any = await save_method();
-                        // relay new object_id to parent view
-                        await this.closeContext(res);
+                        if(res) {
+                            let parent = this.context.getParent();
+                            // if context has a parent, close and relay new object_id to parent view
+                            if(Object.keys(parent).length) {
+                                await this.closeContext(res);
+                            }
+                            // if there's no parent, silently close it and instanciate a new context
+                            else {
+                                await this.closeContext(null, true);
+                                let object_id = res.selection[0];
+                                let view_name = this.name;
+                                let view_type = this.type;
+                                if(action.hasOwnProperty('view')) {
+                                    let parts = action.view.split('.');
+                                    if(parts.length) view_type = <string>parts.shift();
+                                    if(parts.length) view_name = <string>parts.shift();
+                                }
+                                await this.openContext({entity: this.entity, type: view_type, name: view_name, domain: ['id', '=', object_id], mode: 'view', purpose: 'view'});
+                            }
+                        }
                     },
-                    "SAVE_AND_CLOSE": async () => {
+                    "SAVE_AND_EDIT": async (action:any) => {
+                        let res:any = await save_method();
+                        if(res) {
+                            await this.closeContext(null, true);
+                            let object_id = res.selection[0];
+                            let view_name = this.name;
+                            let view_type = this.type;
+                            if(action.hasOwnProperty('view')) {
+                                let parts = action.view.split('.');
+                                if(parts.length) view_type = <string>parts.shift();
+                                if(parts.length) view_name = <string>parts.shift();
+                            }
+                            await this.openContext({entity: this.entity, type: view_type, name: view_name, domain: ['id', '=', object_id], mode: 'edit', purpose: 'edit'});
+                        }
+                    },
+                    "SAVE_AND_CLOSE": async (action:any) => {
                         let res:any = await save_method();
                         if(res) {
                             // relay new object_id to parent view
                             await this.closeContext(res);
-                            if(this.context.getParent().getView().getMode() == "view" && this.purpose == 'update') {
+                            // close parent as well if current view was the edit mode of parent view 
+                            let parent = this.context.getParent();
+                            if(typeof parent.getView === 'function' && parent.getView().getMode() == "view" && this.purpose == 'update') {
                                 await this.closeContext();
                             }
                         }
@@ -1261,7 +1295,7 @@ export class View {
                             // onclick, save and stay in edit mode (save and go back to list)
                             .on('click', async () => {
                                 try {
-                                    await save_action();
+                                    await save_action(header_actions["ACTION.SAVE"][i]);
                                 }
                                 catch(error) {
                                     console.log(error);
@@ -1277,7 +1311,7 @@ export class View {
                     let save_action = save_actions[header_action];
                     $save_button.on('click', async () => {
                         try {
-                            await save_action();
+                            await save_action(header_actions["ACTION.SAVE"][0]);
                         }
                         catch(error) {
                             console.log(error);

@@ -9,12 +9,18 @@ export default class WidgetString extends Widget {
         super(layout, 'string', label, value, config);
     }
 
-    public change(value: any) {
+    public change(value: any) {        
+        if(typeof value == 'string') {
+            value = value.replace(/"/g, "&quot;");
+        }
         this.$elem.find('input').val(value).trigger('change');
     }
 
     public render():JQuery {
-        let value:string = (typeof this.value != undefined && this.value != undefined)?this.value:'';
+        let value:any = (typeof this.value != undefined && this.value != undefined)?this.value:'';
+        if(typeof value == 'string') {
+            value = value.replace(/"/g, "&quot;");
+        }
         switch(this.mode) {
             case 'edit':
                 this.$elem = UIHelper.createInput('', this.label, value, this.config.description, '', this.readonly);
@@ -32,9 +38,6 @@ export default class WidgetString extends Widget {
                 break;
             case 'view':
             default:
-                if(this.config.layout == 'list') {
-                    value = $('<div>'+value+'</div>').text();
-                }
                 this.$elem = UIHelper.createInputView('', this.label, value, this.config.description);
                 break;
         }

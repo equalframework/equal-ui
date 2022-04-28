@@ -92,8 +92,8 @@ and can be displayed to user as an indication of the expected action.
      *
      * @param data
      */
-    public async closeContext(data: any = {}) {
-        await this.frame.closeContext(data);
+    public async closeContext(data: any = {}, silent: boolean = false) {
+        await this.frame.closeContext(data, silent);
     }
 
     /**
