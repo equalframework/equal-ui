@@ -2,7 +2,7 @@ import Widget from "./Widget";
 import { UIHelper } from '../material-lib';
 import { ApiService, TranslationService } from "../equal-services";
 
-import Layout from "../Layout";
+import { View, Layout } from "../equal-lib";
 import Domain from "../Domain";
 
 export default class WidgetMany2One extends Widget {

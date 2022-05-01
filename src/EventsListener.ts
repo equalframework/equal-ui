@@ -67,7 +67,7 @@ class EventsListener {
 
     public addSubscriber(events: [], callback: (context:any) => void) {
         for(let event of events) {
-            if(!['open', 'close', 'navigate'].includes(event)) continue;
+            if(!['open', 'close', 'updated', 'navigate'].includes(event)) continue;
             if(!this.subscribers.hasOwnProperty(event)) {
                 this.subscribers[event] = [];
             }
@@ -135,6 +135,24 @@ class EventsListener {
             for(let callback of this.subscribers['open']) {
                 if( ({}).toString.call(callback) === '[object Function]') {
                     callback(config);
+                }
+            }
+        }
+    }
+
+    /**
+     * Notify subscribers about a context update.
+     */
+    private async _updatedContext() {
+        console.log('EventsListener::_updatedContext', this.mute);
+        // run callback of subscribers
+        if(this.subscribers.hasOwnProperty('updated') && this.subscribers['updated'].length && !this.mute) {
+            console.log('eQ::_updatedContext - running callbacks');
+            for(let callback of this.subscribers['updated']) {
+                if( ({}).toString.call(callback) === '[object Function]') {
+                    // run callback with empty context
+                    console.log('calling callback');
+                    callback();
                 }
             }
         }
@@ -241,7 +259,9 @@ class EventsListener {
         const urlParams = new URLSearchParams(queryString);
 
         if(urlParams.has('lang')) {
+            // #todo - remove ?
             environment.lang = <string> urlParams.get('lang');
+            EnvService.setEnv('lang', <string> urlParams.get('lang'));
         }
 
         /**
@@ -269,12 +289,23 @@ class EventsListener {
 
     }
 
+    /**
+     * Mark current context as changed (called from Frame class).
+     */
+    public updated() {
+        console.log('EventsListener::updated');
+        this._updatedContext();
+    }
+
     public async closeAll(params:any={}) {
         console.log('eQ:received closeAll');
         this.$sbEvents.trigger('_closeAll');
         await this._closeAll(params);
     }
 
+    /**
+     * Close a context (can be invoked either from outside, or from Frame class).
+     */
     public async close(params:any) {
         await this._closeContext(params);
     }

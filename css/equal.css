@@ -7,7 +7,7 @@
     --mdc-theme-primary-outline: #b1b1dc;
 
 
-    
+
     /* checkbox background */
     /* --mdc-theme-secondary: #3f51b5; */
     --mdc-theme-secondary: #ff4081;
@@ -26,7 +26,7 @@
     --mdc-layout-grid-gutter-phone: 16px;
 
 }
-    
+
 body, html {
     margin: 0;
     padding: 0;
@@ -53,7 +53,7 @@ body, html {
     /* added for WP compliance */
     background-color: white;
     position: relative;
-    z-index: 2;  
+    z-index: 2;
 }
 
 
@@ -137,7 +137,7 @@ body, html {
     height: calc(100% - 48px);
 }
 
-.sb-view { 
+.sb-view {
     position: relative;
     height: 100%;
 }
@@ -182,7 +182,7 @@ body, html {
     border: 0;
     padding: 0;
 }
-  
+
 
 .sb-view-list-inline-actions-button {
     transform: scale(0.7);
@@ -342,7 +342,7 @@ body, html {
 }
 
 .sb-view-header-list-filters-search .mdc-text-field__icon--trailing {
-    display: none;    
+    display: none;
 }
 
 .sb-view-header-list-filters-search .mdc-text-field--label-floating .mdc-text-field__icon--trailing {
@@ -383,7 +383,7 @@ body, html {
 }
 
 .sb-view-header-list-pagination .pagination-navigation {
-    user-select: none; 
+    user-select: none;
 }
 
 
@@ -400,19 +400,19 @@ body, html {
     font-weight: 400;
 }
 
-.sb-widget-mode-edit .mdc-text-field .mdc-floating-label, 
+.sb-widget-mode-edit .mdc-text-field .mdc-floating-label,
 .sb-widget-mode-edit.mdc-select .mdc-floating-label {
     color: rgba(0,0,0,0.8) !important;
     font-weight: 600;
 }
 
-.sb-widget-mode-view .mdc-text-field .mdc-floating-label.mdc-floating-label--float-above, 
+.sb-widget-mode-view .mdc-text-field .mdc-floating-label.mdc-floating-label--float-above,
 .sb-widget-mode-view.mdc-select .mdc-floating-label.mdc-floating-label--float-above {
     color: rgba(0,0,0,0.8) !important;
     font-weight: 600;
 }
 
-.sb-widget-mode-edit .mdc-text-field .mdc-floating-label.mdc-floating-label--float-above, 
+.sb-widget-mode-edit .mdc-text-field .mdc-floating-label.mdc-floating-label--float-above,
 .sb-widget-mode-edit.mdc-select .mdc-floating-label.mdc-floating-label--float-above {
     color: rgba(0,0,0,0.6) !important;
     font-weight: 400;
@@ -423,9 +423,30 @@ body, html {
     margin-top: 20px;
 }
 
+.sb-widget.sb-ui-textarea .ql-toolbar {
+    background: white;
+}
+
+.sb-widget.sb-ui-textarea .ql-toolbar .ql-fullscreen {
+    position: relative;
+}
+
+.sb-widget.sb-ui-textarea .ql-toolbar .ql-fullscreen::after {
+  position: absolute;   
+  content: "⛶";
+  font-size: 18px;
+  font-weight: 600;
+  top: 0;
+}
+
+.sb-widget.sb-ui-textarea .ql-editor {
+    background-color: white;
+}
+
 .sb-widget-mode-view.sb-ui-textarea {
     font-size: 14px;
-    border: solid 1px lightgrey;    
+    border: solid 1px lightgrey;
+    overflow-y: scroll;
 }
 
 .sb-widget.sb-ui-textarea .textarea-content {
@@ -439,7 +460,7 @@ body, html {
     color: rgba(0,0,0,0.8) !important;
     font-weight: 600;
     transform: scale(75%);
-    font-size: 16px;    
+    font-size: 16px;
 }
 
 .sb-widget-mode-view.sb-ui-textarea p {
@@ -514,7 +535,7 @@ body, html {
     height: 100%;
     background: none;
     border-color: transparent;
-    box-shadow: none;    
+    box-shadow: none;
 }
 
 .sb-view-layout-list .sb-widget.sb-widget-type-many2one.sb-widget-mode-view:not(.is-first) input {
@@ -586,7 +607,7 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
 @keyframes button_spinner {
     to {transform: rotate(360deg);}
 }
-   
+
 .mdc-button--spinner:before {
     content: '';
     box-sizing: border-box;
@@ -607,7 +628,7 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
 
 /* support for title strings */
 .sb-widget.title {
-    margin-top: -14px; 
+    margin-top: -14px;
 }
 
 .sb-widget.title span.mdc-floating-label--float-above {
@@ -618,7 +639,7 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
 }
 .sb-widget.title input.mdc-text-field__input {
   font-size: 30px;
-  margin-top: auto; 
+  margin-top: auto;
   height: 60px;
 }
 
@@ -659,7 +680,7 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     /* padding-top: 14px; */
 }
 
-/* added for WP compliance */ 
+/* added for WP compliance */
 .sb-widget.sb-widget-type-boolean .mdc-switch__native-control {
     opacity: 0 !important;
 }
@@ -690,11 +711,11 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
 
 .sb-view-layout-list .sb-group-row .sb-toggle-button, .sb-view-layout-list th.sb-group-cell .sb-toggle-button {
     user-select: none;
-    transform: rotate(90deg); 
+    transform: rotate(90deg);
 }
 
 .sb-view-layout-list .sb-group-row.folded .sb-toggle-button, .sb-view-layout-list th.sb-group-cell.folded .sb-toggle-button {
-    transform: rotate(0deg); 
+    transform: rotate(0deg);
 }
 
 .sb-widget.sb-dropable {
@@ -723,7 +744,7 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     outline: solid 1px var(--mdc-theme-primary-outline);
     padding-left: 5px;
     border-top-left-radius: 0;
-    border-top-right-radius: 0;    
+    border-top-right-radius: 0;
 }
 
 .sb-widget-cell .sb-widget-mode-edit .mdc-select__anchor {
@@ -785,7 +806,7 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     height: 100%;
 }
 
-/* make mini-fab flat (mini save buttons) */ 
+/* make mini-fab flat (mini save buttons) */
 .sb-view-layout-list-row-checkbox .mdc-fab--mini {
     box-shadow: none !important;
     margin: 2px 0;
@@ -819,8 +840,8 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     position: absolute;
     z-index: 4;
 }
-    
-        
+
+
 .mdc-data-table__table-container .table-loader .table-overlay {
     position: absolute;
     opacity: 0.5;
@@ -828,7 +849,7 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     width: 100%;
     height: 100%;
 }
-    
+
 .mdc-data-table__table-container .table-loader .table-spinner {
     width: calc(100% + 2px);
     position: absolute;
@@ -841,8 +862,8 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
 	overflow: hidden;
     display: flex;
     align-items: center;
-    align-content: center; 
-    justify-content: flex-start;  
+    align-content: center;
+    justify-content: flex-start;
 }
 
 .mdc-data-table__table-container .table-loader .table-spinner .spinner__element {
@@ -915,7 +936,7 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     margin-right: 0 !important;
     border-top-right-radius: 0 !important;
     border-bottom-right-radius: 0 !important;
-    box-shadow: rgb(0 0 0 / 20%) 4px 3px 1px -2px, rgb(0 0 0 / 14%) 0px 2px 2px 0px, rgb(0 0 0 / 12%) 0px 1px 5px 0px;    
+    box-shadow: rgb(0 0 0 / 20%) 4px 3px 1px -2px, rgb(0 0 0 / 14%) 0px 2px 2px 0px, rgb(0 0 0 / 12%) 0px 1px 5px 0px;
 }
 
 .mdc-button-split_button.mdc-button.mdc-ripple-upgraded--background-focused .mdc-button__ripple::before {
@@ -985,7 +1006,7 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
 .sb-view-layout.sb-view-layout-form .sb-widget:hover .mdc-text-field-helper-text {
     opacity: 1 !important;
 }
- 
+
 .sb-view .sb-view-dialog .sb-widget:hover .mdc-text-field-helper-text {
     opacity: 1 !important;
 }
@@ -998,8 +1019,8 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     position: absolute;
     width: 100%;
     max-width: 100%;
-    padding-left: 0 !important;    
-    padding-right: 0 !important;    
+    padding-left: 0 !important;
+    padding-right: 0 !important;
 }
 
 
@@ -1015,7 +1036,7 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
 .mdc-list-item__text {
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;    
+    text-overflow: ellipsis;
 }
 
 .mdc-chip .mdc-chip__icon {
@@ -1099,7 +1120,7 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
 
 .ui-datepicker {
     padding: 0;
-    border: none;  
+    border: none;
     width: 325px;
     box-shadow: 4px 4px 10px 2px rgba(0, 0, 0, 0.24);
     margin-left: -16px;
@@ -1348,12 +1369,12 @@ button.ui-state-hover {
 .timepicker__controls__control--separator{width:5px}
 .text-center,.timepicker__controls,.timepicker__controls__control,.timepicker__controls__control--separator,.timepicker__controls__control-down,.timepicker__controls__control-up,.timepicker__title{text-align:center}
 .hover-state{color:#3498db}
- 
-.fontello-after:after,.fontello:before,.timepicker__controls__control-down:after,.timepicker__controls__control-up:before{font-family:FontAwesome;font-style:normal;font-weight:400;display:inline-block;text-decoration:inherit;width:1em;margin-right:.2em;text-align:center;font-variant:normal;text-transform:none;line-height:1em;margin-left:.2em;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}  
-.clearable-picker{position:relative;display:inline-block}  
-.clearable-picker>.hastimepicker{padding-right:1em}  
-.clearable-picker>.hastimepicker::-ms-clear{display:none}  
-.clearable-picker>[data-clear-picker]{position:absolute;top:50%;right:0;transform:translateY(-50%);font-weight:700;font-size:.8em;padding:0 .3em .2em;line-height:1;color:#bababa;cursor:pointer}  
+
+.fontello-after:after,.fontello:before,.timepicker__controls__control-down:after,.timepicker__controls__control-up:before{font-family:FontAwesome;font-style:normal;font-weight:400;display:inline-block;text-decoration:inherit;width:1em;margin-right:.2em;text-align:center;font-variant:normal;text-transform:none;line-height:1em;margin-left:.2em;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+.clearable-picker{position:relative;display:inline-block}
+.clearable-picker>.hastimepicker{padding-right:1em}
+.clearable-picker>.hastimepicker::-ms-clear{display:none}
+.clearable-picker>[data-clear-picker]{position:absolute;top:50%;right:0;transform:translateY(-50%);font-weight:700;font-size:.8em;padding:0 .3em .2em;line-height:1;color:#bababa;cursor:pointer}
 .clearable-picker>[data-clear-picker]:hover{color:#a1a1a1}
 .timepicker__controls__control span {
     outline: none;

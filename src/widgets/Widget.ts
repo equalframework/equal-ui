@@ -1,4 +1,4 @@
-import { Layout } from "../Layout";
+import { View, Layout } from "../equal-lib";
 import { EnvService } from "../equal-services";
 import _EnvService from "../EnvService";
 

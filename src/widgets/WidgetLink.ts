@@ -1,5 +1,5 @@
 import Widget from "./Widget";
-import Layout from "../Layout";
+import { View, Layout } from "../equal-lib";
 
 import { UIHelper } from '../material-lib';
 
@@ -61,7 +61,7 @@ export default class WidgetLink extends Widget {
                     this.$elem.append($link);
                 }
                 else {
-                    let $input = UIHelper.createInputView('', this.label, value).css({"width": "calc(100% - 48px)", "display": "inline-block"});
+                    let $input = UIHelper.createInputView('', this.label, value, this.config.description).css({"width": "calc(100% - 48px)", "display": "inline-block"});
                     this.$elem.append($input).append($button_open);
                 }
 

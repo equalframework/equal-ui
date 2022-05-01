@@ -15,8 +15,7 @@ import WidgetOne2Many  from "./widgets/WidgetOne2Many";
 import WidgetMany2One  from "./widgets/WidgetMany2One";
 import WidgetMany2Many  from "./widgets/WidgetMany2Many";
 
-import Layout from "./Layout";
-import View from "./View";
+import { View, Layout } from "./equal-lib";
 
 import { TranslationService } from "./equal-services";
 import { Domain, Clause, Condition } from "./Domain";
@@ -45,11 +44,11 @@ config: {
     */
 
 
-/**
- * factory : maps type guessed from model and view schema with a specific widget
- * @param type
- * @param value
- */
+    /**
+     * Widget factory : maps type guessed from model and view schema with a specific widget.
+     * @param type
+     * @param value
+     */
     public static getWidget(parent:Layout | View, type: string, label: string, value: any = null, config:any = {}): Widget {
         let view_type, layout;
 
@@ -107,11 +106,12 @@ config: {
     /**
      * Generate a widget config based on a layout item (from View schema)
      * 
-     * @param string    field
-     * @param any       translation     View translation map.
-     * @param any       model_fields    Associative array mapping fields with their model definition.
-     * @param string    view_fields     Associative array mapping fields with their view definition.
-     * @return {}       Returns a widget configuration object.
+     * @param {View} view           View    field
+     * @param {string} field        Field name.
+     * @param {any} translation     View translation map.
+     * @param {any} model_fields    Associative array mapping fields with their model definition.
+     * @param {string} view_fields  Associative array mapping fields with their view definition.
+     * @return {}                   Returns a widget configuration object.
      */
     public static getWidgetConfig(view: View, field: string, translation: any, model_fields: any, view_fields: any) :any {
         let config:any = {};

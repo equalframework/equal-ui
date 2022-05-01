@@ -1,5 +1,5 @@
 import WidgetMany2Many from "./WidgetMany2Many";
-import Layout from "../Layout";
+import Layout from "../layouts/Layout";
 
 import { UIHelper } from '../material-lib';
 

@@ -1,9 +1,7 @@
 import { $ } from "./jquery-lib";
 import { ApiService } from "./equal-services";
 
-import View from "./View";
-import Layout from "./Layout";
-
+import { View, Layout } from "./equal-lib";
 /**
  * Class for Model intercations
  * Acts like server-side Collection.class.php
@@ -11,7 +9,7 @@ import Layout from "./Layout";
 export class Model {
 
     private view: View;
-    
+
     // Collection (array) of objects (we use array to maintain objects order)
     private objects: any[];
 
@@ -24,9 +22,9 @@ export class Model {
     private loaded_promise: any;
 
 
-    
-    // Collecitons do not deal with lang: it is used from EnvService in ApiService 
-    
+
+    // Collecitons do not deal with lang: it is used from EnvService in ApiService
+
     constructor(view:View) {
         this.view = view;
 
@@ -36,10 +34,10 @@ export class Model {
         this.objects = [];
         this.total = 0;
     }
-    
 
-    public async init() {        
-        try {            
+
+    public async init() {
+        try {
             await this.refresh();
         }
         catch(err) {
@@ -49,17 +47,17 @@ export class Model {
 
     private deepCopy(obj:any):any {
         var copy:any;
-    
+
         // Handle the 3 simple types, and null or undefined
         if (null == obj || "object" != typeof obj) return obj;
-    
+
         // Handle Date
         if (obj instanceof Date) {
             copy = new Date();
             copy.setTime(obj.getTime());
             return copy;
         }
-    
+
         // Handle Array
         if (obj instanceof Array) {
             copy = [];
@@ -68,7 +66,7 @@ export class Model {
             }
             return copy;
         }
-    
+
         // Handle Object
         if (obj instanceof Object) {
             copy = {};
@@ -77,32 +75,33 @@ export class Model {
             }
             return copy;
         }
-    
+
         throw new Error("Unable to copy obj! Its type isn't supported.");
     }
 
     /**
      * Resolve the final type of a given field (handling 'alias' and 'computed').
-     * 
-     * @param field 
+     *
+     * @param field
      * @returns string The final type. If final type cannot be resolved, the 'string' type is returned as default.
      */
     public getFinalType(field:string) {
         let result = 'string';
         let schema = this.view.getModelFields();
-        
-        while(schema.hasOwnProperty(field) && schema[field].hasOwnProperty('type') && schema[field].type == 'alias' && schema[field].hasOwnProperty('alias')) {
-            field = schema[field].alias;
-        }
-        if(schema.hasOwnProperty(field) && schema[field].hasOwnProperty('type')) {
-            if(schema[field].type == 'computed') {
-                if(schema[field].hasOwnProperty('result_type')) {
-                    result = schema[field].result_type;
+        if(schema) {
+            while(schema.hasOwnProperty(field) && schema[field].hasOwnProperty('type') && schema[field].type == 'alias' && schema[field].hasOwnProperty('alias')) {
+                field = schema[field].alias;
+            }
+            if(schema.hasOwnProperty(field) && schema[field].hasOwnProperty('type')) {
+                if(schema[field].type == 'computed') {
+                    if(schema[field].hasOwnProperty('result_type')) {
+                        result = schema[field].result_type;
+                    }
+                }
+                else {
+                    result = schema[field].type;
                 }
             }
-            else {
-                result = schema[field].type;
-            }            
         }
         return result;
     }
@@ -143,7 +142,7 @@ export class Model {
                 }
                 else {
                     result[field] = object[field];
-                }                
+                }
             }
             else if(['one2many', 'many2many'].indexOf(type) > -1) {
                 // #todo
@@ -156,20 +155,20 @@ export class Model {
         return result;
     }
 
-    /** 
+    /**
      * Update model by requesting data from server using parent View parameters
     */
     public async refresh(full: boolean = false) {
         console.log('Model::refresh');
 
-        // fetch fields that are present in the parent View 
+        // fetch fields that are present in the parent View
         let view_fields: any[] = <[]>Object.keys(this.view.getViewFields());
         let schema = this.view.getModelFields();
 
         let fields = [];
-        
+
         for(let i in view_fields) {
-            
+
             let field = view_fields[i];
             if(!schema.hasOwnProperty(field)) {
                 console.log('unknown field', field);
@@ -203,15 +202,15 @@ export class Model {
             this.objects = [];
             this.loaded_promise.resolve();
             this.total = 0;
-        }        
+        }
         // trigger model change handler in the parent View (in order to update the layout)
-        await this.view.onchangeModel(full);        
+        await this.view.onchangeModel(full);
     }
-    
+
     /**
      * React to external request of Model change (one ore more objects in the collection have been updated through the Layout).
      * Changes are made on a field basis.
-     * 
+     *
      */
     public change(ids: Array<any>, values: any) {
         console.log('Model::change', ids, values);
@@ -230,7 +229,7 @@ export class Model {
                             // mark field as changed
                             this.has_changed[id].push(field);
                         }
-                    }    
+                    }
                 }
             }
         }
@@ -238,9 +237,9 @@ export class Model {
 
     /**
      * Handler for resetting change status and modified field of a given object, when an update occured and was accepted by server.
-     * 
-     * @param id 
-     * @param values 
+     *
+     * @param id
+     * @param values
      */
     public reset(id: number, values: any) {
         console.log('Model::reset', values);
@@ -250,11 +249,11 @@ export class Model {
                 this.has_changed[id] = [];
                 for(let field in values) {
                     object[field] = values[field];
-                }                
+                }
             }
         }
     }
-    
+
     public ids() {
         if(this.objects.length == 0) {
             return [];
@@ -265,7 +264,7 @@ export class Model {
     /**
      * Return the Collection.
      * The result set can be limited to a subset of specific objects by specifying an array of ids.
-     * 
+     *
      * @param ids array list of objects identifiers that must be returned
      */
     public get(ids:any[] = []) {
@@ -275,12 +274,12 @@ export class Model {
         then( () => {
             if(ids.length) {
                 // create a custom collection by filtering objects on their ids
-                promise.resolve( this.objects.filter( (object:any) => ids.indexOf(+object['id']) > -1 ) );                
+                promise.resolve( this.objects.filter( (object:any) => ids.indexOf(+object['id']) > -1 ) );
             }
             else {
                 // return the full collection
                 promise.resolve(this.objects);
-            }            
+            }
         })
         .catch( () => promise.resolve({}) );
 
@@ -289,9 +288,9 @@ export class Model {
 
     /**
      * Manually assign a list of objects from the current set (identified by their ids) to a given value (object).
-     * 
-     * @param ids 
-     * @param object 
+     *
+     * @param ids
+     * @param object
      */
     public async set(ids:number[] = [], object: any) {
         for(let id of ids) {
@@ -304,7 +303,7 @@ export class Model {
     /**
      * Returns a collection holding only modified objects with their modified fields (not original objects).
      * The collection will be empty if no changes occured.
-     * 
+     *
      * @param ids array list of objects identifiers that must be returned (if changed)
      */
     public getChanges(ids:any[] = []) {

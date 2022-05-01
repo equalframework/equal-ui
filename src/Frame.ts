@@ -341,6 +341,11 @@ export class Frame {
         return this.eq.getUser();
     }
 
+    public updatedContext() {
+        console.log('Frame::updatedContext');
+        this.eq.updated();
+    }
+
     /**
      * This method can be called by any child or sub-child (view, layout, widgets) (bottom-up).
      *

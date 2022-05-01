@@ -1,9 +1,8 @@
 import Widget from "./Widget";
-import { Layout } from "../equal-lib";
+import { View, Layout } from "../equal-lib";
 import { Domain, Clause, Condition } from "../Domain";
 import { UIHelper } from '../material-lib';
 
-import View from "../View";
 import { ApiService, TranslationService } from "../equal-services";
 
 export default class WidgetMany2Many extends Widget {

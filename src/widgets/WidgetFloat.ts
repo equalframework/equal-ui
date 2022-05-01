@@ -1,5 +1,5 @@
 import Widget from "./Widget";
-import Layout from "../Layout";
+import { View, Layout } from "../equal-lib";
 
 import WidgetString from "./WidgetString";
 

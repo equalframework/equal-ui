@@ -4,6 +4,7 @@ import { UIHelper } from './material-lib';
 import { ApiService, TranslationService } from "./equal-services";
 import { Context, Layout, Model, Domain } from "./equal-lib";
 import { Widget, WidgetFactory } from "./equal-widgets";
+import { LayoutFactory } from "./equal-layouts";
 
 
 export class View {
@@ -257,7 +258,7 @@ export class View {
         this.$footerContainer = $('<div />').addClass('sb-view-footer').appendTo(this.$container);
 
 
-        this.layout = new Layout(this);
+        this.layout = LayoutFactory.getLayout(this);
         this.model = new Model(this);
 
         this.init();
@@ -1608,6 +1609,10 @@ export class View {
      * or from layout: context has been updated (sort column, sorting order, limit, page, ...)
      */
     public async onchangeView(full: boolean = false) {
+        console.log('View::onchangeView');
+        // notify about context update
+        this.context.updatedContext();
+
         // reset selection
         this.selected_ids = [];
         if(this.type == 'list') {

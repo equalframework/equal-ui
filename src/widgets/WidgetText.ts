@@ -1,5 +1,5 @@
 import Widget from "./Widget";
-import Layout from "../Layout";
+import { View, Layout } from "../equal-lib";
 
 import { UIHelper } from '../material-lib';
 
@@ -49,10 +49,20 @@ export default class WidgetText extends Widget {
                                 // [{ 'header': [1, 2, 3, 4, 5, 6, false]}],
                                 [{ 'list': 'ordered'}, { 'list': 'bullet' }],
                                 [{ "align": '' }, { "align": 'center' }, { 'align': 'right' }],
-                                [{ 'size': ['small', false, 'large', 'huge'] }]  
+                                [{ 'size': ['small', false, 'large', 'huge'] }],
+                                ['fullscreen']  
                               ]
                           }
                     });
+
+                    this.$elem.find('.ql-fullscreen').on('click', () => {
+                        let elem: any = this.$elem[0];
+                        if (elem.requestFullscreen) {
+                            elem.requestFullscreen();
+                        } else if (elem.hasOwnProperty('webkitRequestFullscreen')) {
+                            elem['webkitRequestFullscreen']();
+                        }
+                    });                    
 
                     this.$elem.data('quill', editor);
 

@@ -219,7 +219,6 @@ export class Domain {
 
                     cc_res = <boolean>eval(c_condition);
                 }
-                console.log('evaluating ', cc_res);
                 c_res = c_res && cc_res;
             }
             res = res || c_res;

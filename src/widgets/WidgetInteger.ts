@@ -1,5 +1,5 @@
 import WidgetString from "./WidgetString";
-import Layout from "../Layout";
+import { View, Layout } from "../equal-lib";
 
 import { UIHelper } from '../material-lib';
 

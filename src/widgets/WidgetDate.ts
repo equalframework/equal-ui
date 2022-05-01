@@ -1,5 +1,5 @@
 import Widget from "./Widget";
-import Layout from "../Layout";
+import Layout from "../layouts/Layout";
 
 import { UIHelper } from '../material-lib';
 
