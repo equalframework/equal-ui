@@ -99,9 +99,9 @@ and can be displayed to user as an indication of the expected action.
     /**
      * Relay update notification (from View) to parent Frame.
      */
-    public updatedContext() {
+    public async updatedContext() {
         console.log('Context::updatedContext');
-        this.frame.updatedContext();
+        await this.frame.updatedContext();
     }
 
     /**

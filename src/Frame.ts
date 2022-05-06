@@ -341,9 +341,9 @@ export class Frame {
         return this.eq.getUser();
     }
 
-    public updatedContext() {
+    public async updatedContext() {
         console.log('Frame::updatedContext');
-        this.eq.updated();
+        await this.eq.updated();
     }
 
     /**

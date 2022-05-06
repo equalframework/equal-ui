@@ -22,6 +22,7 @@ import { saveAs } from 'file-saver';
 export interface LayoutInterface {
     init(): any;
     refresh(full: boolean): any;
+    loading(loading: boolean): any;    
     // #todo - add other public methods
 }
 
@@ -46,29 +47,20 @@ export class Layout implements LayoutInterface{
     }
 
     /*
-        Methods from interface, made to be overloaded in inherited classes
+        Methods from interface, meant to be overloaded in inherited classes
     */
     public init() {}
     public refresh(full: boolean = false) {}
+    public loading(loading:boolean) {}
 
     /*
-        Common methods made to be overloaded in inherited classes
+        Common methods meant to be overloaded in inherited classes
     */
     protected layout() {}
     protected feed(objects: any) {}
 
 
-    public loading(loading:boolean) {
-        let $elem = this.$layout.find('.table-wrapper');
-        let $loader = $elem.find('.table-loader');
-
-        if(loading) {
-            $loader.show();
-        }
-        else {
-            $loader.hide();
-        }
-    }
+    
 
     public getView() {
         return this.view;
@@ -330,9 +322,12 @@ export class Layout implements LayoutInterface{
             }
 
             defer.promise().then( async (result:any) => {
-                this.performViewAction(action, {...resulting_params, ...result}, translation, response_descr);
+                // mark action button as loading
+                $button.addClass('mdc-button--spinner').attr('disabled', 'disabled');
+                await this.performViewAction(action, {...resulting_params, ...result}, translation, response_descr);
+                // restore action button
+                $button.removeClass('mdc-button--spinner').removeAttr('disabled');
             });
-
 
         });
 
@@ -412,11 +407,13 @@ export class Layout implements LayoutInterface{
                 saveAs(blob, filename);
             }
 
+            // #memo - this will trigger updatedContext
             await this.view.onchangeView();
             // await this.view.getModel().refresh();
             // await this.refresh();
         }
         catch(response) {
+            await this.view.updatedContext();
             await this.view.displayErrorFeedback(translation, response);
         }
     }

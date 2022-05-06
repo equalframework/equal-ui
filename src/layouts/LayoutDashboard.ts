@@ -55,17 +55,7 @@ export class LayoutDashboard extends Layout {
 
         $.each(view_schema.layout.groups, (i:number, group) => {
             let group_id = 'group-'+i;
-            let $group = $('<div />').addClass('sb-view-form-group').appendTo($elem);
-
-            // try to resolve the group title
-            let group_title = (group.hasOwnProperty('label'))?group.label:'';
-            if(group.hasOwnProperty('id')) {
-                group_title = TranslationService.resolve(translation, 'view', [this.view.getId(), 'layout'], group.id, group_title);
-            }
-            // append the group title, if any
-            if(group_title.length) {
-                $group.append($('<div/>').addClass('sb-view-form-group-title').text(group_title));
-            }
+            let $group = $('<div />').addClass('sb-view-dashboard-group').appendTo($elem);
 
             let selected_section = 0;
             if(view_config && view_config.hasOwnProperty('selected_sections') && view_config.selected_sections.hasOwnProperty(i)) {
@@ -81,7 +71,7 @@ export class LayoutDashboard extends Layout {
             $.each(group.sections, (j:number, section) => {
                 let section_id = group_id+'-section-'+j;
 
-                let $section = $('<div />').attr('id', section_id).addClass('sb-view-form-section mdc-layout-grid').appendTo($group);
+                let $section = $('<div />').attr('id', section_id).addClass('sb-view-dashboard-section mdc-layout-grid').appendTo($group);
 
                 if(j != selected_section) {
                     $section.hide();
@@ -107,9 +97,28 @@ export class LayoutDashboard extends Layout {
                     $tabs.find('.sb-view-form-sections').append($tab);
                 }
 
-
                 $.each(section.rows, (k:number, row) => {
-                    let $row = $('<div />').addClass('sb-view-form-row mdc-layout-grid__inner').appendTo($section);
+                    let $row = $('<div />').addClass('sb-view-dashboard-row mdc-layout-grid__inner').appendTo($section);
+                    if(row.hasOwnProperty('height')) {
+                        // once the view will be ready, update height according to context total height
+                        this.getView().isReady().then( () => {
+                            let available_height = this.getView().getContext().getContainer().height() - (section.rows.length * 24);
+                            let height = Math.floor( (parseInt(row.height, 10) / 100) * available_height );
+                            $row.css('height', height + 'px');
+                            $row.find('.mdc-layout-grid__cell').css('height', height + 'px');
+                        });
+                        // do the same when window is resized
+                        let timeout: any;
+                        $(window).on('resize', () => {
+                            clearTimeout(timeout);
+                            timeout = setTimeout( () => {
+                                let available_height = this.getView().getContext().getContainer().height() - (section.rows.length * 24);
+                                let height = Math.floor( (parseInt(row.height, 10) / 100) * available_height );
+                                $row.css('height', height + 'px');
+                                $row.find('.mdc-layout-grid__cell').css('height', height + 'px');
+                            });
+                        });
+                    }
                     $.each(row.columns, (l:number, column) => {
                         let $column = $('<div />').addClass('mdc-layout-grid__cell').appendTo($row);
 
@@ -121,7 +130,19 @@ export class LayoutDashboard extends Layout {
                         $column = $('<div />').addClass('mdc-layout-grid__inner').appendTo($inner_cell);
 
                         $.each(column.items, (i, item) => {
+                            console.log('#######', item);
                             let $cell = $('<div />').addClass('mdc-layout-grid__cell').appendTo($column);
+
+                            // try to resolve the cell title
+                            let cell_title = (item.hasOwnProperty('label'))?item.label:'';
+                            if(item.hasOwnProperty('id')) {
+                                cell_title = TranslationService.resolve(translation, 'view', [this.view.getId(), 'layout'], item.id, cell_title);
+                            }
+                            // append the group title, if any
+                            if(cell_title.length) {
+                                $cell.append($('<div/>').addClass('sb-view-dashboard-cell-title').text(cell_title));
+                            }
+
                             // compute the width (on a 12 columns grid basis), from 1 to 12
                             let width = (item.hasOwnProperty('width'))?Math.round((parseInt(item.width, 10) / 100) * 12): 12;
                             $cell.addClass('mdc-layout-grid__cell--span-' + width);
@@ -170,7 +191,8 @@ export class LayoutDashboard extends Layout {
             if(!widget) continue;
 
             let $parent = this.$layout.find('#'+widget.getId()).parent();
-            $parent.empty().append(widget.render());
+            // $parent.empty().append(widget.render());
+            $parent.append(widget.render());            
         }
         
     }

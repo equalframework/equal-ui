@@ -128,34 +128,32 @@ export class LayoutForm extends Layout {
                         $column = $('<div />').addClass('mdc-layout-grid__inner').appendTo($inner_cell);
 
                         $.each(column.items, (i, item) => {
+                            if(typeof this.model_widgets[0] == 'undefined') {
+                                this.model_widgets[0] = {};
+                            }
+
                             let $cell = $('<div />').addClass('mdc-layout-grid__cell').appendTo($column);
                             // compute the width (on a 12 columns grid basis), from 1 to 12
                             let width = (item.hasOwnProperty('width'))?Math.round((parseInt(item.width, 10) / 100) * 12): 12;
                             $cell.addClass('mdc-layout-grid__cell--span-' + width);
 
                             if(item.hasOwnProperty('type') && item.hasOwnProperty('value')) {
+                                
                                 if(item.type == 'field') {
-
                                     let config = WidgetFactory.getWidgetConfig(this.view, item.value, translation, model_fields, view_fields);
-
                                     if(config) {
-                                        let widget:Widget = WidgetFactory.getWidget(this, config.type, config.title, '', config);
+                                        let widget: Widget = WidgetFactory.getWidget(this, config.type, config.title, '', config);
                                         widget.setReadonly(config.readonly);
                                         // store widget in widgets Map, using field name as key
-                                        if(typeof this.model_widgets[0] == 'undefined') {
-                                            this.model_widgets[0] = {};
-                                        }
                                         this.model_widgets[0][item.value] = widget;
                                         $cell.append(widget.attach());
                                     }
                                 }
-                                else if(item.type == 'label') {
-                                    // #todo - create WidgetLabel, to be able to apply visibility rules on labels
+                                else if(item.type == 'label') {                                    
                                     let label_title = TranslationService.resolve(translation, 'view', [this.view.getId(), 'layout'], item.id, item.value);
-                                    $cell.append('<span style="font-weight: 600;">'+label_title+'</span>');
-                                }
-                                else if(item.type == 'button') {
-                                    $cell.append(UIHelper.createButton(item.action, item.value,  'raised', (item.icon)?item.icon:''));
+                                    let widget:Widget = WidgetFactory.getWidget(this, 'label', '', label_title, {widget_type: 'label', ...item});
+                                    this.model_widgets[0]['__label_'+widget.getId()] = widget;
+                                    $cell.append(widget.render());
                                 }
                             }
                         });
@@ -226,128 +224,154 @@ export class LayoutForm extends Layout {
                 }
             });
 
-            for(let field of fields) {
+            for(let widget_index of Object.keys(this.model_widgets[0])) {
 
-                let widget = this.model_widgets[0][field];
-
-                // widget might be missing (if not visible)
-                if(!widget) continue;
-
-                let $parent = this.$layout.find('#'+widget.getId()).parent();
-
-                let type = this.view.getModel().getFinalType(field);
-
-                let has_changed = false;
-                let value = (object.hasOwnProperty(field))?object[field]:undefined;
+                let widget = this.model_widgets[0][widget_index];
                 let config = widget.getConfig();
 
-                // for relational fields, we need to check if the Model has been fetched
-                if(['one2many', 'many2one', 'many2many'].indexOf(type) > -1) {
-                    let user = this.view.getUser();
-
-                    // if widget has a domain, parse it using current object and user
-                    if(config.hasOwnProperty('original_domain')) {
-                        let tmpDomain = new Domain(config.original_domain);
-                        config.domain = tmpDomain.parse(object, user).toArray();
+                if( config['widget_type'] == 'label') {
+                    let visible = true;
+                    // handle visibility tests (domain)
+                    if(config.hasOwnProperty('visible')) {
+                        // visible attribute is a Domain
+                        if(Array.isArray(config.visible)) {
+                            let domain = new Domain(config.visible);
+                            visible = domain.evaluate(object);
+                        }
+                        else {
+                            visible = <boolean>config.visible;
+                        }
+                    }
+                    let $parent = this.$layout.find('#'+widget.getId()).parent();
+                    if(!visible) {
+                        $parent.empty().append(widget.attach()).hide();
                     }
                     else {
-                        config.domain = [];
+                        $parent.empty().append(widget.render()).show();
                     }
+                }
+                else {
 
-                    // if widget has a custom header defintion, parse subsequent domains, if any
-                    if(config.hasOwnProperty('header') && config.header.hasOwnProperty('actions') ) {
-                        for (const [id, items] of Object.entries(config.header.actions)) {
-                            for(let index in (<Array<any>>items)) {
-                                let item = (<Array<any>>items)[<any>index];
-                                if(item.hasOwnProperty('domain')) {
-                                    let tmpDomain = new Domain(item.domain);
-                                    config.header.actions[id][index].domain = tmpDomain.parse(object, user).toArray();
+                    let field = config.field;
+                    // widget might be missing (if not visible)
+                    if(!widget) continue;
+
+                    let $parent = this.$layout.find('#'+widget.getId()).parent();
+
+                    let type = this.view.getModel().getFinalType(field);
+
+                    let has_changed = false;
+                    let value = (object.hasOwnProperty(field))?object[field]:undefined;
+
+
+                    // for relational fields, we need to check if the Model has been fetched
+                    if(['one2many', 'many2one', 'many2many'].indexOf(type) > -1) {
+                        let user = this.view.getUser();
+
+                        // if widget has a domain, parse it using current object and user
+                        if(config.hasOwnProperty('original_domain')) {
+                            let tmpDomain = new Domain(config.original_domain);
+                            config.domain = tmpDomain.parse(object, user).toArray();
+                        }
+                        else {
+                            config.domain = [];
+                        }
+
+                        // if widget has a custom header defintion, parse subsequent domains, if any
+                        if(config.hasOwnProperty('header') && config.header.hasOwnProperty('actions') ) {
+                            for (const [id, items] of Object.entries(config.header.actions)) {
+                                for(let index in (<Array<any>>items)) {
+                                    let item = (<Array<any>>items)[<any>index];
+                                    if(item.hasOwnProperty('domain')) {
+                                        let tmpDomain = new Domain(item.domain);
+                                        config.header.actions[id][index].domain = tmpDomain.parse(object, user).toArray();
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    // by convention, `name` subfield is always loaded for relational fields
-                    if(type == 'many2one') {
-                        if(object[field]) {
-                            value = object[field]['name'];
-                            config.object_id = object[field]['id'];
-                        }
-                    }
-                    else if(type == 'many2many' || type == 'one2many') {
-                        // init field if not present yet (o2m and m2m are not loaded by Model)
-                        if(!object.hasOwnProperty(field)) {
-                            object[field] = [];
-                            // force change detection (upon re-feed, the field do not change and remains an empty array)
-                            $parent.data('value', null);
-                        }
-
-                        // for m2m fields, the value of the field is an array of ids
-                        // by convention, when a relation is to be removed, the id field is set to its negative value
-                        value = object[field];
-
-                        // select ids to load by filtering targeted objects
-                        config.ids_to_add = object[field].filter( (id:number) => id > 0 );
-                        config.ids_to_del = object[field].filter( (id:number) => id < 0 ).map( (id:number) => -id );
-
-                        // we need the current object id for new objects creation
-                        config.object_id = object.id;
-                    }
-                }
-
-                has_changed = (!value || $parent.data('value') != JSON.stringify(value));
-
-                widget.setConfig({...config, ready: true})
-                .setMode(this.view.getMode())
-                .setValue(value);
-
-                // store data to parent, for tracking changes at next refresh (prevent storing references)
-                $parent.data('value', JSON.stringify(value) || null);
-
-                let visible = true;
-                // handle visibility tests (domain)
-                if(config.hasOwnProperty('visible')) {
-                    // visible attribute is a Domain
-                    if(Array.isArray(config.visible)) {
-                        let domain = new Domain(config.visible);
-                        visible = domain.evaluate(object);
-                    }
-                    else {
-                        visible = <boolean>config.visible;
-                    }
-                }
-
-                if(!visible) {
-                    $parent.empty().append(widget.attach()).hide();
-                    // visibility update need to trigger a redraw, whatever the value (so we change it to an arbitrary value)
-                    $parent.data('value', null);
-                }
-                else {
-                    let $widget = widget.render();
-                    // Handle Widget update handler
-                    $widget.on('_updatedWidget', async (event:any, refresh: boolean = true) => {
-                        console.log("Layout::feedForm : received _updatedWidget", field, widget.getValue(), refresh);
-                        // update object with new value
-                        let values:any = {};
-                        values[field] = widget.getValue();
-                        // relay the change to back-end through onupdate
-                        try {
-                            const result = await ApiService.fetch("/", {do: 'model_onchange', entity: this.view.getEntity(), changes: this.view.getModel().export(values), values: this.view.getModel().export(object), lang: this.view.getLang()} );
-                            for(let field of Object.keys(result)) {
-                                // if some changes are returned from the back-end, append them to the view model update
-                                values[field] = result[field];
+                        // by convention, `name` subfield is always loaded for relational fields
+                        if(type == 'many2one') {
+                            if(object[field]) {
+                                value = object[field]['name'];
+                                config.object_id = object[field]['id'];
                             }
                         }
-                        catch(response) {
-                            // ignore faulty responses
-                            console.warn('unable to send onupdate request', response);
+                        else if(type == 'many2many' || type == 'one2many') {
+                            // init field if not present yet (o2m and m2m are not loaded by Model)
+                            if(!object.hasOwnProperty(field)) {
+                                object[field] = [];
+                                // force change detection (upon re-feed, the field do not change and remains an empty array)
+                                $parent.data('value', null);
+                            }
+
+                            // for m2m fields, the value of the field is an array of ids
+                            // by convention, when a relation is to be removed, the id field is set to its negative value
+                            value = object[field];
+
+                            // select ids to load by filtering targeted objects
+                            config.ids_to_add = object[field].filter( (id:number) => id > 0 );
+                            config.ids_to_del = object[field].filter( (id:number) => id < 0 ).map( (id:number) => -id );
+
+                            // we need the current object id for new objects creation
+                            config.object_id = object.id;
                         }
-                        this.view.onchangeViewModel([object.id], values, refresh);
-                    });
-                    // prevent refreshing objects that haven't changed
-                    if(has_changed) {
-                        // append rendered widget
-                        $parent.empty().append($widget).show();
+                    }
+
+                    has_changed = (!value || $parent.data('value') != JSON.stringify(value));
+
+                    widget.setConfig({...config, ready: true})
+                    .setMode(this.view.getMode())
+                    .setValue(value);
+
+                    // store data to parent, for tracking changes at next refresh (prevent storing references)
+                    $parent.data('value', JSON.stringify(value) || null);
+
+                    let visible = true;
+                    // handle visibility tests (domain)
+                    if(config.hasOwnProperty('visible')) {
+                        // visible attribute is a Domain
+                        if(Array.isArray(config.visible)) {
+                            let domain = new Domain(config.visible);
+                            visible = domain.evaluate(object);
+                        }
+                        else {
+                            visible = <boolean>config.visible;
+                        }
+                    }
+
+                    if(!visible) {
+                        $parent.empty().append(widget.attach()).hide();
+                        // visibility update need to trigger a redraw, whatever the value (so we change it to an arbitrary value)
+                        $parent.data('value', null);
+                    }
+                    else {
+                        let $widget = widget.render();
+                        // Handle Widget update handler
+                        $widget.on('_updatedWidget', async (event:any, refresh: boolean = true) => {
+                            console.log("Layout::feedForm : received _updatedWidget", field, widget.getValue(), refresh);
+                            // update object with new value
+                            let values:any = {};
+                            values[field] = widget.getValue();
+                            // relay the change to back-end through onupdate
+                            try {
+                                const result = await ApiService.fetch("/", {do: 'model_onchange', entity: this.view.getEntity(), changes: this.view.getModel().export(values), values: this.view.getModel().export(object), lang: this.view.getLang()} );
+                                for(let field of Object.keys(result)) {
+                                    // if some changes are returned from the back-end, append them to the view model update
+                                    values[field] = result[field];
+                                }
+                            }
+                            catch(response) {
+                                // ignore faulty responses
+                                console.warn('unable to send onupdate request', response);
+                            }
+                            this.view.onchangeViewModel([object.id], values, refresh);
+                        });
+                        // prevent refreshing objects that haven't changed
+                        if(has_changed) {
+                            // append rendered widget
+                            $parent.empty().append($widget).show();
+                        }
                     }
                 }
             }

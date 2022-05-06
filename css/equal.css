@@ -156,6 +156,11 @@ body, html {
     padding: 0 12px 6px 12px;
 }
 
+.sb-view-dashboard-row .sb-view-layout-list {
+    height: calc(100% - 66px) !important;
+    padding: 0 !important;
+}
+
 .sb-view-layout-form {
     /* height must be decremented by height of other elements from parent (header and footer) */
     height: calc(100% - 56px);
@@ -500,6 +505,27 @@ body, html {
 
 .sb-view-header-actions .sb-view-header-actions-view button {
     margin-right: 12px;
+}
+
+.sb-view-dashboard-section {
+    padding: 0 24px;
+}
+
+.sb-view-dashboard-group {
+    padding: 0;
+}
+
+.sb-view-dashboard-row {
+    position: relative;
+    padding: 12px 0;
+    box-sizing: content-box;
+}
+
+.sb-view-dashboard-row .sb-view-dashboard-cell-title {
+    position: absolute;
+    font-weight: 500;
+    width: 100%;
+    text-align: center;
 }
 
 .sb-view-form-group {

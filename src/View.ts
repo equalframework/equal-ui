@@ -134,7 +134,12 @@ export class View {
                     primary: false,
                     handler: async (selection:any) => {
                         try {
+                            // #todo - global loader: prevent any action (loader on context, frame, root)
+                            // show loader
+                            this.layout.loading(true);
                             await ApiService.clone(this.entity, selection);
+                            // hide loader
+                            this.layout.loading(false);
                             // refresh the model
                             await this.onchangeView();
                         }
@@ -448,6 +453,14 @@ export class View {
 
     public async closeContext(data: any = {}, silent: boolean = false) {
         await this.context.closeContext(data, silent);
+    }
+
+    /**
+     * Relay update notification (from View) to parent Frame.
+     */
+    public async updatedContext() {
+        console.log('View::updatedContext');
+        await this.context.updatedContext();
     }
 
     public getConfig() {

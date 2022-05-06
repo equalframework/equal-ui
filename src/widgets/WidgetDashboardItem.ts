@@ -23,7 +23,7 @@ export class WidgetDashboardItem extends Widget {
             this.$elem.append($container);
         });
 
-        this.$elem.addClass('sb-widget').attr('id', this.getId());
+        this.$elem.addClass('sb-widget').attr('id', this.getId()).css('height', '100%');
 
         return this.$elem;
     }

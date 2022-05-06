@@ -292,9 +292,9 @@ class EventsListener {
     /**
      * Mark current context as changed (called from Frame class).
      */
-    public updated() {
+    public async updated() {
         console.log('EventsListener::updated');
-        this._updatedContext();
+        await this._updatedContext();
     }
 
     public async closeAll(params:any={}) {

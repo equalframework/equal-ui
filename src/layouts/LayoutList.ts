@@ -40,6 +40,18 @@ export class LayoutList extends Layout {
         this.feed(objects);
     }
 
+    public loading(loading:boolean) {
+        let $elem = this.$layout.find('.table-wrapper');
+        let $loader = $elem.find('.table-loader');
+
+        if(loading) {
+            $loader.show();
+        }
+        else {
+            $loader.hide();
+        }
+    }
+
     protected layout() {
         // create table
 

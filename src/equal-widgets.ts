@@ -14,6 +14,7 @@ import WidgetImage from "./widgets/WidgetImage";
 import WidgetOne2Many  from "./widgets/WidgetOne2Many";
 import WidgetMany2One  from "./widgets/WidgetMany2One";
 import WidgetMany2Many  from "./widgets/WidgetMany2Many";
+import WidgetLabel  from "./widgets/WidgetLabel";
 
 import { View, Layout } from "./equal-lib";
 
@@ -88,6 +89,8 @@ config: {
                     return new WidgetImage(layout, label, value, config);
                 }
                 return new WidgetFile(layout, label, value, config);
+            case 'label':
+                return new WidgetLabel(layout, label, value, config);
             case 'text':
                 if(view_type == 'list') {
                     return new WidgetString(layout, label, value, config);
@@ -114,7 +117,9 @@ config: {
      * @return {}                   Returns a widget configuration object.
      */
     public static getWidgetConfig(view: View, field: string, translation: any, model_fields: any, view_fields: any) :any {
-        let config:any = {};
+        let config:any = {
+            widget_type: 'field'
+        };
 
         let item = view_fields[field];
 
