@@ -368,7 +368,18 @@ export class LayoutList extends Layout {
             let parent_id = '';
 
             for(let i = 0; i < n; ++i) {
-                let field = group_by[i];
+                let field, group:any = group_by[i];
+
+                if(typeof group == 'object') {
+                    if(!group.hasOwnProperty('field')) {
+                        continue;
+                    }
+                    field = group.field;
+                }
+                else {
+                    field = group;
+                }
+                
                 let model_def = model_fields[field];
                 let key = object[field];
                 let label = key;
@@ -397,6 +408,9 @@ export class LayoutList extends Layout {
                     }
                     else {
                         parent[key] = {'_id': parent_id+key, '_parent_id': parent_id, '_key': key, '_label': label, '_data': []};
+                        if(typeof group == 'object' && group.hasOwnProperty('operation')) {
+                            parent[key]['_operation'] = group.operation;
+                        }
                     }
                 }
                 parent_id = parent_id+key;
@@ -571,7 +585,21 @@ export class LayoutList extends Layout {
 
         if(group.hasOwnProperty('_data')) {
             children_count = group['_data'].length;
-            suffix = '['+children_count+']';
+
+            if(group.hasOwnProperty('_operation')) {
+                let op_result = 0;
+                let op_type = group._operation[0];
+                let op_field = (group._operation[1].split('.'))[1];
+                for(let obj of group['_data']) {
+                    if(obj.hasOwnProperty(op_field)) {
+                        op_result += obj[op_field];
+                    }
+                }
+                suffix = '['+op_result+']';
+            }
+            else {
+                suffix = '['+children_count+']';
+            }            
         }
         else {
             // sum children groups
@@ -620,7 +648,12 @@ export class LayoutList extends Layout {
         }
 
         $row.append( $('<td />').addClass('sb-group-cell').append( $('<i/>').addClass('material-icons sb-toggle-button').text('chevron_right') ) );
-        $row.append( $('<td/>').attr('title', prefix + label).attr('colspan', schema.layout.items.length).addClass('sb-group-cell sb-group-cell-label').append(prefix + ' <span>'+label+'</span>'+' '+suffix) );
+        $row.append( $('<td/>')
+                        .attr('title', prefix + label)
+                        .attr('colspan', schema.layout.items.length)
+                        .addClass('sb-group-cell sb-group-cell-label')
+                        .append('<div style="display: flex;"> <div style="overflow: hidden;text-overflow: ellipsis;">'+prefix + ' <span>'+label+'</span></div>'+'<div style="font-weight: 500; margin-left: 20px;">'+suffix+'</div></div>')
+                    );
 
         $row.on('click', () => {
             let $tbody = this.$layout.find('tbody');

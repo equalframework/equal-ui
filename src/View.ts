@@ -1900,6 +1900,22 @@ export class View {
             }
             else if(errors.hasOwnProperty('NOT_ALLOWED')) {
                 let msg = TranslationService.instant('SB_ERROR_NOT_ALLOWED');
+
+                if(typeof errors['NOT_ALLOWED'] == 'string') {
+                    let error_id:string = <string> String(errors['NOT_ALLOWED']);
+                    // try to resolve the error message
+                    let translated_msg = TranslationService.resolve(translation, 'error', [], 'errors', error_id, error_id);
+                    if(translated_msg == error_id) {
+                        let translated_error = TranslationService.instant('SB_ERROR_'+error_id.toUpperCase());
+                        if(translated_error.length) {
+                            msg = translated_error;
+                        }
+                    }
+                    else {
+                        msg = translated_msg;
+                    }
+                }
+
                 // generate snack, if required
                 if(snack) {
                     let $snack = UIHelper.createSnackbar(msg, TranslationService.instant('SB_ERROR_ERROR'), '', delay);

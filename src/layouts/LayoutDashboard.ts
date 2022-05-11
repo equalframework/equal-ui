@@ -40,6 +40,7 @@ export class LayoutDashboard extends Layout {
      */
     protected layout() {
         console.log('LayoutDashboard::layout');
+
         let $elem = $('<div/>').css({"width": "100%"});
 
         let view_schema = this.view.getViewSchema();
@@ -130,7 +131,6 @@ export class LayoutDashboard extends Layout {
                         $column = $('<div />').addClass('mdc-layout-grid__inner').appendTo($inner_cell);
 
                         $.each(column.items, (i, item) => {
-                            console.log('#######', item);
                             let $cell = $('<div />').addClass('mdc-layout-grid__cell').appendTo($column);
 
                             // try to resolve the cell title

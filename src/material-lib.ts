@@ -489,7 +489,7 @@ class UIHelper {
                             <div class="mdc-button__ripple"></div> \
                             <span class="mdc-button__label">'+label_cancel+'</span> \
                         </button> \
-                        <button type="button" class="mdc-button mdc-dialog__button" data-mdc-dialog-action="accept"> \
+                        <button tabindex="1" type="button" class="mdc-button mdc-dialog__button" data-mdc-dialog-action="accept"> \
                             <div class="mdc-button__ripple"></div> \
                             <span class="mdc-button__label">'+label_accept+'</span> \
                         </button> \
@@ -503,6 +503,7 @@ class UIHelper {
 
         dialog.listen('MDCDialog:opened', () => {
             dialog.layout();
+            $elem.find('button[tabindex=0]').focus();
         });
 
         dialog.listen('MDCDialog:closed', (event:any) => {
