@@ -24,76 +24,99 @@ export default class WidgetText extends Widget {
         let value:string = this.value?this.value:'';
         switch(this.mode) {
             case 'edit':
-                this.$elem = $('<div class="sb-ui-textarea" />');
-
-                let $editor = $('<div quill__editor></div>');
-
-                this.$elem.append($editor);
-
-                this.getLayout().getView().isReady().then( () => {
-                    // init inline styling
-                    var ColorClass = Quill.import('attributors/class/color');
-                    var SizeStyle = Quill.import('attributors/style/size');
-                    var AlignStyle = Quill.import('attributors/style/align');
-                    Quill.register(ColorClass, true);
-                    Quill.register(SizeStyle, true);
-                    Quill.register(AlignStyle,true);
-
-                    const editor = new Quill($editor[0], {
-                        placeholder: this.config.description,
-                        theme: "snow",
-                        modules: {
-                            toolbar: [
-                                ['bold', 'italic', 'underline', 'strike'],
-                                ['blockquote'],
-                                // [{ 'header': [1, 2, 3, 4, 5, 6, false]}],
-                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                                [{ "align": '' }, { "align": 'center' }, { 'align': 'right' }],
-                                [{ 'size': ['small', false, 'large', 'huge'] }],
-                                ['fullscreen']  
-                              ]
-                          }
+                if(this.config.layout == 'list') {
+                    this.$elem = UIHelper.createInput('', this.label, value, this.config.description, '', this.readonly);
+                    this.$elem.css({"width": "calc(100% - 10px)"});
+                    // setup handler for relaying value update to parent layout
+                    this.$elem.find('input').on('change', (event) => {
+                        let $this = $(event.currentTarget);
+                        this.value = $this.val();
+                        if(this.value != value) {
+                            this.$elem.trigger('_updatedWidget', [false]);
+                        }
                     });
 
-                    this.$elem.find('.ql-fullscreen').on('click', () => {
-                        let elem: any = this.$elem[0];
-                        if (elem.requestFullscreen) {
-                            elem.requestFullscreen();
-                        } else if (elem.hasOwnProperty('webkitRequestFullscreen')) {
-                            elem['webkitRequestFullscreen']();
-                        }
-                    });                    
+                }
+                else {
+                    this.$elem = $('<div class="sb-ui-textarea" />');
 
-                    this.$elem.data('quill', editor);
+                    let $editor = $('<div quill__editor></div>');
 
-                    editor.root.innerHTML = value;
+                    this.$elem.append($editor);
 
-                    let timeout: any;
+                    this.getLayout().getView().isReady().then( () => {
+                        // init inline styling
+                        var ColorClass = Quill.import('attributors/class/color');
+                        var SizeStyle = Quill.import('attributors/style/size');
+                        var AlignStyle = Quill.import('attributors/style/align');
+                        Quill.register(ColorClass, true);
+                        Quill.register(SizeStyle, true);
+                        Quill.register(AlignStyle,true);
 
-                    editor.on('text-change', (delta, source) => {
-                        this.value = editor.root.innerHTML;
-                        // update value without refreshing the layout
-                        if(this.value != value) {
-                            // debounce updates
-                            if(timeout) {
-                                clearTimeout(timeout);
+                        const editor = new Quill($editor[0], {
+                            placeholder: this.config.description,
+                            theme: "snow",
+                            modules: {
+                                toolbar: [
+                                    ['bold', 'italic', 'underline', 'strike'],
+                                    ['blockquote'],
+                                    // [{ 'header': [1, 2, 3, 4, 5, 6, false]}],
+                                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                    [{ "align": '' }, { "align": 'center' }, { 'align': 'right' }],
+                                    [{ 'size': ['small', false, 'large', 'huge'] }],
+                                    ['fullscreen']  
+                                ]
                             }
-                            timeout = setTimeout( () => {
-                                this.$elem.trigger('_updatedWidget', [false]);
-                            }, 1000);                            
-                        }                        
-                    })
+                        });
 
-                })
+                        this.$elem.find('.ql-fullscreen').on('click', () => {
+                            let elem: any = this.$elem[0];
+                            if (elem.requestFullscreen) {
+                                elem.requestFullscreen();
+                            } else if (elem.hasOwnProperty('webkitRequestFullscreen')) {
+                                elem['webkitRequestFullscreen']();
+                            }
+                        });                    
 
+                        this.$elem.data('quill', editor);
+
+                        editor.root.innerHTML = value;
+
+                        let timeout: any;
+
+                        editor.on('text-change', (delta, source) => {
+                            this.value = editor.root.innerHTML;
+                            // update value without refreshing the layout
+                            if(this.value != value) {
+                                // debounce updates
+                                if(timeout) {
+                                    clearTimeout(timeout);
+                                }
+                                timeout = setTimeout( () => {
+                                    this.$elem.trigger('_updatedWidget', [false]);
+                                }, 1000);                            
+                            }                        
+                        })
+
+                    })                    
+                }
                 break;
             case 'view':
-            default:            
-                this.$elem = $('<div class="sb-ui-textarea" />').append( $('<div class="textarea-content" />').html(value) );                
+            default:
+                if(this.config.layout == 'list') {
+                    value = $("<div/>").html(value).text();
+                    this.$elem = UIHelper.createInputView('', this.label, value, this.config.description);
+                }
+                else {
+                    this.$elem = $('<div class="sb-ui-textarea" />').append( $('<div class="textarea-content" />').html(value) );                
+                }
+                
                 break;
         }
 
-        this.$elem.append( $('<div class="textarea-title" />').text(this.label) );
+        if(this.config.layout != 'list') {
+            this.$elem.append( $('<div class="textarea-title" />').text(this.label) );
+        }
 
         this.$elem.addClass('sb-widget').addClass('sb-widget-mode-'+this.mode).attr('id', this.getId());
         return this.$elem;

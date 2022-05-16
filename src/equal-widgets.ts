@@ -92,14 +92,8 @@ config: {
             case 'label':
                 return new WidgetLabel(layout, label, value, config);
             case 'text':
-                if(view_type == 'list') {
-                    return new WidgetString(layout, label, value, config);
-                }
                 return new WidgetText(layout, label, value, config);    
             case 'string':
-                if(config.hasOwnProperty('usage') && config.usage == 'string/text' && view_type == 'form') {
-                    return new WidgetText(layout, label, value, config);
-                }
             default:
                 return new WidgetString(layout, label, value, config);
         }
@@ -142,6 +136,7 @@ config: {
             if(def.hasOwnProperty('usage')) {
                 switch(def.usage) {
                     // #todo - complete the list
+                    case 'string/text':
                     case 'text/plain':
                     case 'markup/html':
                         type = 'text';
