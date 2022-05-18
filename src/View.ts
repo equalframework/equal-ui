@@ -359,6 +359,9 @@ export class View {
                 this.$layoutContainer.addClass('sb-view-layout-form');
                 this.layoutFormHeader();
             }
+            if(['chart'].indexOf(this.type) >= 0) {
+                this.$layoutContainer.addClass('sb-view-layout-chart');
+            }
 
             await this.layout.init();
             await this.model.init();

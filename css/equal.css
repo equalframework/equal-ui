@@ -546,6 +546,10 @@ body, html {
     margin-bottom: 6px;
 }
 
+.sb-view-layout-chart {
+    height: 100%;
+}
+
 .sb-view-layout-list .mdc-line-ripple::before, .sb-view-layout-list .mdc-line-ripple::after {
   border: none !important;
 }
