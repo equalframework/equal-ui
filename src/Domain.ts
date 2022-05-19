@@ -1,3 +1,5 @@
+import { DateReference } from "./DateReference";
+
 /**
  * Class Domain manipulations
  *
@@ -145,6 +147,9 @@ export class Domain {
                         continue;
                     }
                     value = user[target];
+                }
+                else if(typeof value === 'string' && value.indexOf('date.') == 0) {
+                    value = (new DateReference(value)).getDate().toISOString();
                 }
 
                 condition.value = value;
