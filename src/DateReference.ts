@@ -1,5 +1,26 @@
 /**
  * Class for Date descriptors parsing
+ * 
+ * 
+ 
+    ## date parser
+
+    * soit une chaine ISO
+    * soit une description au format relatif à NOW
+
+    Result of the parsing is always a date.
+
+
+    Syntaxe:
+    date.[this|prev|next].[day|week|month|quarter|semester|year].[first|last]
+
+
+    * today = date.this.day
+
+    * first day of current year = date.this.year.first
+
+    * last day of last week = date.prev.week.last
+
  *
  */
 export class DateReference {

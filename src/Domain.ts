@@ -111,7 +111,7 @@ export class Domain {
      * @param values
      * @returns Domain  Returns current instance with updated values.
      */
-    public parse(object: any, user: any = {}) {
+    public parse(object: any = {}, user: any = {}) {
         for(let clause of this.clauses) {
             for(let condition of clause.conditions) {
                 // adapt value according to its syntax ('user.' or 'object.')

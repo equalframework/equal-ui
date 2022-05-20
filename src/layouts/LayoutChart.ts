@@ -60,13 +60,27 @@ export class LayoutChart extends Layout {
             ...layout
         }
 
-/*
-// parse schema to get the operations (datasets), relative dates : range_from, range_tp
-*/
+        let parsed_datasets = layout.datasets.map( (a:any, index: number) => { 
+            let dataset:any = {
+                label: 'label',
+                operation: ['COUNT', 'object.id'],
+                ...a
+            };
+
+            if(a.hasOwnProperty('domain')) {
+                let tmpDomain = new Domain(a.domain);
+                let user = this.view.getUser();
+                dataset.domain = tmpDomain.parse({}, user).toArray();
+            }
+            return dataset;
+        });
+
+        /*
+        // parse schema to get the operations (datasets), relative dates : range_from, range_tp
+        */
         let $elem = $('<canvas/>').css({"width": "100%", "height": "100%"});
         this.$layout.append($elem);
 
-//    http://equal.local/?get=model_chart&entity=lodging\sale\booking\Booking&range_from=2022-03-01&range_to=2022-06-30&datasets=[{operation:[%22+%22,%20%22object.total_paid%22]}]
         const result = await ApiService.fetch('/', {
             get: 'model_chart',
             type: config.type,
@@ -76,7 +90,7 @@ export class LayoutChart extends Layout {
             range_interval: config.range_interval,
             range_from: (new DateReference(config.range_from)).getDate().toISOString(),
             range_to: (new DateReference(config.range_to)).getDate().toISOString(),
-            datasets: layout.datasets
+            datasets: parsed_datasets
         });
 
         const CHART_COLORS = [
