@@ -73,10 +73,13 @@ export default class WidgetText extends Widget {
                             let elem: any = this.$elem[0];
                             if (elem.requestFullscreen) {
                                 elem.requestFullscreen();
-                            } else if (elem.hasOwnProperty('webkitRequestFullscreen')) {
+                            } 
+                            else if (elem.hasOwnProperty('webkitRequestFullscreen')) {
                                 elem['webkitRequestFullscreen']();
                             }
-                        });                    
+                        });  
+
+                        this.$elem.find('.ql-formats *').attr('tabindex',-1);
 
                         this.$elem.data('quill', editor);
 
@@ -94,7 +97,7 @@ export default class WidgetText extends Widget {
                                 }
                                 timeout = setTimeout( () => {
                                     this.$elem.trigger('_updatedWidget', [false]);
-                                }, 1000);                            
+                                }, 1000);
                             }                        
                         })
 
@@ -108,7 +111,8 @@ export default class WidgetText extends Widget {
                     this.$elem = UIHelper.createInputView('', this.label, value, this.config.description);
                 }
                 else {
-                    this.$elem = $('<div class="sb-ui-textarea" />').append( $('<div class="textarea-content" />').html(value) );                
+                    this.$elem = $('<div class="sb-ui-textarea" />');
+                    this.$elem.append( $('<div class="textarea-content" />').html(value) );
                 }
                 
                 break;

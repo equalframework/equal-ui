@@ -188,14 +188,22 @@ export class Model {
         }
 
         try {
-            // #todo - allow to fetch objects from an arbitrary controller (when filtering with domain is not enough)
-            // default controller is core_model_collect
-            let response = await ApiService.collect(this.view.getEntity(), this.view.getDomain(), fields, this.view.getOrder(), this.view.getSort(), this.view.getStart(), this.view.getLimit(), this.view.getLang());
+            let body:any = {
+                get: this.view.getController(),
+                entity: this.view.getEntity(),
+                fields: fields,
+                domain: this.view.getDomain(),
+                ...this.view.getParams()
+            };
+
+            // fetch objects using controller given by View (default is core_model_collect)
+            let response = await ApiService.fetch('/', body);
+
+            // let response = await ApiService.collect(this.view.getEntity(), this.view.getDomain(), fields, this.view.getOrder(), this.view.getSort(), this.view.getStart(), this.view.getLimit(), this.view.getLang());
 
             this.objects = response;
             this.loaded_promise.resolve();
             this.total = ApiService.getLastCount();
-
         }
         catch(response) {
             console.log('Unable to fetch Collection from server', response);

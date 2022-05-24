@@ -4,7 +4,7 @@ import {MDCCheckbox} from '@material/checkbox';
 import {MDCTextField} from '@material/textfield';
 import {MDCDataTable} from '@material/data-table';
 import {MDCSelect} from '@material/select';
-import {MDCMenu} from '@material/menu';
+import {MDCMenu, DefaultFocusState} from '@material/menu';
 import {MDCList} from '@material/list';
 import {MDCTabBar} from '@material/tab-bar';
 import {MDCSnackbar} from '@material/snackbar';
@@ -92,7 +92,7 @@ class UIHelper {
         let $elem = $('<div style="display: inline-flex;"></div>');
 
         let $button = this.createButton(id+'_button', label, 'raised', '', variant).addClass('mdc-button-split_button');
-        let $drop_button = this.createButton(id+'_drop', '', 'raised', 'arrow_drop_down', variant).addClass('mdc-button-split_drop');            
+        let $drop_button = this.createButton(id+'_drop', '', 'raised', 'arrow_drop_down', variant).addClass('mdc-button-split_drop');
 
         let $drop_menu = this.createMenu(id+'_drop'+'menu').appendTo($drop_button);
         let $menu_list = this.createList(id+'_drop'+'menu-list').addClass('menu-list').appendTo($drop_menu);
@@ -161,7 +161,7 @@ class UIHelper {
                 <span class="mdc-text-field__ripple"></span> \
                 <span class="mdc-floating-label">'+label+'</span> \
                 '+((icon.length)?'<i aria-hidden="true" class="material-icons mdc-text-field__icon">'+icon+'</i>':'')+'\
-                <input '+( (disabled)?'disabled':'' )+' class="mdc-text-field__input" type="text" role="presentation" autocorrect="off" autocomplete="off" spellcheck="false" value="'+value+'"> \
+                <input id="'+id+'_input" '+( (disabled)?'disabled':'' )+' class="mdc-text-field__input" type="text" role="presentation" autocorrect="off" autocomplete="off" spellcheck="false" value="'+value+'"> \
                 '+((trailing_icon.length)?'<i class="material-icons mdc-text-field__icon mdc-text-field__icon--trailing" tabindex="0" role="button">'+trailing_icon+'</i>':'')+'\
                 <span class="mdc-line-ripple"></span> \
             </label> \
@@ -237,7 +237,7 @@ class UIHelper {
 
     public static createListItem(id: string, label: string, icon:string = '') {
         let $elem = $('\
-        <li class="mdc-list-item" id="'+id+'"> \
+        <li class="mdc-list-item" tabindex="-1" id="'+id+'"> \
             <span class="mdc-list-item__text">'+label+'</span> \
             <span class="mdc-list-item__ripple"></span> \
         </li>');
@@ -357,9 +357,9 @@ class UIHelper {
                 </span> \
                 <span class="mdc-line-ripple"></span> \
             </div> \
-            <div class="mdc-select__menu mdc-menu mdc-menu-surface--fixed mdc-menu-surface" role="listbox"> \
-                <input type="text" style="display: none" value="'+selected+'" /> \
-                <ul class="mdc-list"></ul> \
+            <div id="'+id+'_menu" tabindex="-1" class="mdc-select__menu mdc-menu mdc-menu-surface--fixed mdc-menu-surface" role="listbox"> \
+                <input id="'+id+'_input" type="text" style="display: none" value="'+selected+'" /> \
+                <ul id="'+id+'_menu_list" class="mdc-list"></ul> \
             </div> \
             <div class="mdc-text-field-helper-line"> \
                 <div class="mdc-text-field-helper-text" aria-hidden="true" title="'+helper+'">'+helper+'</div> \
@@ -371,7 +371,7 @@ class UIHelper {
         if( !Array.isArray(values) ) {
             for(let key in values) {
                 let $line = $(' \
-                <li class="mdc-list-item" role="option" data-value="'+key+'"> \
+                <li id="'+id+'_menu_list-'+key+'" class="mdc-list-item" role="option" data-value="'+key+'"> \
                     <span class="mdc-list-item__ripple"></span> \
                     <span class="mdc-list-item__text">'+values[key]+'</span> \
                 </li>');
@@ -385,7 +385,7 @@ class UIHelper {
         else {
             for(let value of values) {
                 let $line = $(' \
-                <li class="mdc-list-item" role="option" data-value="'+value+'"> \
+                <li class="mdc-list-item" tabindex="-1" role="option" data-value="'+value+'"> \
                     <span class="mdc-list-item__ripple"></span> \
                     <span class="mdc-list-item__text">'+value+'</span> \
                 </li>');
@@ -416,13 +416,13 @@ class UIHelper {
     }
 
     public static createList(id:string, label:string='', values:any=[]) {
-        let $elem = $('<ul id="'+id+'" role="menu" class="mdc-list"></ul>');
+        let $elem = $('<ul id="'+id+'" tabindex="-1" role="menu" class="mdc-list"></ul>');
 
         return $elem;
     }
 
     public static createMenu(id:string, label:string='', values:any=[]) {
-        let $elem = $('<div class="sb-ui-menu mdc-menu mdc-menu-surface mdc-menu-surface--fixed"></div>');
+        let $elem = $('<div id="'+id+'" tabindex="-1" class="sb-ui-menu mdc-menu mdc-menu-surface mdc-menu-surface--fixed"></div>');
         return $elem;
     }
 
@@ -489,7 +489,7 @@ class UIHelper {
                             <div class="mdc-button__ripple"></div> \
                             <span class="mdc-button__label">'+label_cancel+'</span> \
                         </button> \
-                        <button tabindex="1" type="button" class="mdc-button mdc-dialog__button" data-mdc-dialog-action="accept"> \
+                        <button tabindex="0" type="button" class="mdc-button mdc-dialog__button" data-mdc-dialog-action="accept"> \
                             <div class="mdc-button__ripple"></div> \
                             <span class="mdc-button__label">'+label_accept+'</span> \
                         </button> \
@@ -533,9 +533,51 @@ class UIHelper {
     public static decorateMenu($elem:any) {
         if(!$elem.length) return;
         let fields_toggle_menu = new MDCMenu($elem[0]);
+        // prevent menu from getting the focus
+        fields_toggle_menu.setDefaultFocusState(DefaultFocusState.NONE);
+
         $elem.on('_toggle', () => {
             fields_toggle_menu.open = !$elem.hasClass('mdc-menu-surface--open');
         });
+
+        $elem.on('_open', (event: any) => {
+            console.log('MDCMenu _open');
+            event.stopPropagation();
+            if(!fields_toggle_menu.open) {
+                fields_toggle_menu.open = true;
+                fields_toggle_menu.selectedIndex = 0;
+                // prevent tab capture
+                $elem.find('.mdc-list-item').attr('tabindex', -1);
+            }
+        });
+
+        $elem.on('_close', (event: any) => {
+            console.log('MDCMenu _close');
+            event.stopPropagation();
+            fields_toggle_menu.open = false;
+        });
+
+        $elem.on('_moveup', (event:any) => {
+            event.stopPropagation();
+            let index:number = <number> fields_toggle_menu.selectedIndex;
+            fields_toggle_menu.selectedIndex = (index > 0)?index-1:0;
+            // prevent tab capture
+            $elem.find('.mdc-list-item').attr('tabindex', -1);
+        });
+
+        $elem.on('_movedown', (event:any) => {
+            event.stopPropagation();
+            let index:number = <number> fields_toggle_menu.selectedIndex;
+            fields_toggle_menu.selectedIndex = index + 1;
+            // prevent tab capture
+            $elem.find('.mdc-list-item').attr('tabindex', -1);
+        });
+
+        $elem.on('_select', (event:any) => {
+            event.stopPropagation();
+            $elem.find('.mdc-list-item--selected').trigger('click');
+        });
+
     }
 
     public static decorateTabBar($elem:any) {
@@ -558,7 +600,7 @@ class UIHelper {
 
         $thead.find('th').addClass('mdc-data-table__header-cell');
         $tbody.find('td').addClass('mdc-data-table__cell');
-        
+
         /*
          handler for click on header checkbox
         */
@@ -611,7 +653,7 @@ class UIHelper {
             let selection_count = 0;
             $('td:first-child', $tbody).each( (i:number, elem:any) => {
                 selection_count += +$('input[type="checkbox"]', elem).prop('checked');
-            });            
+            });
 
             if($this.prop('checked')) {
                 $tbody.find('tbody').find('tr').addClass('mdc-data-table__row--selected');

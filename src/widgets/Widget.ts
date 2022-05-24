@@ -33,10 +33,6 @@ export default class Widget {
 
         this.$elem = $();
 
-        this.init();
-    }
-
-    private async init() {
         var S4 = () => (((1+Math.random())*0x10000)|0).toString(16).substring(1);
         // generate a random guid
         this.id = (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());

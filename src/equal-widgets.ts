@@ -197,7 +197,8 @@ config: {
         config.align = (item.hasOwnProperty('align'))?item.align:'left';
         config.sortable = (item.hasOwnProperty('sortable') && item.sortable);
 
-        config.layout = view.getType();
+        // only 'list' and 'form' are supported for widgets
+        config.layout = (view.getType() == 'list')?'list':'form';
         config.lang = view.getLang();
         config.locale = view.getLocale();
 
@@ -235,7 +236,9 @@ config: {
                 entity: def['foreign_object'],
                 view_type: view_type,
                 view_name: view_name,
-                original_domain: domain.toArray()
+                original_domain: domain.toArray(),
+                action_create: true,
+                action_open: true
             };
 
         }

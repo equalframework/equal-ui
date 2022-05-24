@@ -47,6 +47,7 @@ export default class WidgetDate extends Widget {
                     this.value = date.toISOString();
                     this.$elem.trigger('_updatedWidget');
                 });
+                this.$elem.find('button').attr('tabindex', -1);
                 break;
             case 'view':
             default:

@@ -28,6 +28,7 @@ export interface LayoutInterface {
 
 export class Layout implements LayoutInterface{
 
+    protected uuid: string;
     protected view: View;             // parent view the layout belongs to
 
     protected $layout: any;
@@ -40,6 +41,7 @@ export class Layout implements LayoutInterface{
      * @param view  View    Parent View object
      */
     constructor(view:View) {
+        this.uuid = UIHelper.getUUID();
         this.view = view;
         this.$layout = $('<div />').addClass('sb-layout');
         this.model_widgets = {};

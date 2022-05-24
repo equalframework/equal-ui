@@ -296,6 +296,10 @@ body, html {
     */
 }
 
+.sb-view-header-list.has-advanced-filters {
+    max-height: unset;
+}
+
 .sb-view-header-list-actions {
     margin-left: 12px;
     max-height: 56px;
@@ -333,8 +337,47 @@ body, html {
     margin-left: 12px;
 }
 
+
+.sb-view-header-list .sb-view-header-advanced {
+    display: none;
+}
+
+.sb-view-header-list.has-advanced-filters .sb-view-header-advanced {
+    position: absolute;
+    display: block;    
+    left: 12px;
+    margin-top: 4px;    
+}
+
+.sb-view-header-list.has-advanced-filters .sb-view-header-advanced .sb-view-header-advanced-layout {
+    display: none;
+}
+
+.sb-view-header-list.is-advanced-open .sb-view-header-advanced .sb-view-header-advanced-layout {
+    display: block;
+    width: calc(100% - 60px);
+    margin-left: 48px;
+    margin-top: -12px;
+}
+
+.sb-view-header-list.is-advanced-open .sb-view-header-advanced {
+    position: relative;
+}
+
+.sb-view-header-list.is-advanced-open .sb-view-header-advanced .sb-view-header-list-advanced-filters-button {
+    transform: rotate(-90deg); 
+    transform-origin: bottom left;
+    position: absolute;
+    left: 48px;
+    margin-top: 12px;
+}
+
 .sb-view-header-list-filters {
     margin-top: 4px;
+}
+
+.sb-view-header-list.has-advanced-filters .sb-view-header-list-filters {
+    margin-left: 48px;
 }
 
 .sb-view-header-list-filters .sb-view-header-list-filters-menu {
@@ -449,14 +492,39 @@ body, html {
 }
 
 .sb-widget-mode-view.sb-ui-textarea {
+    position: relative;
     font-size: 14px;
     border: solid 1px lightgrey;
-    overflow-y: scroll;
 }
 
 .sb-widget.sb-ui-textarea .textarea-content {
+    height: 100%;
     overflow-y: auto;
 }
+
+.sb-widget.sb-ui-textarea .textarea-content::-webkit-scrollbar {
+    width: 6px;
+    overflow-y: scroll;
+    background: transparent;
+}
+
+.sb-widget.sb-ui-textarea .textarea-content::-webkit-scrollbar-thumb {
+    background: var(--mdc-theme-primary, #6200ee);
+    border-radius: 10px;
+}
+
+.sb-widget.sb-ui-textarea .ql-editor::-webkit-scrollbar {
+    width: 6px;
+    overflow-y: scroll;
+    background: transparent;
+}
+
+.sb-widget.sb-ui-textarea .ql-editor::-webkit-scrollbar-thumb {
+    background: var(--mdc-theme-primary, #6200ee);
+    border-radius: 10px;
+}
+
+
 
 .sb-widget.sb-ui-textarea .textarea-title {
     position: absolute;

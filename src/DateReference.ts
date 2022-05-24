@@ -61,7 +61,7 @@ export class DateReference {
                             break;
                         case 'week':
                             this.date = new Date(date);
-                            let dow = date.getDay(), diff = date.getDate() - dow + (dow == 0 ? -6:1); // adjust sunday
+                            let dow = date.getDay(), diff = -dow + (dow == 0 ? -6:1);
                             this.date.setDate(date.getDate() + diff + offset * 7);
                             if(day == 'last') {
                                 this.date.setDate(this.date.getDate() + 6);

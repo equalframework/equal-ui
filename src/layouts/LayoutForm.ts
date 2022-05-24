@@ -378,6 +378,7 @@ export class LayoutForm extends Layout {
             // try to give the focus back to the previously focused widget
             $('#'+focused_widget_id).find('input').trigger('focus');
         }
+
     }
 
 }

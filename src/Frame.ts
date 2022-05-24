@@ -277,7 +277,7 @@ export class Frame {
             .addClass('context-close')
             .on('click', () => {
                 let validation = true;
-                if(this.context.hasChanged()) {
+                if(Object.keys(this.context).length && this.context.hasChanged()) {
                     validation = confirm(TranslationService.instant('SB_ACTIONS_MESSAGE_ABANDON_CHANGE'));
                 }
                 if(!validation) return;

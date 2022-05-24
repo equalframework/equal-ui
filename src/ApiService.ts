@@ -225,6 +225,9 @@ export class _ApiService {
                         reject(xhr.response)
                     }
                     else {
+                        if(xhr.getResponseHeader('X-Total-Count')) {
+                            this.last_count = parseInt( <string> xhr.getResponseHeader('X-Total-Count') );
+                        }
                         resolve(xhr.response);
                     }
                 };

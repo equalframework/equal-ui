@@ -28,12 +28,21 @@ export default class WidgetString extends Widget {
                     this.$elem.css({"width": "calc(100% - 10px)"});
                 }
                 // setup handler for relaying value update to parent layout
-                this.$elem.find('input').on('change', (event) => {
+                let timeout: any;
+                this.$elem.find('input').on('keyup', (event:any) => {
+                    if(event.which == 9) {
+                        // prevent double handling tab
+                        return;
+                    }
+                    if(timeout) {
+                        clearTimeout(timeout);
+                    }
                     let $this = $(event.currentTarget);
                     this.value = $this.val();
-                    if(this.value != value) {
+
+                    timeout = setTimeout( () => {
                         this.$elem.trigger('_updatedWidget', [false]);
-                    }
+                    }, 300);
                 });
                 break;
             case 'view':

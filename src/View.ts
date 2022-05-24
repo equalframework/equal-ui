@@ -30,6 +30,10 @@ export class View {
     private limit: number;
     private group_by: string[];
 
+    private controller: string;
+    // associative array mapping additional params with their values (relayed to controller)
+    private params: any;
+
     public  lang: string;
 
     private layout: Layout;
@@ -62,6 +66,8 @@ export class View {
     // When type is list, one or more objects might be selected
     private selected_ids: any[];
 
+    private subscribers: any = {};
+
     private is_ready_promise: any;
 
     public $container: any;
@@ -86,7 +92,7 @@ export class View {
     constructor(context: Context, entity: string, type: string, name: string, domain: any[], mode: string, purpose: string, lang: string, config: any = null) {
         // generate a random UUID
         this.uuid = UIHelper.getUUID();
-
+        this.params = {};
         this.context = context;
         this.entity = entity;
         this.type = type;
@@ -222,6 +228,7 @@ export class View {
             this.config = {...this.config, ...config};
         }
 
+        this.controller = (this.config.hasOwnProperty('controller'))?this.config.controller:'model_collect';
         this.order = (this.config.hasOwnProperty('order'))?this.config.order:'id';
         this.sort = (this.config.hasOwnProperty('sort'))?this.config.sort:'asc';
         this.start = (this.config.hasOwnProperty('start'))?this.config.start:0;
@@ -320,6 +327,10 @@ export class View {
                 }
             }
 
+            if(this.view_schema.hasOwnProperty("controller")) {
+                this.controller = this.view_schema.controller;
+            }
+
             if(this.view_schema.hasOwnProperty("exports")) {
                 for(let item of this.view_schema.exports) {
                     this.exports[item.id] = item;
@@ -410,6 +421,20 @@ export class View {
         }
 
         throw new Error("Unable to copy obj! Its type isn't supported.");
+    }
+
+    private hasAdvancedFilters():boolean {
+        return (['core_model_collect', 'model_collect'].indexOf(this.controller) < 0);
+    }
+
+    public addSubscriber(events: string[], callback: (context:any) => void) {
+        for(let event of events) {
+            // if(!['open', 'close', 'updated', 'navigate'].includes(event)) continue;
+            if(!this.subscribers.hasOwnProperty(event)) {
+                this.subscribers[event] = [];
+            }
+            this.subscribers[event].push(callback);
+        }
     }
 
     public isReady() {
@@ -543,6 +568,19 @@ export class View {
 
         return domain.parse({}, this.getUser()).toArray();
     }
+    public getParams() {
+        return {
+            lang:   this.getLang(),
+            order:  this.getOrder(),
+            sort:   this.getSort(),
+            start:  this.getStart(),
+            limit:  this.getLimit(),
+            ...this.params
+        };
+    }
+    public getController() {
+        return this.controller;
+    }
     public getSort() {
         return this.sort;
     }
@@ -657,6 +695,7 @@ export class View {
         this.$headerContainer.append(' \
             <div class="sb-view-header-list"> \
                 <div class="sb-view-header-actions"></div> \
+                <div class="sb-view-header-advanced"></div> \
                 <div class="sb-view-header-list-navigation"></div> \
             </div>'
         );
@@ -664,6 +703,7 @@ export class View {
         let $elem = this.$headerContainer.find('.sb-view-header-list');
 
         let $actions_set = $elem.find('.sb-view-header-actions');
+        let $level1 = $elem.find('.sb-view-header-advanced');
         let $level2 = $elem.find('.sb-view-header-list-navigation');
 
         // left side : standard actions for views
@@ -681,6 +721,7 @@ export class View {
             has_action_create = (this.custom_actions['ACTION.CREATE'])?true:false;
         }
 
+        // append view actions, if requested
         if(this.config.show_actions) {
             switch(this.purpose) {
                 case 'view':
@@ -797,6 +838,42 @@ export class View {
             }
         }
 
+
+        // append advanced layout if requested
+        if(this.hasAdvancedFilters()) {
+            $elem.addClass('has-advanced-filters');
+            let $layout = $('<div class="sb-view-header-advanced-layout" />').appendTo($level1);
+
+            let view = new View(this.getContext(), this.controller.replace(/_/g, '\\'), 'search', 'default', [], 'edit', 'widget', this.lang, {});
+            view.isReady().then( () => {
+                let $container = view.getContainer();
+                $layout.append($container);
+
+                // detect view submission / change
+                view.addSubscriber(['change'], async () => {
+                    // retrieve model of the viewFget
+                    let model = view.getModel();
+                    let objects = await model.get();
+                    let object:any = objects[0];
+                    // inject object as part of the body for the Model service                                         
+                    for(let field in object) {
+                        let value = object[field];
+                        if(typeof value == 'object' && value !== null) {
+                            value = value.id;
+                        }
+                        this.params[field] = value;
+                    }                    
+                    // trigger a refresh of the current view
+                    this.onchangeView();
+                });
+
+            });
+
+        }
+
+
+
+
         //  bulk assign action
         let $bulk_assign_dialog = UIHelper.createDialog(this.uuid+'_bulk-assign-dialog', TranslationService.instant('SB_ACTIONS_BUTTON_BULK_ASSIGN'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
         $bulk_assign_dialog.addClass('sb-view-dialog').appendTo(this.$container);
@@ -835,6 +912,16 @@ export class View {
                     this.applyFilter(filter.id);
                 }
             }, 100);
+        });
+
+        let $advanced_filters_button =
+        $('<div/>').addClass('sb-view-header-list-advanced-filters-button')
+        .append( UIHelper.createButton('advanced-filters', 'filters', 'icon', 'chevron_right') ).prependTo($level1);
+
+        $advanced_filters_button.on('click', () => {
+            $elem.toggleClass('is-advanced-open');
+            let head_height = this.$headerContainer.height();
+            this.$layoutContainer.css({height: 'calc(100% - '+head_height+'px)'});
         });
 
         // fields toggle menu : button for displaying the filters menu
@@ -964,7 +1051,6 @@ export class View {
             this.onchangeView();
         });
 
-        // attach elements to header toolbar
         $level2.append( $filters_button );
         $level2.append( $filters_search );
         $level2.append( $filters_set );
@@ -1473,6 +1559,7 @@ export class View {
         // setup handler for relaying value update to parent layout
         $select_field.addClass('dialog-select').find('input')
         .on('change', (event) => {
+            console.log('dialog select', event);
             let $this = $(event.currentTarget);
             selected_field = <string> $this.val();
 
@@ -1510,12 +1597,12 @@ export class View {
             });
             $elem.append($select_operator);
             $elem.append($select_value);
-        })
-        // init
-        .trigger('change');
-
-
+        });
+        
         $dialog.find('.mdc-dialog__content').append($elem);
+
+        // init
+        $select_field.trigger('change');
 
         $dialog.on('_accept', () => {
             let operand = selected_field;
@@ -1601,10 +1688,17 @@ export class View {
      * @param values    object   map of fields names and their related values
      */
     public async onchangeViewModel(ids: Array<any>, values: object, refresh: boolean = true) {
+        console.log('View::onchangeViewModel', ids, values, refresh);
         this.model.change(ids, values);
         // model has changed : forms need to re-check the visibility attributes
         if(refresh) {
             await this.onchangeModel();
+            // notify subscribers
+            for(let callback of this.subscribers['change']) {
+                if( ({}).toString.call(callback) === '[object Function]') {
+                    callback();
+                }
+            }
         }
     }
 

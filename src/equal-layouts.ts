@@ -3,6 +3,7 @@ import { View, Layout } from "./equal-lib";
 
 import { LayoutList } from "./layouts/LayoutList";
 import { LayoutForm } from "./layouts/LayoutForm";
+import { LayoutSearch } from "./layouts/LayoutSearch";
 import { LayoutChart } from "./layouts/LayoutChart";
 import { LayoutDashboard } from "./layouts/LayoutDashboard";
 
@@ -21,6 +22,8 @@ export class LayoutFactory {
                 return new LayoutList(view);
             case 'form':
                 return new LayoutForm(view);
+            case 'search':
+                return new LayoutSearch(view);
             case 'chart':
                 return new LayoutChart(view);
             case 'dashboard':
