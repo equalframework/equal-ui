@@ -321,12 +321,14 @@ export class View {
                 this.group_by = this.view_schema.group_by;
             }
 
+            // predefined filters
             if(this.view_schema.hasOwnProperty("filters")) {
                 for(let item of this.view_schema.filters) {
                     this.filters[item.id] = item;
                 }
             }
 
+            // override of default controller
             if(this.view_schema.hasOwnProperty("controller")) {
                 this.controller = this.view_schema.controller;
             }
@@ -357,7 +359,22 @@ export class View {
                 let domain = eval(this.view_schema.domain);
                 // merge domains
                 let tmpDomain = new Domain(this.domain);
-                tmpDomain.merge(new Domain(domain));
+                let viewDomain = new Domain(domain); 
+
+                let i = 0;
+                for(let clause of viewDomain.getClauses()) {
+                    ++i;
+                    let filter = {
+                        "id": "filter_domain_"+i,
+                        "label": "search",
+                        "description": "",
+                        "clause": clause
+                    };
+                    // add filter to available filters
+                    this.filters[filter.id] = filter;                    
+                    this.applied_filters_ids.push(filter.id);
+                }
+                tmpDomain.merge(viewDomain);
                 this.domain = tmpDomain.toArray();
             }
 
@@ -557,8 +574,8 @@ export class View {
     public getDomain() {
         console.log('View::getDomain', this.domain, this.applied_filters_ids);
 
-        let domain = new Domain(this.domain);
-
+        let domain = new Domain(/*this.domain*/[]);
+// #todo : all filters are shown : use only applied filters
         let filters_domain = [];
         for(let filter_id of this.applied_filters_ids) {
             filters_domain.push(this.filters[filter_id].clause);
