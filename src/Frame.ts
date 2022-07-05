@@ -106,11 +106,11 @@ export class Frame {
         let name = context.getName();
         let purpose = context.getPurpose();
 
-        await EnvService.getEnv();
+        const environment = await EnvService.getEnv();
 
         let view_schema = await ApiService.getView(entity, type+'.'+name);
         // get translation from currently selected locale
-        let translation = await ApiService.getTranslation(entity, this.environment.locale);
+        let translation = await ApiService.getTranslation(entity, environment.locale);
 
         if(translation.hasOwnProperty('name')) {
             entity = translation['name'];
@@ -130,6 +130,13 @@ export class Frame {
             if(type == 'list') {
                 if(translation.hasOwnProperty('plural')) {
                     result = translation['plural'];
+                }
+            }
+            // if view_id is defined in translation file : use its translated values, if present
+            if(translation.hasOwnProperty('view')) {
+                let view_id = context.getView().getId();
+                if(translation.view.hasOwnProperty(view_id) && translation.view[view_id].hasOwnProperty('name')) {
+                    result = translation.view[view_id].name;
                 }
             }
         }
@@ -238,7 +245,7 @@ export class Frame {
                         // close all contexts after the one clicked
                         for(let j = this.stack.length-1; j > i; --j) {
                             // unstack contexts silently (except for the targeted one), and ask for validation at each step
-                            if(this.context.hasChanged()) {
+                            if(this.context.getView().hasChanged()) {
                                 let validation = confirm(TranslationService.instant('SB_ACTIONS_MESSAGE_ABANDON_CHANGE'));
                                 if(!validation) return;
                                 this.closeContext(null, true);
@@ -267,17 +274,29 @@ export class Frame {
         if(prepend_contexts_count > 0) {
             $('<span> › </span>').css({'margin': '0 10px'}).appendTo($elem);
         }
-        $('<span>'+current_purpose_string+'</span>').appendTo($elem);
+
+
+        if(this.display_mode == 'popup') {            
+            let model_schema = await ApiService.getSchema(this.context.getEntity());
+            let objects:any = await this.context.getView().getModel().get();
+            let link = model_schema.link.replace(/object\.id/, objects[0].id);
+            $('<a>'+current_purpose_string+'</a>').attr('href', link).prependTo($elem);
+        }
+        else {
+            $('<span>'+current_purpose_string+'</span>').appendTo($elem);
+        }
+        
+
+
         if(this.stack.length > 1 || this.display_mode == 'popup' || this.close_button) {
-        // #memo - check this: for integration, we need to let user close any context
-        // if(true) {
+            // #memo - for integration, we need to let user close any context
             UIHelper.createButton('context-close', '', 'mini-fab', 'close')
             .css({'transform': 'scale(0.5)', 'margin-top': '3px', 'background': '#bababa', 'box-shadow': 'none'})
             .appendTo($elem)
             .addClass('context-close')
             .on('click', () => {
                 let validation = true;
-                if(Object.keys(this.context).length && this.context.hasChanged()) {
+                if(Object.keys(this.context).length && this.context.getView().hasChanged()) {
                     validation = confirm(TranslationService.instant('SB_ACTIONS_MESSAGE_ABANDON_CHANGE'));
                 }
                 if(!validation) return;
@@ -286,20 +305,23 @@ export class Frame {
         }
 
         // lang selector controls the current context and is used for opening subsequent contexts
-        await EnvService.getEnv();
-        let locale = this.environment.locale;
+        const environment = await EnvService.getEnv();
+
+        let locale = environment.locale;
         
         // if there is a current context, use its lang
         if(this.context.hasOwnProperty('$container')) {
             locale = this.context.getLang();
         }
 
-        let $lang_selector = UIHelper.createSelect('lang-selector', 'Langue', this.languages, locale);
+        let $lang_selector = UIHelper.createSelect('lang-selector', '', this.languages, locale);
         $lang_selector.addClass('lang-selector');
+        $lang_selector.find('.mdc-select__selected-text').css({'text-transform': 'uppercase'}).text(locale);
 
         $lang_selector.on('change', () => {
             // when the lang selector is changed by user, update current context
             let lang:string = <string> $lang_selector.find('input').val();
+            $lang_selector.find('.mdc-select__selected-text').css({'text-transform': 'uppercase'}).text(lang);
             let context: Context = new Context(this, this.context.getEntity(), this.context.getType(), this.context.getName(), this.context.getDomain(), this.context.getMode(), this.context.getPurpose(), lang, this.context.getCallback(), this.context.getConfig());
             this.context.destroy();
             this.context = context;
@@ -392,7 +414,7 @@ export class Frame {
     public async _openContext(config: any) {
         console.log('Frame: received _openContext', config);
 
-        await EnvService.getEnv();
+        const environment = await EnvService.getEnv();
         // extend default params with received config
         config = {...{
             entity:     '',
@@ -401,8 +423,8 @@ export class Frame {
             domain:     [],
             mode:       'view',             // view, edit
             purpose:    'view',             // view, select, add, create
-            lang:       this.environment.lang,
-            locale:     this.environment.locale,
+            lang:       environment.lang,
+            locale:     environment.locale,
             callback:   null
         }, ...config};
 
@@ -468,12 +490,19 @@ export class Frame {
      *
      * This method is meant to be called by the eventListener only (eQ object).
      *
-     * @param silent do not show the pop-ed context and do not refresh the header
+     * @param silent    If set to true, we do not show the pop-ed context and we do not refresh the header.
      */
     public async _closeContext(data:any = null, silent: boolean = false) {
 
         if(this.stack.length) {
-            let has_changed:boolean = this.context.hasChanged();
+            if(this.context.hasChanged()) {
+                // mark all contexts in the stack as changed
+                for(let ctx of this.stack) {
+                    if(ctx.hasOwnProperty('$container')) {
+                        ctx.setChanged();
+                    }
+                }                
+            }
 
             // destroy current context and run callback, if any
             this.context.close({silent: silent, ...data});
@@ -483,7 +512,7 @@ export class Frame {
 
             if(!silent) {
                 if( this.context && this.context.hasOwnProperty('$container') ) {
-                    if(has_changed && this.context.getMode() == 'view') {
+                    if(this.context.hasChanged() && this.context.getMode() == 'view') {
                         await this.context.refresh();
                     }
                     this.context.$container.show();
@@ -492,7 +521,7 @@ export class Frame {
             }
 
             // if we closed the lastest Context from the stack, relay data to the outside
-            // #todo - is this still necessary ? since we run callbacks in eventlisteners ?
+            // #todo - is this still necessary ? (since we run callbacks in eventlisteners)
             if(!this.stack.length) {
                 // console.log('Frame::_closeContext - stack empty, closing');
                 // $(this.domContainerSelector).hide().trigger('_close', [ data ]);

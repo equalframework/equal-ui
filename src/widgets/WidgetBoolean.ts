@@ -18,7 +18,7 @@ export default class WidgetBoolean extends Widget {
 
         switch(this.mode) {
             case 'edit':
-                this.$elem = UIHelper.createSwitch('', this.label, this.value, this.config.description, '', this.readonly);
+                this.$elem = UIHelper.createSwitch('bool_'+this.id, this.label, this.value, this.config.description, '', this.readonly);
 
                 // setup handler for relaying value update to parent layout
                 this.$elem.find('input')

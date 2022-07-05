@@ -24,7 +24,7 @@ export default class WidgetDateTime extends Widget {
             case 'edit':
                 var format = moment.localeData().longDateFormat('L') + ' ' + moment.localeData().longDateFormat('LT');
                 value = moment(date).format(format);
-                this.$elem = UIHelper.createInput('', this.label, value, this.config.description, 'calendar_today', this.readonly);
+                this.$elem = UIHelper.createInput('date_'+this.id, this.label, value, this.config.description, 'calendar_today', this.readonly);
                 // setup handler for relaying value update to parent layout
                 if(this.config.layout == 'list') {
                     this.$elem.css({"width": "calc(100% - 10px)"});

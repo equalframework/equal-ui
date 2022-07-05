@@ -170,7 +170,7 @@ export class LayoutSearch extends Layout {
 
     }
 
-    protected feed(objects: any) {
+    protected async feed(objects: any) {
         console.log('LayoutSearch::feed', objects);
 
         // display the first object from the collection

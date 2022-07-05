@@ -464,28 +464,32 @@
 						var yearPicker = '<table><tbody><tr>';
 						//show years in 4x3 matrix 
 						year--; //last year of the previous decade
-						for (var i = 1; i <= 12; i++) {
-							unselectable = (minYear !== 'undefined' && year < minYear) ||
-								(maxYear !== 'undefined' && year > maxYear);
-							//html += '<span class="year'+(i == -1 || i == 10 ? ' old' : '')+(currentYear == year ? ' active' : '')+'">'+year+'</span>';
-							yearPicker += '<td class="' +
-								(unselectable ? ' ' + this._unselectableClass + ' ui-state-disabled': '') +  // highlight unselectable months
-								((!unselectable && (i==1 || i==12)) ? ' outoffocus' : '') +
-								(year == drawYear ? ' ui-datepicker-today' : '') + '"' +
-								(unselectable ? '' : ' onclick="$.datepicker._pickMonthYear_MonthYearPicker(\'#' + inst.id + '\', ' + year + ', \'Y\');return false;"') + '>' + // actions
-								((unselectable ? '<span class="ui-state-default">' + year + '</span>' : '<a class="ui-state-default ' +
-								//(month == drawMonth ? ' ui-state-highlight' : '') +
-								(year == drawYear ? ' ui-state-active' : '') + // highlight selected day
-								//(otherMonth ? ' ui-priority-secondary' : '') + // distinguish dates from other months
-								'" href="#">' + year + '</a>')) + '</td>'; // display selectable date
-							if(i % 4 == 0) {
-								yearPicker += '</tr>';
-								if(i != 12) {
-									yearPicker += '<tr>';
-								}
-							}
-							year++;
-						}
+                        try {
+                            for (var i = 1; i <= 12; i++) {
+                                var unselectable = (minYear && year < minYear) || (maxYear && year > maxYear);
+                                //html += '<span class="year'+(i == -1 || i == 10 ? ' old' : '')+(currentYear == year ? ' active' : '')+'">'+year+'</span>';
+                                yearPicker += '<td class="' +
+                                    (unselectable ? ' ' + this._unselectableClass + ' ui-state-disabled': '') +  // highlight unselectable months
+                                    ((!unselectable && (i==1 || i==12)) ? ' outoffocus' : '') +
+                                    (year == drawYear ? ' ui-datepicker-today' : '') + '"' +
+                                    (unselectable ? '' : ' onclick="$.datepicker._pickMonthYear_MonthYearPicker(\'#' + inst.id + '\', ' + year + ', \'Y\');return false;"') + '>' + // actions
+                                    ((unselectable ? '<span class="ui-state-default">' + year + '</span>' : '<a class="ui-state-default ' +
+                                    //(month == drawMonth ? ' ui-state-highlight' : '') +
+                                    (year == drawYear ? ' ui-state-active' : '') + // highlight selected day
+                                    //(otherMonth ? ' ui-priority-secondary' : '') + // distinguish dates from other months
+                                    '" href="#">' + year + '</a>')) + '</td>'; // display selectable date
+                                if(i % 4 == 0) {
+                                    yearPicker += '</tr>';
+                                    if(i != 12) {
+                                        yearPicker += '<tr>';
+                                    }
+                                }
+                                year++;
+                            }
+                        }
+                        catch(error) {
+                            console.log(error);
+                        }
 						yearPicker += '</tbody></table>';
 						$('.ui-datepicker-select-year').html(yearPicker);
 					};

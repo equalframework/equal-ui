@@ -138,6 +138,7 @@ config: {
                     // #todo - complete the list
                     case 'string/text':
                     case 'text/plain':
+                    case 'text/html':                        
                     case 'markup/html':
                         type = 'text';
                         break;
@@ -238,8 +239,21 @@ config: {
                 view_name: view_name,
                 original_domain: domain.toArray(),
                 action_create: true,
-                action_open: true
+                action_open: true,
+                action_select: true
             };
+            
+            if(config.hasOwnProperty('header')) {
+                if(config.header.hasOwnProperty('ACTION.CREATE')) {
+                    config.action_create = config.header['ACTION.CREATE'];
+                }
+                if(config.header.hasOwnProperty('ACTION.OPEN')) {
+                    config.action_open = config.header['ACTION.OPEN'];
+                }
+                if(config.header.hasOwnProperty('ACTION.SELECT')) {
+                    config.action_select = config.header['ACTION.SELECT'];
+                }
+            }
 
         }
 

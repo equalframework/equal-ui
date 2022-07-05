@@ -12,39 +12,39 @@ export class Context {
 
     private view: View;
 
+    // flag for marking the context to be refreshed
+    private has_changed: boolean;
 
     // callback to be called when the context closes
     private callback: (data:any) => void;
 
     private config: any;
 
-/*
-
-Contexts have a type and a mode, and are created for a purpose.
-The purpose influences the need for available actions (buttons in the header),
-and can be displayed to user as an indication of the expected action.
-
-{type = list} (toggleable mode)
-    * {purpose = view}: View a list of existing objects : only possible action should be available ('create')
-    * {purpose = select}: Select a value for a field : the displayed list purpose is to select an item (other actions should not be available)
-    * {purpose = add}: Add one or more objects to a x2many fields
-
-{type = form}
-    * {mode = view}
-        * {purpose = view}: View a single object : only available actions should be 'edit'
-    * {mode = edit}
-        * {purpose = create}: Create a new object : only available actions should be 'save' and 'cancel'
-        * {purpose = update}: Update an existing object : only available actions should be 'save' and 'cancel'
-
- */
-
-
+    /**
+     * 
+     * Contexts have a type and a mode, and are created for a purpose.
+     * The purpose influences the need for available actions (buttons in the header),
+     * and can be displayed to user as an indication of the expected action.
+     *
+     * {type = list} (toggleable mode)
+     *     * {purpose = view}: View a list of existing objects : only possible action should be available ('create')
+     *    * {purpose = select}: Select a value for a field : the displayed list purpose is to select an item (other actions should not be available)
+     *    * {purpose = add}: Add one or more objects to a x2many fields
+     *
+     * {type = form}
+     *    * {mode = view}
+     *        * {purpose = view}: View a single object : only available actions should be 'edit'
+     *    * {mode = edit}
+     *        * {purpose = create}: Create a new object : only available actions should be 'save' and 'cancel'
+     *        * {purpose = update}: Update an existing object : only available actions should be 'save' and 'cancel'
+     * 
+     */
     constructor(frame: Frame, entity: string, type: string, name: string, domain: any[], mode: string = 'view', purpose: string = 'view', lang: string = '', callback: (data:any) => void = (data:any=null) => {}, config: any = null) {
         console.log('Context - opening context', entity, type, name, domain, mode, purpose, lang, config);
         this.$container = $('<div />').addClass('sb-context');
 
         this.callback = callback;
-
+        this.has_changed = false;
         this.config = config;
         this.frame = frame;
         this.view = new View(this, entity, type, name, domain, mode, purpose, lang, config);
@@ -105,6 +105,14 @@ and can be displayed to user as an indication of the expected action.
     }
 
     /**
+     * Mark the context as change (requires a refresh).
+     * Called from parent Frame.
+     */
+    public setChanged() {
+        this.has_changed = true;
+    }
+
+    /**
      *
      * @returns Promise A promise that resolves when the View will be fully rendered
      */
@@ -113,7 +121,7 @@ and can be displayed to user as an indication of the expected action.
     }
 
     public hasChanged() {
-        return this.view.hasChanged();
+        return (this.has_changed || this.view.hasChanged());
     }
 
     public getEntity() {

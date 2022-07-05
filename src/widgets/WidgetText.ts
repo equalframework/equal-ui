@@ -97,6 +97,7 @@ export default class WidgetText extends Widget {
                                 }
                                 timeout = setTimeout( () => {
                                     this.$elem.trigger('_updatedWidget', [false]);
+                                    // we set timeout to 1s because there is no hurry here and we want to minimize requests
                                 }, 1000);
                             }                        
                         })
@@ -109,6 +110,7 @@ export default class WidgetText extends Widget {
                 if(this.config.layout == 'list') {
                     value = $("<div/>").html(value).text();
                     this.$elem = UIHelper.createInputView('', this.label, value, this.config.description);
+                    this.$elem.attr('title', value);
                 }
                 else {
                     this.$elem = $('<div class="sb-ui-textarea" />');

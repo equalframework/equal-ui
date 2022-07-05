@@ -88,11 +88,11 @@ class UIHelper {
         return $button;
     }
 
-    public static createSplitButton(id:string, label:string, variant='') {
-        let $elem = $('<div style="display: inline-flex;"></div>');
+    public static createSplitButton(id:string, label:string, type:string='', icon:string='', variant:string='') {
+        let $elem = $('<div id="'+id+'" style="display: inline-flex;"></div>');
 
-        let $button = this.createButton(id+'_button', label, 'raised', '', variant).addClass('mdc-button-split_button');
-        let $drop_button = this.createButton(id+'_drop', '', 'raised', 'arrow_drop_down', variant).addClass('mdc-button-split_drop');
+        let $button = this.createButton(id+'_button', label, type, icon, variant).addClass('mdc-button-split_button');
+        let $drop_button = this.createButton(id+'_drop', '', type, 'arrow_drop_down', variant).addClass('mdc-button-split_drop');
 
         let $drop_menu = this.createMenu(id+'_drop'+'menu').appendTo($drop_button);
         let $menu_list = this.createList(id+'_drop'+'menu-list').addClass('menu-list').appendTo($drop_menu);
@@ -117,6 +117,39 @@ class UIHelper {
 
         return $elem.append($button).append($drop_button);
     }
+
+    public static createDropDown(id:string, label:string, type:string='', icon:string='', variant:string='') {
+        let $elem = $('<div id="'+id+'" style="display: inline-flex;"></div>');
+
+        let $drop_button = this.createButton(id+'_button', label, type, icon, variant).addClass('mdc-dropdown');
+
+        $drop_button.append($('<i/>').addClass('material-icons mdc-button__icon').text('arrow_drop_down'))
+
+
+        let $drop_menu = this.createMenu(id+'_drop-'+'menu').appendTo($drop_button);
+        let $menu_list = this.createList(id+'_drop-'+'menu-list').addClass('menu-list').appendTo($drop_menu);
+
+        this.decorateMenu($drop_menu);
+
+        $drop_button.css({'right': 0});
+
+        $drop_button.on('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            let parent_width = <number> Math.round(<number>$drop_button.innerWidth());
+            if(parent_width > <number> $drop_menu.innerWidth()) {
+                $drop_menu.css({'width': parent_width+'px'})
+            }
+            else {
+                $drop_menu.css({'left': '-'+(Math.round(<number>$drop_button.innerWidth()))+ 'px'})
+            }
+            $drop_menu.trigger('_toggle');
+            return false;
+        });
+
+        return $elem.append($drop_button);
+    }
+
 
     public static createTooltip(id:string, label: string) {
         let $elem = $('<div/>').attr('id', id+'-tooltip').addClass('mdc-tooltip').attr('role', 'tooltip').attr('aria-hidden', 'true')
@@ -588,6 +621,18 @@ class UIHelper {
     public static decorateTooltip($elem:any) {
         if(!$elem.length) return;
         new MDCTooltip($elem[0]);
+    }
+
+    public static decorateTableStatic($elem:any) {
+        if(!$elem.length) return;
+        $elem.addClass('mdc-data-table').children().first().addClass('mdc-data-table__table-container');
+
+        let $thead = $elem.find('thead');
+        let $table = $elem.find('table').addClass('mdc-data-table__table');
+        let $tbody = $table.find('tbody').addClass('mdc-data-table__content');
+
+        $thead.find('th').addClass('mdc-data-table__header-cell');
+        $tbody.find('td').addClass('mdc-data-table__cell');
     }
 
     public static decorateTable($elem:any) {

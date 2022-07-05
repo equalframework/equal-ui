@@ -238,6 +238,33 @@ export class _ApiService {
         });
     }
 
+    public call(route:string, body:any = {}) {
+        return new Promise<any>( async (resolve, reject) => {
+            try {
+                const environment = await EnvService.getEnv();
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', environment.backend_url+route, true);
+                xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                var params = jQuery.param(body);
+                xhr.responseType = "json";
+                xhr.withCredentials = true;
+                xhr.send(params);
+
+                xhr.onload = () => {
+                    if(xhr.status < 200 || xhr.status > 299) {
+                        reject(xhr.response)
+                    }
+                    else {
+                        resolve(xhr.response);
+                    }
+                };
+            }
+            catch(error:any) {
+                reject(error);
+            }
+        });
+    }
+
     public async create(entity:string, fields:any = {}) {
         let result: any;
         try {
@@ -263,7 +290,7 @@ export class _ApiService {
         return result;
     }
 
-    public async read(entity:string, ids:any[], fields:[], lang: string = '') {
+    public async read(entity:string, ids:any[], fields:string[], lang: string = '') {
         let result: any;
         try {
             const environment = await EnvService.getEnv();

@@ -9,6 +9,8 @@ import Chart from 'chart.js/auto';
 
 
 export class LayoutChart extends Layout {
+    private config:any = {};
+    private parsed_datasets: any = {};
 
     public async init() {
         console.log('LayoutChart::init');
@@ -46,10 +48,9 @@ export class LayoutChart extends Layout {
         console.log('LayoutChart::layout');
 
         let view_schema = this.view.getViewSchema();
-    
         let layout = view_schema.layout;
 
-        let config = {
+        this.config = {
             type: 'bar',
             stacked: false,
             group_by: 'range',
@@ -60,7 +61,8 @@ export class LayoutChart extends Layout {
             ...layout
         }
 
-        let parsed_datasets = layout.datasets.map( (a:any, index: number) => { 
+        // parse schema to get the operations (datasets), relative dates : range_from, range_to
+        this.parsed_datasets = layout.datasets.map( (a:any, index: number) => { 
             let dataset:any = {
                 label: 'label',
                 operation: ['COUNT', 'object.id'],
@@ -75,77 +77,127 @@ export class LayoutChart extends Layout {
             return dataset;
         });
 
-        /*
-        // parse schema to get the operations (datasets), relative dates : range_from, range_tp
-        */
-        let $elem = $('<canvas/>').css({"width": "100%", "height": "100%"});
-        this.$layout.append($elem);
-
-        const result = await ApiService.fetch('/', {
-            get: 'model_chart',
-            type: config.type,
-            entity: config.entity,
-            group_by: config.group_by,
-            field: config.field,
-            range_interval: config.range_interval,
-            range_from: (new DateReference(config.range_from)).getDate().toISOString(),
-            range_to: (new DateReference(config.range_to)).getDate().toISOString(),
-            datasets: parsed_datasets
-        });
-
-        const CHART_COLORS = [
-            'rgb(75, 192, 192)',    // green
-            'rgb(255, 99, 132)',    // red
-            'rgb(54, 162, 235)',    // blue
-            'rgb(255, 159, 64)',    // orange
-            'rgb(153, 102, 255)',   // purple
-            'rgb(255, 205, 86)',    // yellow
-            'rgb(201, 203, 207)'    // grey
-        ];
-
-        let datasets: any, options: any;
-        
-        if(['pie', 'doughnut', 'polarArea'].indexOf(config.type) >= 0) {
-            datasets = result.datasets.map( (a:any, index: number) => { return {label: layout.datasets[index].label, data: a, backgroundColor: CHART_COLORS}; });
-            options = {
-                responsive: true,
-                maintainAspectRatio: false
-            };
-        }
-        else {
-            datasets = result.datasets.map( (a:any, index: number) => { return {label: layout.datasets[index].label, data: a, backgroundColor: CHART_COLORS[index%7]}; });
-            options = {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        stacked: config.stacked
-                    },
-                    y: {
-                        beginAtZero: true,
-                        stacked: config.stacked
-                    }
-                }
-            };
-        }         
-
-        this.getView().isReady().then( () => {
-            const myChart = new Chart(<any> $elem[0], {
-                type: config.type,
-                    data: {
-                        labels: result.labels,
-                        datasets: datasets
-                    },
-                    options: options
-            });
-        });
-
     }
 
-    protected feed(objects: any) {
-        console.log('LayoutChart::feed', objects);
+    protected async feed(objects: any) {
+
+        // #todo : split between layout and feed 
+
+        this.$layout.empty();
+
+        console.log('LayoutChart::feed ###', objects);
         // display the first object from the collection
 
+        let view_schema = this.view.getViewSchema();
+        let layout = view_schema.layout;
+
+        let result:any;
+
+        try {
+            result = await ApiService.fetch('/', {
+                    get: 'model_chart',
+                    type: this.config.type,
+                    entity: this.config.entity,
+                    group_by: this.config.group_by,
+                    field: this.config.field,
+                    range_interval: this.config.range_interval,
+                    range_from: (new DateReference(this.config.range_from)).getDate().toISOString(),
+                    range_to: (new DateReference(this.config.range_to)).getDate().toISOString(),
+                    datasets: this.parsed_datasets,
+                    mode: this.view.getMode(),
+                    ...this.view.getParams()
+                });
+        }
+        catch(response) {
+            console.log(response);
+            return;
+        }
+
+
+        let $elem: JQuery;
+
+        if(this.view.getMode() == 'grid') {
+            $elem = $('<div/>').addClass('table-wrapper').css({"width": "100%"});
+            let $container = $('<div/>').css({"width": "100%"}).appendTo($elem);
+
+            let $table = $('<table/>').css({"width": "100%"}).appendTo($container);
+
+            let $thead = $('<thead/>').appendTo($table);
+            let $tbody = $('<tbody/>').appendTo($table);
+
+            let object = result[0];
+            
+            let $hrow = $('<tr/>').appendTo($thead);
+            let i = 0;
+            let keys = Object.keys(object).sort();
+            for(let field of keys) {
+                let $cell = $('<th/>').append(field).appendTo($hrow);
+                if(i == 0) {
+                    $cell.css({width: "20%"});
+                }
+                ++i;
+            }
+            for(let object of result) {
+                let $row = $('<tr/>').appendTo($tbody);
+                for(let field of keys) {
+                    $('<td/>').attr('title', object[field]).append(object[field]).appendTo($row);
+                }
+            }
+
+            UIHelper.decorateTable($elem);
+        }
+        else {
+            $elem = $('<canvas/>').css({"width": "100%", "height": "calc(100% - 20px)", "margin-top": "20px"});
+
+            const CHART_COLORS = [
+                'rgb(75, 192, 192)',    // green
+                'rgb(255, 99, 132)',    // red
+                'rgb(54, 162, 235)',    // blue
+                'rgb(255, 159, 64)',    // orange
+                'rgb(153, 102, 255)',   // purple
+                'rgb(255, 205, 86)',    // yellow
+                'rgb(201, 203, 207)'    // grey
+            ];
+
+            let datasets: any, options: any;
+            
+            if(['pie', 'doughnut', 'polarArea'].indexOf(this.config.type) >= 0) {
+                datasets = result.datasets.map( (a:any, index: number) => { return {label: layout.datasets[index].label, data: a, backgroundColor: CHART_COLORS}; });
+                options = {
+                    responsive: true,
+                    maintainAspectRatio: false
+                };
+            }
+            else {
+                datasets = result.datasets.map( (a:any, index: number) => { return {label: layout.datasets[index].label, data: a, backgroundColor: CHART_COLORS[index%7]}; });
+                options = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: this.config.stacked
+                        },
+                        y: {
+                            beginAtZero: true,
+                            stacked: this.config.stacked
+                        }
+                    }
+                };
+            }
+
+            this.getView().isReady().then( () => {
+                const myChart = new Chart(<any> $elem[0], {
+                    type: this.config.type,
+                        data: {
+                            labels: result.labels,
+                            datasets: datasets
+                        },
+                        options: options
+                });
+            });
+        }
+
+        this.$layout.append($elem);
 
     }
 

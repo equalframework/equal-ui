@@ -86,6 +86,37 @@ class EventsListener {
         }
     }
 
+    public async getActionButton(entity: string, view_id: string, domain: any[]) {        
+        let type = 'list';
+        let name = 'default';
+        if( view_id.length ) {
+            let parts = view_id.split('.');
+            if(parts.length) type = <string>parts.shift();
+            if(parts.length) name = <string>parts.shift();
+        }
+
+        let config:any = {
+            entity:     entity,
+            type:       type,
+            name:       name,
+            domain:     domain,
+            mode:       'view',
+            purpose:    'view'
+        };
+
+        // get a unique DOM id
+        let id:string = UIHelper.getUUID();
+        let target = '#'+id;
+        let $container = $('<div></div>').attr('id', id);
+        $container.appendTo('body');
+
+        let frame = new Frame(this, target);
+        await frame._openContext(config);        
+        // context has been created and is ready
+        let $view_container = frame.getContext().getView().getContainer();
+        return $view_container.find('.layout-actions');
+    }
+
     private async _openContext(config:any, reset: boolean = false) {
 
         if(!config) {
@@ -405,7 +436,7 @@ class EventsListener {
         }
         // close context (update frame header if necessary)
         await frame._closeContext(params.data);
-    }
+    }    
 
     public getUser() {
         return this.user;

@@ -52,14 +52,14 @@ export class Layout implements LayoutInterface{
         Methods from interface, meant to be overloaded in inherited classes
     */
     public init() {}
-    public refresh(full: boolean = false) {}
+    public async refresh(full: boolean = false) {}
     public loading(loading:boolean) {}
 
     /*
         Common methods meant to be overloaded in inherited classes
     */
     protected layout() {}
-    protected feed(objects: any) {}
+    protected async feed(objects: any) {}
 
 
     
@@ -210,127 +210,141 @@ export class Layout implements LayoutInterface{
 
     protected async decorateActionButton($button: JQuery, action: any, object: any = {}) {
         $button.on('click', async () => {
-            console.log("click action button ", object);
+            try {
+                console.log("click action button ", object);
 
-            // mark action button as loading
-            $button.addClass('mdc-button--spinner').attr('disabled', 'disabled');
+                let resulting_params:any = {};
+                let missing_params:any = {};
+                let user = this.view.getUser();
 
-            let resulting_params:any = {};
-            let missing_params:any = {};
-            let user = this.view.getUser();
+                // 1) pre-feed with params from the action, if any
 
-            // 1) pre-feed with params from the action, if any
-
-            if(!action.hasOwnProperty('params')) {
-                action['params'] = {};
-            }
-            // by convention, add current object id as reference
-            if(object.hasOwnProperty('id') && !action.params.hasOwnProperty('id')) {
-                action.params['id'] = 'object.id';
-            }
-
-            for(let param of Object.keys(action.params)) {
-                let ref = new Reference(action.params[param]);
-                resulting_params[param] = ref.parse(object, user);
-            }
-
-            // 2) retrieve announcement from the target action controller
-            const result = await ApiService.fetch("/", {do: action.controller, announce: true});
-            let params: any = {};
-            let response_descr:any = {};
-            let description:string = '';
-
-            if(result.hasOwnProperty('announcement')) {
-                if(result.announcement.hasOwnProperty('params')) {
-                    params = result.announcement.params;
+                if(!action.hasOwnProperty('params')) {
+                    action['params'] = {};
                 }
-                for(let param of Object.keys(params)) {
-                    if(Object.keys(resulting_params).indexOf(param) < 0) {
-                        missing_params[param] = params[param];
+                // by convention, add current object id as reference
+                if(object.hasOwnProperty('id') && !action.params.hasOwnProperty('id')) {
+                    action.params['id'] = 'object.id';
+                }
+
+                for(let param of Object.keys(action.params)) {
+                    let ref = new Reference(action.params[param]);
+                    resulting_params[param] = ref.parse(object, user);
+                }
+
+                // 2) retrieve announcement from the target action controller
+                const result = await ApiService.fetch("/", {do: action.controller, announce: true});
+                let params: any = {};
+                let response_descr:any = {};
+                let description:string = '';
+
+                if(result.hasOwnProperty('announcement')) {
+                    if(result.announcement.hasOwnProperty('params')) {
+                        params = result.announcement.params;
+                    }
+                    for(let param of Object.keys(params)) {
+                        if(Object.keys(resulting_params).indexOf(param) < 0) {
+                            missing_params[param] = params[param];
+                        }
+                    }
+                    if(result.announcement.hasOwnProperty('response')) {
+                        response_descr = result.announcement.response;
+                    }
+                    if(result.announcement.hasOwnProperty('description')) {
+                        description = result.announcement.description;
                     }
                 }
-                if(result.announcement.hasOwnProperty('response')) {
-                    response_descr = result.announcement.response;
+
+                // 3) retrieve translation related to action, if any
+                let translation = await ApiService.getTranslation(action.controller.replaceAll('_', '\\'), this.view.getLocale());
+
+
+                // check presence of description and fallback to controller description
+                if(action.hasOwnProperty('description')) {
+                    description = action.description;
                 }
-                if(result.announcement.hasOwnProperty('description')) {
-                    description = result.announcement.description;
+
+                let translated_description = TranslationService.resolve(translation, '', [], '', description, 'description');
+                // no translation was found for controller
+                if(translated_description == description) {
+                    // fallback to current view translation
+                    description = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, description, 'description');
                 }
-            }
-
-            // 3) retrieve translation related to action, if any
-            let translation = await ApiService.getTranslation(action.controller.replaceAll('_', '\\'), this.view.getLocale());
-
-            // restore action button
-            $button.removeClass('mdc-button--spinner').removeAttr('disabled');
-
-            // check presence of description and fallback to controller description
-            if(action.hasOwnProperty('description')) {
-                description = action.description;
-            }
-
-            let translated_description = TranslationService.resolve(translation, '', [], '', description, 'description');
-            // no translation was found for controller
-            if(translated_description == description) {
-                // fallback to current view translation
-                description = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, description, 'description');
-            }
-            else {
-                description = translated_description;
-            }
-
-            let defer = $.Deferred();
-            let $description = $('<p />').text(description);
-
-            if(action.hasOwnProperty('confirm') && action.confirm) {
-                // params dialog
-                if(Object.keys(missing_params).length) {
-                    let $dialog = UIHelper.createDialog(this.view.getUUID()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
-                    $dialog.find('.mdc-dialog__content').append($description);
-                    await this.decorateViewActionDialog($dialog, action, missing_params);
-                    $dialog.addClass('sb-view-dialog').appendTo(this.view.getContainer());
-                    $dialog
-                    .on('_accept', () => defer.resolve($dialog.data('result')))
-                    .on('_reject', () => defer.reject() );
-                    $dialog.trigger('_open');
-                }
-                // confirm dialog
                 else {
-                    // display confirmation dialog with checkbox for archive
-                    let $dialog = UIHelper.createDialog(this.view.getUUID()+'_'+action.id+'_confirm-action-dialog', TranslationService.instant('SB_ACTIONS_CONFIRM'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
-                    $dialog.find('.mdc-dialog__content').append($description);
-                    $dialog.appendTo(this.view.getContainer());
-                    $dialog
-                    .on('_accept', () => defer.resolve())
-                    .on('_reject', () => defer.reject() );
-                    $dialog.trigger('_open');
+                    description = translated_description;
                 }
-            }
-            else {
-                // params dialog
-                if(Object.keys(missing_params).length) {
-                    let $dialog = UIHelper.createDialog(this.view.getUUID()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
-                    $dialog.find('.mdc-dialog__content').append($description);
-                    await this.decorateViewActionDialog($dialog, action, missing_params);
-                    $dialog.addClass('sb-view-dialog').appendTo(this.view.getContainer());
-                    $dialog
-                    .on('_accept', () => defer.resolve($dialog.data('result')))
-                    .on('_reject', () => defer.reject() );
-                    $dialog.trigger('_open');
-                }
-                // perform action
-                else {
-                    defer.resolve()
-                }
-            }
 
-            defer.promise().then( async (result:any) => {
-                // mark action button as loading
-                $button.addClass('mdc-button--spinner').attr('disabled', 'disabled');
-                await this.performViewAction(action, {...resulting_params, ...result}, translation, response_descr);
+                let defer = $.Deferred();
+                let $description = $('<p />').text(description);
+
+                if(action.hasOwnProperty('confirm') && action.confirm) {
+                    // params dialog
+                    if(Object.keys(missing_params).length) {
+                        let $dialog = UIHelper.createDialog(this.view.getUUID()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
+                        $dialog.find('.mdc-dialog__content').append($description);
+                        await this.decorateViewActionDialog($dialog, action, missing_params);
+                        $dialog.addClass('sb-view-dialog').appendTo(this.view.getContainer());
+                        $dialog
+                        .on('_accept', () => defer.resolve($dialog.data('result')))
+                        .on('_reject', () => defer.reject() );
+                        $dialog.trigger('_open');
+                    }
+                    // confirm dialog
+                    else {
+                        // display confirmation dialog with checkbox for archive
+                        let $dialog = UIHelper.createDialog(this.view.getUUID()+'_'+action.id+'_confirm-action-dialog', TranslationService.instant('SB_ACTIONS_CONFIRM'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
+                        $dialog.find('.mdc-dialog__content').append($description);
+                        $dialog.appendTo(this.view.getContainer());
+                        $dialog
+                        .on('_accept', () => defer.resolve())
+                        .on('_reject', () => defer.reject() );
+                        $dialog.trigger('_open');
+                    }
+                }
+                else {
+                    // params dialog
+                    if(Object.keys(missing_params).length) {
+                        let $dialog = UIHelper.createDialog(this.view.getUUID()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
+                        $dialog.find('.mdc-dialog__content').append($description);
+                        await this.decorateViewActionDialog($dialog, action, missing_params);
+                        $dialog.addClass('sb-view-dialog').appendTo(this.view.getContainer());
+                        $dialog
+                        .on('_accept', () => defer.resolve($dialog.data('result')))
+                        .on('_reject', () => defer.reject() );
+                        $dialog.trigger('_open');
+                    }
+                    // perform action
+                    else {
+                        defer.resolve();
+                    }
+                }
+
+                defer.promise().then( async (result:any) => {
+                    // mark action button as loading
+                    let $action_dropdown = $button.closest('button');
+                    $action_dropdown.addClass('mdc-button--spinner');
+                    try {
+                        console.log('########## perform action', $button.closest('button'));
+                        await this.performViewAction(action, {...resulting_params, ...result}, translation, response_descr);
+                    }
+                    catch(response) {
+
+                    }
+                    // restore action button
+                    console.log('########## accepted', $button.closest('button'));
+                    $action_dropdown.removeClass('mdc-button--spinner');
+                })
+                .catch( () => {
+                    console.log('########## rejected', $button.closest('button'));
+                    $button.closest('button').removeClass('mdc-button--spinner');
+                });
+            }
+            catch(response) {
+                console.log('unknown error', response);
                 // restore action button
-                $button.removeClass('mdc-button--spinner').removeAttr('disabled');
-            });
-
+                $button.closest('button').removeClass('mdc-button--spinner');
+                await this.view.displayErrorFeedback(this.view.getTranslation(), response);
+            }
         });
 
     }

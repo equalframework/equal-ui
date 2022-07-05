@@ -23,27 +23,22 @@ export default class WidgetString extends Widget {
         }
         switch(this.mode) {
             case 'edit':
-                this.$elem = UIHelper.createInput('', this.label, value, this.config.description, '', this.readonly);
+                this.$elem = UIHelper.createInput('string_'+this.id, this.label, value, this.config.description, '', this.readonly);
                 if(this.config.layout == 'list') {
                     this.$elem.css({"width": "calc(100% - 10px)"});
                 }
-                // setup handler for relaying value update to parent layout
-                let timeout: any;
-                this.$elem.find('input').on('keyup', (event:any) => {
-                    if(event.which == 9) {
-                        // prevent double handling tab
-                        return;
-                    }
-                    if(timeout) {
-                        clearTimeout(timeout);
-                    }
-                    let $this = $(event.currentTarget);
-                    this.value = $this.val();
 
-                    timeout = setTimeout( () => {
+                // #memo - not dealing with keydown is preferred to avoid confusion about special keys role
+                // #memo - we use 'change' event to cover float and integers changes with up and down buttons (same timeout)
+                this.$elem.find('input').on('change', (event:any) => {
+                    let $this = $(event.currentTarget);
+
+                    if(this.value != $this.val()) {
+                        this.value = $this.val();
                         this.$elem.trigger('_updatedWidget', [false]);
-                    }, 300);
+                    }
                 });
+
                 break;
             case 'view':
             default:
@@ -71,6 +66,7 @@ export default class WidgetString extends Widget {
                 }
                 else {
                     this.$elem = UIHelper.createInputView('', this.label, value, this.config.description);
+                    this.$elem.attr('title', value);
                 }
 
                 break;

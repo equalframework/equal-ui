@@ -182,7 +182,7 @@ export class LayoutDashboard extends Layout {
         this.$layout.append($elem);
     }
 
-    protected feed(objects: any) {
+    protected async feed(objects: any) {
         // nothing to feed : dashboard is read only
         for(let widget_id of Object.keys(this.model_widgets[0])) {
             let widget = this.model_widgets[0][widget_id];

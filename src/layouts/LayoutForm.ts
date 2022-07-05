@@ -166,12 +166,13 @@ export class LayoutForm extends Layout {
         this.$layout.append($elem);
     }
 
-    protected feed(objects: any) {
+    protected async feed(objects: any) {
         console.log('LayoutForm::feed', objects);
         // display the first object from the collection
 
         let fields = Object.keys(this.view.getViewFields());
         let model_fields = this.view.getModelFields();
+        let translation = this.view.getTranslation();
 
         // remember which element has focus (DOM is going to be modified)
         let focused_widget_id = $("input:focus").closest('.sb-widget').attr('id');
@@ -183,9 +184,30 @@ export class LayoutForm extends Layout {
             // update actions in view header
             let view_schema = this.view.getViewSchema();
 
+            let $view_actions = this.view.getContainer().find('.sb-view-header-actions-view');
+
+            // show object status, if defined and present
+            if(model_fields.hasOwnProperty('status')) {
+                let $status_container = $view_actions.find('#'+this.uuid+'_status');
+                if($status_container.length == 0) {
+                    let status_title = TranslationService.resolve(translation, 'model', [], 'status', 'status', 'label');                    
+                    $status_container = $('<div style="margin-left: auto;"></div>').attr('id', this.uuid+'_status').append( $('<span style="line-height: 46px;margin-right: 12px; text-transform: capitalize;">'+status_title+': <span class="status-value"></span></span>') ).appendTo($view_actions);
+                }
+
+                let status_selection = TranslationService.resolve(translation, 'model', [], 'status', model_fields['status'].selection, 'selection');
+                let status_value = status_selection[object['status']];
+                $status_container.find('.status-value').empty().append($('<b>'+status_value+'</b>'));
+            }
+
             if(view_schema.hasOwnProperty('actions')) {
-                let $view_actions = this.view.getContainer().find('.sb-view-header-actions-view');
-                $view_actions.empty();
+                // $view_actions.empty();
+                
+                let $actions_button = $view_actions.find('#'+this.uuid+'_actions-dropdown');
+                if($actions_button.length == 0) {
+                    $actions_button = UIHelper.createDropDown(this.uuid+'_actions-dropdown', 'Actions', 'text', '', '').addClass('layout-actions').appendTo($view_actions);
+                }
+                $actions_button.find('.menu-list').empty();
+
                 for(let action of view_schema.actions) {
                     let visible = true;
                     if(action.hasOwnProperty('visible')) {
@@ -200,9 +222,12 @@ export class LayoutForm extends Layout {
                     }
                     if(visible) {
                         let action_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, action.label);
-                        let $button = UIHelper.createButton('action-view-'+action.id, action_title, 'outlined')
-                        this.decorateActionButton($button, action, object);
-                        $view_actions.append($button);
+                        // let $button = UIHelper.createButton('action-view-'+action.id, action_title, 'outlined')
+                        // this.decorateActionButton($button, action, object);
+                        // $view_actions.append($button);
+                        let $item = UIHelper.createListItem(this.uuid+'_action-'+action.id.replace('.', '_'), action_title);
+                        this.decorateActionButton($item, action, object);
+                        $actions_button.find('.menu-list').append($item);
                     }
                 }
             }
@@ -353,17 +378,21 @@ export class LayoutForm extends Layout {
                             // update object with new value
                             let values:any = {};
                             values[field] = widget.getValue();
-                            // relay the change to back-end through onupdate
-                            try {
-                                const result = await ApiService.fetch("/", {do: 'model_onchange', entity: this.view.getEntity(), changes: this.view.getModel().export(values), values: this.view.getModel().export(object), lang: this.view.getLang()} );
-                                for(let field of Object.keys(result)) {
-                                    // if some changes are returned from the back-end, append them to the view model update
-                                    values[field] = result[field];
+                            // if value is less than 1k, relay onchange to server
+                            // #todo - choose an objectivable limit
+                            if(String(widget.getValue()).length < 1000) {
+                                // relay the change to back-end through onupdate
+                                try {
+                                    const result = await ApiService.call("/?do=model_onchange", {entity: this.view.getEntity(), changes: this.view.getModel().export(values), values: this.view.getModel().export(object), lang: this.view.getLang()} );
+                                    for(let field of Object.keys(result)) {
+                                        // if some changes are returned from the back-end, append them to the view model update
+                                        values[field] = result[field];
+                                    }
                                 }
-                            }
-                            catch(response) {
-                                // ignore faulty responses
-                                console.warn('unable to send onupdate request', response);
+                                catch(response) {
+                                    // ignore faulty responses
+                                    console.warn('unable to send onupdate request', response);
+                                }
                             }
                             this.view.onchangeViewModel([object.id], values, refresh);
                         });

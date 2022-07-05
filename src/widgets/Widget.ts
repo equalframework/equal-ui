@@ -104,6 +104,11 @@ export default class Widget {
         return this;
     }
 
+    /**
+     * 
+     * This method is called by LayoutList for setting a widget with bulk assign.
+     * @param value 
+     */
     public change(value:any) {
         this.setValue(value);
     }

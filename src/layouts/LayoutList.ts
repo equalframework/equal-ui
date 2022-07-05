@@ -232,8 +232,8 @@ export class LayoutList extends Layout {
         }
     }
 
-    protected feed(objects: any) {
-        console.log('Layout::feedList', objects);
+    protected async feed(objects: any) {
+        console.log('LayoutList::feed', objects);
 
         this.$layout.find("tbody").remove();
 
@@ -270,6 +270,8 @@ export class LayoutList extends Layout {
                     let $row = this.feedListCreateObjectRow(object, parent_group_id);
                     $tbody.append($row);
                 }
+
+                // #todo - if operations are defined, add a line for each group
             }
             else if(group.hasOwnProperty('_is_group')) {
                 let $row = this.feedListCreateGroupRow(group, $tbody);
@@ -327,7 +329,7 @@ export class LayoutList extends Layout {
                             let suffix = '';
                             if(descriptor[item.value].hasOwnProperty('usage')) {
                                 let usage = descriptor[item.value]['usage'];
-                                if(usage.indexOf('amount/percent') >= 0) {
+                                if(usage.indexOf('amount/percent') >= 0 || usage.indexOf('amount/rate') >= 0) {
                                     suffix = '%';
                                     value = (value * 100).toFixed(0);
                                 }
@@ -592,6 +594,7 @@ export class LayoutList extends Layout {
                 let op_field = (group._operation[1].split('.'))[1];
                 for(let obj of group['_data']) {
                     if(obj.hasOwnProperty(op_field)) {
+                        // #todo - handle all cases of operations
                         op_result += obj[op_field];
                     }
                 }

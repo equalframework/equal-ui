@@ -15,8 +15,8 @@ export default class WidgetFloat extends WidgetString {
     }
 
     public setValue(value: any) {
-        console.log('WidgetFloat::setValue', value);
-        this.value = Number.parseFloat(value);
+        let res = Number.parseFloat(value);        
+        this.value = (isNaN(res))?0:res;
         return this;
     }
 
@@ -36,7 +36,7 @@ export default class WidgetFloat extends WidgetString {
 
             if(this.config.hasOwnProperty('usage')) {
                 let usage = this.config.usage;
-                if(usage.indexOf('amount/percent') >= 0) {
+                if(usage.indexOf('amount/percent') >= 0 || usage.indexOf('amount/rate') >= 0) {
                     value = (value * 100).toFixed(0) + '%';
                 }
                 else if(usage.indexOf('amount/money') >= 0) {

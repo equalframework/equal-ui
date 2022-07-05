@@ -167,6 +167,9 @@ export class Domain {
      */
     public evaluate(object: any) : boolean {
         let res = false;
+        if(this.clauses.length == 0) {
+            return true;
+        }
         // parse any reference to object in conditions
         this.parse(object);
         // evaluate clauses (OR) and conditions (AND)
@@ -230,7 +233,6 @@ export class Domain {
         }
         return res;
     }
-
 }
 
 export class Clause {

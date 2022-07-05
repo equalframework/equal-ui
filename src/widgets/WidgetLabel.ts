@@ -11,7 +11,6 @@ export default class WidgetLabel extends Widget {
 
 
     public render():JQuery {
-        console.log('################################ rendering label', this);
         let value:any = (typeof this.value != undefined && this.value != undefined)?this.value:'';
         if(typeof value == 'string') {
             value = value.replace(/"/g, "&quot;");

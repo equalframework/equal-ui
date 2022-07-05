@@ -113,7 +113,7 @@ body, html {
 
 .sb-container-header .lang-selector {
     height: 48px;
-    width: 150px;
+    width: 85px;
     position: absolute;
     top: 0;
     right: 0;
@@ -140,6 +140,7 @@ body, html {
 .sb-view {
     position: relative;
     height: 100%;
+    user-select: none;
 }
 
 .sb-view .mdc-snackbar {
@@ -569,6 +570,7 @@ body, html {
 
 .sb-view-header-actions .sb-view-header-actions-view {
     margin-left: auto;
+    display: flex;
 }
 
 .sb-view-header-actions .sb-view-header-actions-view button {
@@ -976,7 +978,7 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
 	background-color: var(--mdc-theme-primary);
 	height: 4px;
 	width: 0;
-    animation: tableSpinnerGetWidth 2s ease-in infinite;
+    animation: tableSpinnerGetWidth 2s linear infinite;
 }
 
 @keyframes tableSpinnerGetWidth {
@@ -1034,6 +1036,9 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     margin-right: 0 !important;
     border-top-right-radius: 0 !important;
     border-bottom-right-radius: 0 !important;
+}
+
+.mdc-button-split_button.mdc-button--raised {
     box-shadow: rgb(0 0 0 / 20%) 4px 3px 1px -2px, rgb(0 0 0 / 14%) 0px 2px 2px 0px, rgb(0 0 0 / 12%) 0px 1px 5px 0px;
 }
 
@@ -1041,13 +1046,20 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     opacity: 0 !important;
 }
 
+.mdc-dropdown {
+    z-index: 2;
+    min-width: 150px;
+    display: flex;
+    justify-content: space-evenly;
+}
+
 .mdc-button-split_drop {
+    z-index: 2;
     margin-left: 0 !important;
     border-top-left-radius: 0 !important;
     border-bottom-left-radius: 0 !important;
     max-width: 30px;
     min-width: 30px;
-    z-index: 2;
 }
 
 .mdc-button-split_drop .mdc-button__ripple {
@@ -1055,11 +1067,11 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     border-bottom-left-radius: 0 !important;
 }
 
-.mdc-button-split_drop i.mdc-button__icon {
+.mdc-button-split_drop i.mdc-button__icon, .mdc-dropdown i.mdc-button__icon {
     margin: 0;
 }
 
-.mdc-button-split_drop .mdc-menu {
+.mdc-button-split_drop .mdc-menu, .mdc-dropdown .mdc-menu {
     left: unset !important;
     right: 0 !important;
     margin-top: 37px !important;

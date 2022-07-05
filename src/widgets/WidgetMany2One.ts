@@ -69,7 +69,15 @@ export default class WidgetMany2One extends Widget {
                                 type: 'form',
                                 mode: 'edit',
                                 name: (this.config.hasOwnProperty('view_name'))?this.config.view_name:'default',
-                                domain: ['id', '=', this.config.object_id]
+                                domain: ['id', '=', this.config.object_id],
+                                callback: (data:any) => {
+                                    if(data && data.selection && data.objects && data.selection.length) {
+                                        // we should have received a single (partial) object with up-to-date name and id
+                                        let object = data.objects.find( (o:any) => o.id == data.selection[0] );
+                                        this.value = {id: object.id, name: object.name};
+                                        this.$elem.trigger('_updatedWidget');
+                                    }
+                                }                                
                             });
                         }
                     });
@@ -87,15 +95,13 @@ export default class WidgetMany2One extends Widget {
                             domain: domain,
                             name: (this.config.hasOwnProperty('view_name'))?this.config.view_name:'default',
                             callback: (data:any) => {
-                                if(data && data.selection && data.objects) {
-                                    if(data.selection.length) {
-                                        $button_create.hide();
-                                        $button_open.show();
-                                        // m2o relations are always loaded as an object with {id:, name:}
-                                        let object = data.objects.find( (o:any) => o.id == data.selection[0] );
-                                        this.value = {id: object.id, name: object.name};
-                                        this.$elem.trigger('_updatedWidget');
-                                    }
+                                if(data && data.selection && data.objects && data.selection.length) {
+                                    $button_create.hide();
+                                    $button_open.show();
+                                    // m2o relations are always loaded as an object with {id:, name:}
+                                    let object = data.objects.find( (o:any) => o.id == data.selection[0] );
+                                    this.value = {id: object.id, name: object.name};
+                                    this.$elem.trigger('_updatedWidget');
                                 }
                             }
                         });
@@ -117,7 +123,7 @@ export default class WidgetMany2One extends Widget {
                         purpose: 'select',
                         limit: 25,
                         callback: (data:any) => {
-                            if(data && data.selection && data.objects) {
+                            if(data && data.selection && data.objects && data.selection.length) {
                                 // m2o relations are always loaded as an object with {id:, name:}
                                 let object = data.objects.find( (o:any) => o.id == data.selection[0] );
                                 this.value = {id: object.id, name: object.name};
@@ -262,7 +268,7 @@ export default class WidgetMany2One extends Widget {
 
                     $select.find('input').on('focus', (event:any) => {
                         event.stopPropagation();
-console.log('input focus');
+
                         if($select.attr('data-selected')) {
                             return;
                         }

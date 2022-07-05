@@ -21,13 +21,14 @@ export default class WidgetInteger extends WidgetString {
 
         if(this.mode == 'edit') {
             $input.attr( "type", "number" );
+            if(this.config.hasOwnProperty('min')) {
+                $input.attr( "min", this.config.min );
+            }
+            if(this.config.hasOwnProperty('max')) {
+                $input.attr( "max", this.config.max );
+            }
         }
-        if(this.config.hasOwnProperty('min')) {
-            $input.attr( "min", this.config.min );
-        }
-        if(this.config.hasOwnProperty('max')) {
-            $input.attr( "max", this.config.max );
-        }
+
         return this.$elem;
     }
 }

@@ -15,7 +15,7 @@ export class WidgetDashboardItem extends Widget {
 
         this.$elem = $('<div />');
 
-        let view = new View(this.getLayout().getView().getContext(), this.config.entity, this.config.view_type, this.config.view_name, this.config.domain, this.mode, 'widget', this.config.lang, this.config);
+        let view = new View(this.getLayout().getView().getContext(), this.config.entity, this.config.view_type, this.config.view_name, this.config.domain, this.mode, 'widget', this.getLayout().getView().getLang(), this.config);
 
         view.isReady().then( () => {
             let $container = view.getContainer();        
