@@ -1,15 +1,16 @@
+import Widget from "./Widget";
 import WidgetString from "./WidgetString";
 import { View, Layout } from "../equal-lib";
 
 import { UIHelper } from '../material-lib';
 
 export default class WidgetInteger extends WidgetString {
-    
+
 
     constructor(layout: Layout, label: string, value: any, config: any) {
         super(layout, label, value, config);
     }
-    
+
     public render():JQuery {
         this.$elem = super.render();
         let $input = this.$elem.find('input');
@@ -17,7 +18,7 @@ export default class WidgetInteger extends WidgetString {
         // numeric fields are aligned right (except for `id` column)
         if(this.config.field != 'id') {
             $input.css({'text-align': 'right'});
-        }        
+        }
 
         if(this.mode == 'edit') {
             $input.attr( "type", "number" );
@@ -27,6 +28,13 @@ export default class WidgetInteger extends WidgetString {
             if(this.config.hasOwnProperty('max')) {
                 $input.attr( "max", this.config.max );
             }
+        }
+        else if(this.mode == 'view') {
+            // for lists, item is a DIV
+            if(this.config.layout == 'list') {
+                this.$elem.css({'text-align': 'right'});
+            }
+
         }
 
         return this.$elem;

@@ -138,13 +138,13 @@ export class LayoutSearch extends Layout {
                             $cell.addClass('mdc-layout-grid__cell--span-' + width);
 
                             if(item.hasOwnProperty('type') && item.hasOwnProperty('value')) {
-                                
+
                                 if(item.type == 'field') {
                                     let config = WidgetFactory.getWidgetConfig(this.view, item.value, translation, model_fields, view_fields);
                                     if(config) {
-                                        config.action_create = false;
-                                        config.action_open = false;
-                                        let widget: Widget = WidgetFactory.getWidget(this, config.type, config.title, '', config);                                        
+                                        config.has_action_create = false;
+                                        config.has_action_open = false;
+                                        let widget: Widget = WidgetFactory.getWidget(this, config.type, config.title, '', config);
                                         widget.setMode(this.view.getMode());
 
                                         // store widget in widgets Map, using field name as key
@@ -152,7 +152,7 @@ export class LayoutSearch extends Layout {
                                         $cell.append(widget.attach());
                                     }
                                 }
-                                else if(item.type == 'label') {                                    
+                                else if(item.type == 'label') {
                                     let label_title = TranslationService.resolve(translation, 'view', [this.view.getId(), 'layout'], item.id, item.value);
                                     let widget:Widget = WidgetFactory.getWidget(this, 'label', '', label_title, {widget_type: 'label', ...item});
                                     this.model_widgets[0]['__label_'+widget.getId()] = widget;

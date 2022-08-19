@@ -21,6 +21,7 @@ export class _ApiService {
     private schemas: any;
 
     private last_count: number;
+    private last_status: number;
 
 
     constructor() {
@@ -43,6 +44,7 @@ export class _ApiService {
         this.schemas = {};
 
         this.last_count = 0;
+        this.last_status = 0;        
     }
 
 
@@ -152,7 +154,10 @@ export class _ApiService {
         return this.translations[package_name][class_name][locale];
     }
 
-
+    public getLastStatus() {
+        return this.last_status;
+    }
+    
     public getLastCount() {
         return this.last_count;
     }
@@ -221,6 +226,8 @@ export class _ApiService {
                 xhr.send(null);
 
                 xhr.onload = () => {
+                    this.last_status = xhr.status;
+
                     if(xhr.status < 200 || xhr.status > 299) {
                         reject(xhr.response)
                     }

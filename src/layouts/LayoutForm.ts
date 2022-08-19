@@ -137,8 +137,12 @@ export class LayoutForm extends Layout {
                             let width = (item.hasOwnProperty('width'))?Math.round((parseInt(item.width, 10) / 100) * 12): 12;
                             $cell.addClass('mdc-layout-grid__cell--span-' + width);
 
+                            if(item.hasOwnProperty('align') && item.align == 'right') {
+                                $cell.css({'margin-left': 'auto'});
+                            }
+
                             if(item.hasOwnProperty('type') && item.hasOwnProperty('value')) {
-                                
+
                                 if(item.type == 'field') {
                                     let config = WidgetFactory.getWidgetConfig(this.view, item.value, translation, model_fields, view_fields);
                                     if(config) {
@@ -149,7 +153,7 @@ export class LayoutForm extends Layout {
                                         $cell.append(widget.attach());
                                     }
                                 }
-                                else if(item.type == 'label') {                                    
+                                else if(item.type == 'label') {
                                     let label_title = TranslationService.resolve(translation, 'view', [this.view.getId(), 'layout'], item.id, item.value);
                                     let widget:Widget = WidgetFactory.getWidget(this, 'label', '', label_title, {widget_type: 'label', ...item});
                                     this.model_widgets[0]['__label_'+widget.getId()] = widget;
@@ -190,7 +194,7 @@ export class LayoutForm extends Layout {
             if(model_fields.hasOwnProperty('status')) {
                 let $status_container = $view_actions.find('#'+this.uuid+'_status');
                 if($status_container.length == 0) {
-                    let status_title = TranslationService.resolve(translation, 'model', [], 'status', 'status', 'label');                    
+                    let status_title = TranslationService.resolve(translation, 'model', [], 'status', 'status', 'label');
                     $status_container = $('<div style="margin-left: auto;"></div>').attr('id', this.uuid+'_status').append( $('<span style="line-height: 46px;margin-right: 12px; text-transform: capitalize;">'+status_title+': <span class="status-value"></span></span>') ).appendTo($view_actions);
                 }
 
@@ -201,7 +205,7 @@ export class LayoutForm extends Layout {
 
             if(view_schema.hasOwnProperty('actions')) {
                 // $view_actions.empty();
-                
+
                 let $actions_button = $view_actions.find('#'+this.uuid+'_actions-dropdown');
                 if($actions_button.length == 0) {
                     $actions_button = UIHelper.createDropDown(this.uuid+'_actions-dropdown', 'Actions', 'text', '', '').addClass('layout-actions').appendTo($view_actions);

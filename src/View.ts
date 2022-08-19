@@ -419,7 +419,7 @@ export class View {
                     let tmpDomain = new Domain(this.domain);
                     this.domain = tmpDomain.merge(viewDomain).toArray();
                 }
-                
+
             }
 
             if(['list', 'cards'].indexOf(this.type) >= 0) {
@@ -625,7 +625,7 @@ export class View {
         console.log('View::getDomain', this.domain, this.applied_filters_ids);
 
         let filters_domain = new Domain([]);
-        
+
         for(let filter_id of this.applied_filters_ids) {
             // filters clauses are cumulatives (conjunctions conditions)
             filters_domain.merge(new Domain(this.filters[filter_id].clause))
@@ -1239,16 +1239,16 @@ export class View {
         let $refresh_list_button = UIHelper.createButton(this.getUUID()+'-refresh-view', 'refresh', 'icon', 'refresh').on('click', () => this.onchangeView());
 
         let $switch_grid_button = UIHelper.createButton(this.getUUID()+'switch-view', 'refresh', 'icon', 'list').on('click', () => {
-            this.setMode('grid'); 
+            this.setMode('grid');
             this.$layoutContainer.removeClass('sb-view-layout-chart');
             this.$layoutContainer.addClass('sb-view-layout-list');
             this.onchangeView(true);
             $switch_grid_button.hide();
-            $switch_chart_button.show();            
+            $switch_chart_button.show();
         }).hide();
 
         let $switch_chart_button = UIHelper.createButton(this.getUUID()+'switch-view', 'refresh', 'icon', 'bar_chart').on('click', () => {
-            this.setMode('chart'); 
+            this.setMode('chart');
             this.$layoutContainer.removeClass('sb-view-layout-list');
             this.$layoutContainer.addClass('sb-view-layout-chart');
             this.onchangeView(true);
@@ -1260,10 +1260,10 @@ export class View {
 
         $pagination.find('.pagination-container')
         .prepend( $switch_chart_button )
-        .prepend( $switch_grid_button )        
+        .prepend( $switch_grid_button )
         .prepend( $refresh_list_button );
 
-        $level2.append( $pagination );        
+        $level2.append( $pagination );
 
         this.$headerContainer.append( $elem );
     }
@@ -1323,17 +1323,17 @@ export class View {
 
                     let export_title = TranslationService.resolve(this.translation, 'view', [this.getId(), 'exports'], item.id, item.label, 'label')
                     UIHelper.createListItem('SB_ACTIONS_BUTTON_EXPORT-'+item.id, export_title, item.hasOwnProperty('icon')?item.icon:'')
-                    .on( 'click', (event:any) => {                        
+                    .on( 'click', (event:any) => {
                         const params = new URLSearchParams({
-                                get:        item.controller,
-                                view_id:    (item.view)?item.view: this.getId(),
-                                entity:     this.entity,
-                                domain:     JSON.stringify(this.getDomain()),
-                                id:         (this.selected_ids.length)?this.selected_ids[0]:0,
-                                ids:        JSON.stringify(this.selected_ids),
-                                lang:       this.lang,
-                                controller: this.controller,
-                                params:     JSON.stringify(this.getParams())
+                            get:        item.controller,
+                            view_id:    (item.view)?item.view: this.getId(),
+                            entity:     this.entity,
+                            domain:     JSON.stringify(this.getDomain()),
+                            id:         (this.selected_ids.length)?this.selected_ids[0]:0,
+                            ids:        JSON.stringify(this.selected_ids),
+                            lang:       this.lang,
+                            controller: this.controller,
+                            params:     JSON.stringify(this.getParams())
                         }).toString();
                         window.open(this.getEnv().backend_url+'/?'+params, "_blank");
                     })
@@ -1417,10 +1417,10 @@ export class View {
 
                     let export_title = TranslationService.resolve(this.translation, 'view', [this.getId(), 'exports'], item.id, item.label, 'label')
                     UIHelper.createListItem('SB_ACTIONS_BUTTON_EXPORT-'+item.id, export_title, item.hasOwnProperty('icon')?item.icon:'')
-                    .on( 'click', (event:any) => {                        
+                    .on( 'click', (event:any) => {
                         const params = new URLSearchParams({
                                 get:        item.controller,
-                                entity:     this.entity,                                
+                                entity:     this.entity,
                                 view_id:    (item.view)?item.view: this.getId(),
                                 domain:     JSON.stringify(this.getDomain()),
                                 lang:       this.lang,
@@ -2224,9 +2224,9 @@ export class View {
                         let error_id:string = <string> String((Object.keys(errors['INVALID_PARAM'][field]))[0]);
                         let msg:string = <string>(Object.values(errors['INVALID_PARAM'][field]))[0];
                         let translated_msg = TranslationService.resolve(translation, 'error', [], field, msg, error_id);
-                        if(translated_msg == msg) {
+                        if(translated_msg == msg.replace(/_/g, ' ')) {
                             let translated_error = TranslationService.instant('SB_ERROR_'+error_id.toUpperCase());
-                            if(translated_error.length) {
+                            if(translated_error != 'SB_ERROR_'+error_id.toUpperCase()) {
                                 translated_msg = translated_error;
                             }
                         }
@@ -2252,9 +2252,9 @@ export class View {
                         // try to resolve the error message
                         let msg:string = TranslationService.instant('SB_ERROR_INVALID_PARAM');
                         let translated_msg = TranslationService.resolve(translation, 'error', [], 'errors', error_id, error_id);
-                        if(translated_msg == error_id) {
+                        if(translated_msg == error_id.replace(/_/g, ' ')) {
                             let translated_error = TranslationService.instant('SB_ERROR_'+error_id.toUpperCase());
-                            if(translated_error.length) {
+                            if(translated_error != 'SB_ERROR_'+error_id.toUpperCase()) {
                                 msg = translated_error;
                             }
                         }
@@ -2280,9 +2280,9 @@ export class View {
                         let error_id:string = <string> String((Object.keys(errors['NOT_ALLOWED'][field]))[0]);
                         let msg:string = <string>(Object.values(errors['NOT_ALLOWED'][field]))[0];
                         let translated_msg = TranslationService.resolve(translation, 'error', [], field, msg, error_id);
-                        if(translated_msg == msg) {
+                        if(translated_msg == msg.replace(/_/g, ' ')) {
                             let translated_error = TranslationService.instant('SB_ERROR_'+error_id.toUpperCase());
-                            if(translated_error.length) {
+                            if(translated_error != 'SB_ERROR_'+error_id.toUpperCase()) {
                                 translated_msg = translated_error;
                             }
                         }
@@ -2308,9 +2308,9 @@ export class View {
                         let msg = TranslationService.instant('SB_ERROR_NOT_ALLOWED');
                         // try to resolve the error message
                         let translated_msg = TranslationService.resolve(translation, 'error', [], 'errors', error_id, error_id);
-                        if(translated_msg == error_id) {
+                        if(translated_msg == error_id.replace(/_/g, ' ')) {
                             let translated_error = TranslationService.instant('SB_ERROR_'+error_id.toUpperCase());
-                            if(translated_error.length) {
+                            if(translated_error != 'SB_ERROR_'+error_id.toUpperCase()) {
                                 msg = translated_error;
                             }
                         }
@@ -2388,7 +2388,6 @@ export class View {
                 let operator = condition[1];
                 let value = condition[2];
 
-    console.log('#######################', operand, operator, value);
                 let field = operand;
 
                 // assign default resulting values
@@ -2412,11 +2411,11 @@ export class View {
                     case '=':
                         res_operator = '=';
                         break;
-                    case 'not in':                    
+                    case 'not in':
                     case '<>':
                     case '!=':
                         res_operator = '<>';
-                        break;            
+                        break;
                 }
 
                 /*
@@ -2443,9 +2442,9 @@ export class View {
                             res_value = values[value];
                         }
                     }
-                    else if(['date', 'datetime'].indexOf(type) >= 0) {                        
+                    else if(['date', 'datetime'].indexOf(type) >= 0) {
                         if(value instanceof Date) {
-                            res_value = value.toISOString();                        
+                            res_value = value.toISOString();
                         }
                         res_value = res_value.substring(0, 10);
                     }

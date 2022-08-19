@@ -170,7 +170,7 @@ export class Model {
         for(let i in view_fields) {
 
             let field = view_fields[i];
-            if(!schema.hasOwnProperty(field)) {
+            if(!schema || !schema.hasOwnProperty(field)) {
                 console.log('unknown field', field);
                 continue;
             }
@@ -198,12 +198,9 @@ export class Model {
 
             // fetch objects using controller given by View (default is core_model_collect)
             let response = await ApiService.fetch('/', body);
-
-            // let response = await ApiService.collect(this.view.getEntity(), this.view.getDomain(), fields, this.view.getOrder(), this.view.getSort(), this.view.getStart(), this.view.getLimit(), this.view.getLang());
-
+            this.total = ApiService.getLastCount();
             this.objects = response;
             this.loaded_promise.resolve();
-            this.total = ApiService.getLastCount();
         }
         catch(response) {
             console.log('Unable to fetch Collection from server', response);

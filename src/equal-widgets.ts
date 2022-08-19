@@ -92,7 +92,7 @@ config: {
             case 'label':
                 return new WidgetLabel(layout, label, value, config);
             case 'text':
-                return new WidgetText(layout, label, value, config);    
+                return new WidgetText(layout, label, value, config);
             case 'string':
             default:
                 return new WidgetString(layout, label, value, config);
@@ -102,7 +102,7 @@ config: {
 
     /**
      * Generate a widget config based on a layout item (from View schema)
-     * 
+     *
      * @param {View} view           View    field
      * @param {string} field        Field name.
      * @param {any} translation     View translation map.
@@ -138,7 +138,7 @@ config: {
                     // #todo - complete the list
                     case 'string/text':
                     case 'text/plain':
-                    case 'text/html':                        
+                    case 'text/html':
                     case 'markup/html':
                         type = 'text';
                         break;
@@ -190,7 +190,7 @@ config: {
         }
         config.field = field;
         config.visible = true;
-        // #memo - ready property is set to true during the 'feed' phase        
+        // #memo - ready property is set to true during the 'feed' phase
         config.ready = false;
         config.title = TranslationService.resolve(translation, 'model', [], field, label, 'label');
         config.description = TranslationService.resolve(translation, 'model', [], field, description, 'description');
@@ -219,7 +219,7 @@ config: {
         // convert visible property to JSON
         config.visible = eval(config.visible);
 
-        // for relational fields, we need to check if the Model has been fetched al
+        // for relational fields, we need some additional values
         if(['one2many', 'many2one', 'many2many'].indexOf(config.type) > -1) {
             // defined config for Widget's view with a custom domain according to object values
             let view_id = (config.hasOwnProperty('view'))?config.view:'list.default';
@@ -238,20 +238,27 @@ config: {
                 view_type: view_type,
                 view_name: view_name,
                 original_domain: domain.toArray(),
-                action_create: true,
-                action_open: true,
-                action_select: true
+                has_action_create: true,
+                has_action_open: true,
+                has_action_select: true
             };
-            
+
             if(config.hasOwnProperty('header')) {
-                if(config.header.hasOwnProperty('ACTION.CREATE')) {
-                    config.action_create = config.header['ACTION.CREATE'];
+                if(config.header === false) {
+                    config.has_action_create = false;
+                    config.has_action_open = false;
+                    config.has_action_select = false;
                 }
-                if(config.header.hasOwnProperty('ACTION.OPEN')) {
-                    config.action_open = config.header['ACTION.OPEN'];
-                }
-                if(config.header.hasOwnProperty('ACTION.SELECT')) {
-                    config.action_select = config.header['ACTION.SELECT'];
+                else if(config.header.hasOwnProperty('actions')) {
+                    if(config.header.actions.hasOwnProperty('ACTION.CREATE')) {
+                        config.has_action_create = config.header.actions['ACTION.CREATE'];
+                    }
+                    if(config.header.actions.hasOwnProperty('ACTION.OPEN')) {
+                        config.has_action_open = config.header.actions['ACTION.OPEN'];
+                    }
+                    if(config.header.actions.hasOwnProperty('ACTION.SELECT')) {
+                        config.has_action_select = config.header.actions['ACTION.SELECT'];
+                    }
                 }
             }
 

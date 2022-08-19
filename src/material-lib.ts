@@ -570,7 +570,7 @@ class UIHelper {
         fields_toggle_menu.setDefaultFocusState(DefaultFocusState.NONE);
 
         $elem.on('_toggle', () => {
-            fields_toggle_menu.open = !$elem.hasClass('mdc-menu-surface--open');
+            // fields_toggle_menu.open = !$elem.hasClass('mdc-menu-surface--open');
         });
 
         $elem.on('_open', (event: any) => {
@@ -586,8 +586,8 @@ class UIHelper {
 
         $elem.on('_close', (event: any) => {
             console.log('MDCMenu _close');
-            event.stopPropagation();
-            fields_toggle_menu.open = false;
+            // event.stopPropagation();
+            // fields_toggle_menu.open = false;
         });
 
         $elem.on('_moveup', (event:any) => {

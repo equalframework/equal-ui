@@ -280,7 +280,7 @@ export class Frame {
             let model_schema = await ApiService.getSchema(this.context.getEntity());
             let objects:any = await this.context.getView().getModel().get();
             let link = model_schema.link.replace(/object\.id/, objects[0].id);
-            $('<a>'+current_purpose_string+'</a>').attr('href', link).prependTo($elem);
+            $('<a>'+current_purpose_string+'</a>').attr('href', link).attr('target', '_blank').prependTo($elem);
         }
         else {
             $('<span>'+current_purpose_string+'</span>').appendTo($elem);

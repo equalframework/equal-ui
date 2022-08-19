@@ -108,7 +108,8 @@ export class Domain {
     /**
      * Update domain by parsing conditions and replace any occurence of `object.` and `user.` notations with related attributes of given objects.
      *
-     * @param values
+     * @param object    Object to parse the conditions with.
+     * @param user      Current User instance.
      * @returns Domain  Returns current instance with updated values.
      */
     public parse(object: any = {}, user: any = {}) {

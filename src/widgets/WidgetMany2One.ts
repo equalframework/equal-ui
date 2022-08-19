@@ -13,7 +13,6 @@ export default class WidgetMany2One extends Widget {
     }
 
     public render():JQuery {
-
         // in edit mode, we should have received an id, and in view mode, a name
         let value:string = this.value?this.value:'';
         let domain:any = [];
@@ -34,13 +33,13 @@ export default class WidgetMany2One extends Widget {
                 this.$elem = $('<div />');
 
                 let $select = UIHelper.createInput('m2o-input-'+this.id, this.label, value, this.config.description, '', this.readonly)
-                                .addClass('mdc-menu-surface--anchor')
-                                .css({"width": "100%", "display": "inline-block"});
+                                      .addClass('mdc-menu-surface--anchor')
+                                      .css({"width": "100%", "display": "inline-block"});
                 let $menu = UIHelper.createMenu('m2o-menu-'+this.id).appendTo($select);
                 let $menu_list = UIHelper.createList('m2o-menu-list-'+this.id).appendTo($menu);
                 let $link = UIHelper.createListItem('m2o-actions-create-'+this.id, '<a style="text-decoration: underline;">'+TranslationService.instant('SB_WIDGETS_MANY2ONE_ADVANCED_SEARCH')+'</a>');
 
-                if(this.config.action_open || this.config.action_create) {
+                if(this.config.has_action_open || this.config.has_action_create) {
                     $select.css({"width": "calc(100% - 48px)"});
                 }
 
@@ -59,7 +58,10 @@ export default class WidgetMany2One extends Widget {
                     $select.attr('data-selected', this.config.object_id);
                 }
 
-                if(this.config.action_open) {
+                if(!this.config.has_action_open) {
+                    $button_open.hide();
+                }
+                else {
                     this.$elem.append($button_open);
                     // open targeted object in new context
                     $button_open.on('click', async () => {
@@ -77,13 +79,16 @@ export default class WidgetMany2One extends Widget {
                                         this.value = {id: object.id, name: object.name};
                                         this.$elem.trigger('_updatedWidget');
                                     }
-                                }                                
+                                }
                             });
                         }
                     });
                 }
 
-                if(this.config.action_create) {
+                if(!this.config.has_action_create) {
+                    $button_create.hide();
+                }
+                else {
                     this.$elem.append($button_create);
                     // open creation form in new context
                     $button_create.on('click', async () => {
@@ -138,7 +143,6 @@ export default class WidgetMany2One extends Widget {
                 let feedObjects = async () => {
                     let $input = $select.find('input');
                     if(!$input.length) return;
-                    console.log('feedobjects');
                     let val = <string> $input.val();
                     let parts:string[] = val.split(" ");
 
@@ -199,7 +203,7 @@ export default class WidgetMany2One extends Widget {
 
                     let $button_reset = UIHelper.createButton('m2o-actions-reset-'+this.id, '', 'icon', 'close').css({"position": "absolute", "right": "45px", "top": "5px", "z-index": "2"});
 
-                    if(!this.config.action_open && !this.config.action_create) {
+                    if(!this.config.has_action_open && !this.config.has_action_create) {
                         $button_reset.css({"right": "5px"});
                     }
 
@@ -213,7 +217,6 @@ export default class WidgetMany2One extends Widget {
                     let dblclick_timeout:boolean = false;
 
                     $button_reset.on('click', (event:any) => {
-                        console.log('button reset onclick');
                         this.value = {id: 0, name:''};
                         $select.attr('data-selected', 0);
                         this.$elem.trigger('_updatedWidget');
@@ -237,7 +240,6 @@ export default class WidgetMany2One extends Widget {
                         // wait for the focus be given at next widget AND change to be relayed, if any
                         setTimeout( () => {
                             has_focus = false;
-                            console.log('closing menu');
                             $menu.trigger('_close');
                         }, 150);
                     });
@@ -247,12 +249,10 @@ export default class WidgetMany2One extends Widget {
                         if(dblclick_timeout) {
                             return;
                         }
-                        console.log('widget on click', has_focus);
                         // click on a focused input blurs (workaround for disapearing menu)
                         if(has_focus) {
                             has_focus = false;
-                            dblclick_timeout = true;                            
-                            console.log('bluring');
+                            dblclick_timeout = true;
                             $select.find('input').blur();
                             setTimeout( () => {
                                 dblclick_timeout = false;
@@ -283,7 +283,6 @@ export default class WidgetMany2One extends Widget {
                         feedObjects();
                         // delay has_focus to distinguish first focus and later
                         setTimeout( () => {
-                            console.log('has focus');
                             has_focus = true;
                         }, 250);
 
@@ -293,7 +292,6 @@ export default class WidgetMany2One extends Widget {
 
                     $select.find('input')
                     .on('keyup', (event:any) => {
-                        console.log('input on keyup');
                         if(event.which == 9) {
                             console.log('tab', this.getLabel());
                             // if clicked ok, if tab only not
@@ -331,13 +329,17 @@ export default class WidgetMany2One extends Widget {
                         // m2o relations are always loaded as an object with {id:, name:}
                         let object:any = objects.find( o => o.id == $select.attr('data-selected'));
                         if(object) {
+                            if(this.config.has_action_open) {
+                                $button_open.show();
+                            }
                             $button_create.hide();
-                            $button_open.show();
                             this.value = {id: object.id, name: object.name};
                             this.$elem.trigger('_updatedWidget');
                         }
                         else {
-                            $button_create.show();
+                            if(this.config.has_action_create) {
+                                $button_create.show();
+                            }
                             $button_open.hide();
                         }
                     });
@@ -360,19 +362,21 @@ export default class WidgetMany2One extends Widget {
                         $input.css({"width": "calc(100% - 48px)", "display": "inline-block"});
 
                         this.$elem.append($input);
-                        this.$elem.append($button_open);
 
-                        // open targeted object in new context
-                        $button_open.on('click', async () => {
-                            if(this.config.hasOwnProperty('object_id') && this.config.object_id && this.config.object_id > 0) {
-                                this.getLayout().openContext({
-                                    entity: this.config.foreign_object,
-                                    type: 'form',
-                                    name: (this.config.hasOwnProperty('view_name'))?this.config.view_name:'default',
-                                    domain: ['id', '=', this.config.object_id]
-                                });
-                            }
-                        });
+                        if(this.config.has_action_open) {
+                            this.$elem.append($button_open);
+                            // open targeted object in new context
+                            $button_open.on('click', async () => {
+                                if(this.config.hasOwnProperty('object_id') && this.config.object_id && this.config.object_id > 0) {
+                                    this.getLayout().openContext({
+                                        entity: this.config.foreign_object,
+                                        type: 'form',
+                                        name: (this.config.hasOwnProperty('view_name'))?this.config.view_name:'default',
+                                        domain: ['id', '=', this.config.object_id]
+                                    });
+                                }
+                            });
+                        }
                         break;
                     case 'list':
                     default:

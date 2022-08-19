@@ -324,18 +324,15 @@ export class Layout implements LayoutInterface{
                     let $action_dropdown = $button.closest('button');
                     $action_dropdown.addClass('mdc-button--spinner');
                     try {
-                        console.log('########## perform action', $button.closest('button'));
                         await this.performViewAction(action, {...resulting_params, ...result}, translation, response_descr);
                     }
                     catch(response) {
 
                     }
                     // restore action button
-                    console.log('########## accepted', $button.closest('button'));
                     $action_dropdown.removeClass('mdc-button--spinner');
                 })
                 .catch( () => {
-                    console.log('########## rejected', $button.closest('button'));
                     $button.closest('button').removeClass('mdc-button--spinner');
                 });
             }
@@ -410,7 +407,9 @@ export class Layout implements LayoutInterface{
             }
 
             const result = await ApiService.fetch("/", {do: action.controller, ...params}, content_type);
+            const status = ApiService.getLastStatus();
 
+            // handle binary data response
             if(content_type != 'application/json') {
                 let blob = new Blob([result], {type: content_type});
                 let filename = "file.download";
@@ -423,10 +422,15 @@ export class Layout implements LayoutInterface{
                 saveAs(blob, filename);
             }
 
-            // #memo - this will trigger updatedContext
-            await this.view.onchangeView();
-            // await this.view.getModel().refresh();
-            // await this.refresh();
+            if(status == 205) {
+                // context is no longer valid : close context
+                await this.view.closeContext();
+            }
+            else {
+                // refresh the view
+                // #memo - this will trigger updatedContext
+                await this.view.onchangeView();
+            }
         }
         catch(response) {
             await this.view.updatedContext();

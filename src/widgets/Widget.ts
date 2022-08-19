@@ -3,23 +3,23 @@ import { EnvService } from "../equal-services";
 import _EnvService from "../EnvService";
 
 export default class Widget {
-    
+
     private layout: Layout;
 
     protected $elem: JQuery;
 
     protected value: any;
-    protected label: string;    
+    protected label: string;
     protected type: string;
     protected is_first: boolean;
 
-    protected mode: string = ''; 
-    protected id: string = ''; 
-    
+    protected mode: string = '';
+    protected id: string = '';
+
     protected readonly: boolean = false;
 
     protected config: any;
-    
+
     constructor(layout: Layout, type: string, label: string, value: any, config: any) {
         this.layout = layout;
 
@@ -69,8 +69,8 @@ export default class Widget {
     public getConfig() {
         return this.config;
     }
-    
-    public setIsFirst(is_first: boolean) {        
+
+    public setIsFirst(is_first: boolean) {
         this.is_first = is_first;
     }
 
@@ -105,9 +105,9 @@ export default class Widget {
     }
 
     /**
-     * 
+     *
      * This method is called by LayoutList for setting a widget with bulk assign.
-     * @param value 
+     * @param value
      */
     public change(value:any) {
         this.setValue(value);
@@ -120,9 +120,9 @@ export default class Widget {
         return this.$elem;
     }
 
-    public attach(): JQuery {        
+    public attach(): JQuery {
         this.$elem = $('<div/>').addClass('sb-widget').addClass('sb-widget-mode-'+this.mode).attr('id', this.getId());
         return this.$elem;
     }
-    
+
 }

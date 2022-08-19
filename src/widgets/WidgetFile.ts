@@ -42,9 +42,11 @@ export default class WidgetFile extends Widget {
                 let $text = UIHelper.createInputView('', this.label, '', this.config.description);
                 $text.on('click', () => $input.trigger('click') );
                 $button.on('click', () => $input.trigger('click') );
+
                 $input.on('change', async (event:any) => {
                     console.log(event);
                     let val:string = <string>$input.val();
+
                     this.value = await ( ( blob:any ) => {
                         let defer = $.Deferred();
                         var reader = new FileReader();
@@ -54,6 +56,9 @@ export default class WidgetFile extends Widget {
                         reader.readAsDataURL(blob);
                         return defer.promise();
                     })($input.prop('files')[0]);
+                    
+                    this.$elem.trigger('_updatedWidget', [false]);
+
                     let filename = <string>val.split('\\').pop();
                     $text.remove();
                     $text = UIHelper.createInputView('', this.label, filename, this.config.description);
@@ -66,7 +71,7 @@ export default class WidgetFile extends Widget {
             case 'view':
             default:
 
-                this.$elem.append('binary data');
+                this.$elem.append('[binary data]');
                 break;
         }
 

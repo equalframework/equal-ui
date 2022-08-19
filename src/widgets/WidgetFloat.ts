@@ -15,7 +15,7 @@ export default class WidgetFloat extends WidgetString {
     }
 
     public setValue(value: any) {
-        let res = Number.parseFloat(value);        
+        let res = Number.parseFloat(value);
         this.value = (isNaN(res))?0:res;
         return this;
     }
@@ -23,7 +23,7 @@ export default class WidgetFloat extends WidgetString {
     public render():JQuery {
         this.$elem = super.render();
         let $input = this.$elem.find('input');
-        
+
         // numeric fields are aligned right
         $input.css({'text-align': 'right'});
 
@@ -47,7 +47,14 @@ export default class WidgetFloat extends WidgetString {
                 value = EnvService.formatNumber(value);
             }
 
-            $input.val(value);
+            // for lists, item is a DIV
+            if(this.config.layout == 'list') {
+                this.$elem.html(value);
+                this.$elem.css({"text-align": "right", "white-space": "nowrap"});
+            }
+            else {
+                $input.val(value);
+            }
         }
         return this.$elem;
     }

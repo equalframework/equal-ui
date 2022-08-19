@@ -381,7 +381,7 @@ export class LayoutList extends Layout {
                 else {
                     field = group;
                 }
-                
+
                 let model_def = model_fields[field];
                 let key = object[field];
                 let label = key;
@@ -550,7 +550,7 @@ export class LayoutList extends Layout {
             widget.setReadonly(config.readonly);
             widget.setIsFirst(is_first);
             is_first = false;
-            
+
             // store widget in widgets Map, using widget id as key (there are several rows for each field)
             if(typeof this.model_widgets[object.id] == 'undefined') {
                 this.model_widgets[object.id] = {};
@@ -558,7 +558,7 @@ export class LayoutList extends Layout {
             // store widget: use id and field as keys for storing widgets (current layout is for a single entity)
             this.model_widgets[object.id][item.value] = widget;
 
-            let $cell = $('<td/>').addClass('sb-widget-cell').attr('data-field', item.value).append(widget.render());
+            let $cell = $('<td/>').addClass('sb-widget-cell').attr('data-type', config.type).attr('data-field', item.value).append(widget.render());
 
             $row.append($cell);
         }
@@ -602,7 +602,7 @@ export class LayoutList extends Layout {
             }
             else {
                 suffix = '['+children_count+']';
-            }            
+            }
         }
         else {
             // sum children groups
@@ -723,6 +723,6 @@ export class LayoutList extends Layout {
         }
 
         return $row;
-    }    
+    }
 
 }

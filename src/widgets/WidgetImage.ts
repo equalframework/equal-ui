@@ -30,7 +30,7 @@ export default class WidgetImage extends Widget {
 
         let content_type = (this.config.hasOwnProperty('usage'))?this.config.usage:'image/jpeg';
 
-        this.$elem = $('<div />').addClass('sb-image-thumbnail');        
+        this.$elem = $('<div />').addClass('sb-image-thumbnail');
 
         switch(this.mode) {
             case 'edit':
@@ -79,7 +79,7 @@ export default class WidgetImage extends Widget {
                             })(file);
 
                             this.value = value;
-                            this.$elem.trigger('_updatedWidget', [false]);        
+                            this.$elem.trigger('_updatedWidget', [false]);
                         }
                     });
 
@@ -89,7 +89,7 @@ export default class WidgetImage extends Widget {
                 break;
             case 'view':
             default:
- 
+
                 this.$elem.css({'background-image': 'url(' + 'data:'+content_type+';base64,'+value + ')'});
 
                 break;

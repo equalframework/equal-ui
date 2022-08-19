@@ -65,10 +65,15 @@ export default class WidgetString extends Widget {
                     this.$elem.append($link);
                 }
                 else {
-                    this.$elem = UIHelper.createInputView('', this.label, value, this.config.description);
-                    this.$elem.attr('title', value);
+                    if(this.config.layout == 'list') {
+                        this.$elem = $('<div />').html(value);
+                        this.$elem.css({"width": "100%", "height": "auto", "max-height": "calc(44px - 2px)", "white-space": "break-spaces", "overflow": "hidden"});
+                    }
+                    else {
+                        this.$elem = UIHelper.createInputView('', this.label, value, this.config.description);
+                        this.$elem.attr('title', value);
+                    }
                 }
-
                 break;
         }
 

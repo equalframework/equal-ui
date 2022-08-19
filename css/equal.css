@@ -162,6 +162,10 @@ body, html {
     padding: 0 !important;
 }
 
+.sb-view-layout-list .sb-widget-cell .sb-widget-mode-view {
+    padding-right: 17px;
+}
+
 .sb-view-layout-form {
     /* height must be decremented by height of other elements from parent (header and footer) */
     height: calc(100% - 56px);
@@ -830,6 +834,7 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
 /* adapt inputs for inline editing */
 .sb-widget-cell .mdc-text-field {
   height: 100%;
+  padding: 0;
 }
 
 .sb-widget-cell.allow-overflow {
