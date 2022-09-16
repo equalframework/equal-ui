@@ -8,20 +8,20 @@ import { Domain, Clause, Condition, Reference } from "../Domain";
 export class LayoutForm extends Layout {
 
     public async init() {
-        console.log('LayoutForm::init');
+        console.debug('LayoutForm::init');
         try {
             // initialize the layout
             this.layout();
         }
         catch(err) {
-            console.log('Something went wrong ', err);
+            console.warn('Something went wrong ', err);
         }
     }
 
     // refresh layout
     // this method is called in response to parent View `onchangeModel` method
     public async refresh(full: boolean = false) {
-        console.log('LayoutForm::refresh');
+        console.debug('LayoutForm::refresh');
 
         // also re-generate the layout
         if(full) {
@@ -40,7 +40,7 @@ export class LayoutForm extends Layout {
      *
      */
     protected layout() {
-        console.log('LayoutForm::layout');
+        console.debug('LayoutForm::layout');
         let $elem = $('<div/>').css({"width": "100%"});
 
         let view_schema = this.view.getViewSchema();
@@ -171,7 +171,7 @@ export class LayoutForm extends Layout {
     }
 
     protected async feed(objects: any) {
-        console.log('LayoutForm::feed', objects);
+        console.debug('LayoutForm::feed', objects);
         // display the first object from the collection
 
         let fields = Object.keys(this.view.getViewFields());
@@ -204,15 +204,10 @@ export class LayoutForm extends Layout {
             }
 
             if(view_schema.hasOwnProperty('actions')) {
-                // $view_actions.empty();
-
-                let $actions_button = $view_actions.find('#'+this.uuid+'_actions-dropdown');
-                if($actions_button.length == 0) {
-                    $actions_button = UIHelper.createDropDown(this.uuid+'_actions-dropdown', 'Actions', 'text', '', '').addClass('layout-actions').appendTo($view_actions);
-                }
-                $actions_button.find('.menu-list').empty();
-
-                for(let action of view_schema.actions) {
+                // there is a single action: show it as a button
+                if(view_schema.actions.length == 1) {
+                    $view_actions.empty();
+                    let action = view_schema.actions[0];
                     let visible = true;
                     if(action.hasOwnProperty('visible')) {
                         // visible attribute is a Domain
@@ -226,12 +221,40 @@ export class LayoutForm extends Layout {
                     }
                     if(visible) {
                         let action_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, action.label);
-                        // let $button = UIHelper.createButton('action-view-'+action.id, action_title, 'outlined')
-                        // this.decorateActionButton($button, action, object);
-                        // $view_actions.append($button);
-                        let $item = UIHelper.createListItem(this.uuid+'_action-'+action.id.replace('.', '_'), action_title);
-                        this.decorateActionButton($item, action, object);
-                        $actions_button.find('.menu-list').append($item);
+                        let $button = UIHelper.createButton('action-view-'+action.id, action_title, 'outlined')
+                        this.decorateActionButton($button, action, object);
+                        $view_actions.append($button);
+                    }
+                }
+                // there are several actions: display a dropdown
+                else {
+                    let $actions_button = $view_actions.find('#'+this.uuid+'_actions-dropdown');
+                    if($actions_button.length == 0) {
+                        $actions_button = UIHelper.createDropDown(this.uuid+'_actions-dropdown', 'Actions', 'text', '', '').addClass('layout-actions').appendTo($view_actions);
+                    }
+                    $actions_button.find('.menu-list').empty();
+
+                    for(let action of view_schema.actions) {
+                        let visible = true;
+                        if(action.hasOwnProperty('visible')) {
+                            // visible attribute is a Domain
+                            if(Array.isArray(action.visible)) {
+                                let domain = new Domain(action.visible);
+                                visible = domain.evaluate(object);
+                            }
+                            else {
+                                visible = <boolean> action.visible;
+                            }
+                        }
+                        if(visible) {
+                            let action_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, action.label);
+                            // let $button = UIHelper.createButton('action-view-'+action.id, action_title, 'outlined')
+                            // this.decorateActionButton($button, action, object);
+                            // $view_actions.append($button);
+                            let $item = UIHelper.createListItem(this.uuid+'_action-'+action.id.replace('.', '_'), action_title);
+                            this.decorateActionButton($item, action, object);
+                            $actions_button.find('.menu-list').append($item);
+                        }
                     }
                 }
             }
@@ -242,13 +265,17 @@ export class LayoutForm extends Layout {
                 let $tab = $(elem);
                 let visible = $tab.attr('data-visible');
                 if(visible != undefined) {
-                    console.log('section visible', visible);
-                    let domain = new Domain(JSON.parse(visible));
-                    if(domain.evaluate(object)) {
-                        $tab.show();
+                    if(visible == 'false') {
+                        $tab.hide();
                     }
                     else {
-                        $tab.hide();
+                        let domain = new Domain(JSON.parse(visible));
+                        if(domain.evaluate(object)) {
+                            $tab.show();
+                        }
+                        else {
+                            $tab.hide();
+                        }
                     }
                 }
             });
@@ -378,7 +405,7 @@ export class LayoutForm extends Layout {
                         let $widget = widget.render();
                         // Handle Widget update handler
                         $widget.on('_updatedWidget', async (event:any, refresh: boolean = true) => {
-                            console.log("Layout::feedForm : received _updatedWidget", field, widget.getValue(), refresh);
+                            console.debug("Layout::feedForm : received _updatedWidget", field, widget.getValue(), refresh);
                             // update object with new value
                             let values:any = {};
                             values[field] = widget.getValue();

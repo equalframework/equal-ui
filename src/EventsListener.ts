@@ -139,7 +139,7 @@ class EventsListener {
             target:     '#sb-container'
         }, ...config};
 
-        console.log('eQ: received _openContext', config, reset, config.entity, config.entity.length);
+        console.debug('eQ: received _openContext', config, reset, config.entity, config.entity.length);
 
         // abort invalid entities
         if(!config.entity.length) {
@@ -175,14 +175,14 @@ class EventsListener {
      * Notify subscribers about a context update.
      */
     private async _updatedContext() {
-        console.log('EventsListener::_updatedContext', this.mute);
+        console.debug('EventsListener::_updatedContext', this.mute);
         // run callback of subscribers
         if(this.subscribers.hasOwnProperty('updated') && this.subscribers['updated'].length && !this.mute) {
-            console.log('eQ::_updatedContext - running callbacks');
+            console.debug('eQ::_updatedContext - running callbacks');
             for(let callback of this.subscribers['updated']) {
                 if( ({}).toString.call(callback) === '[object Function]') {
                     // run callback with empty context
-                    console.log('calling callback');
+                    console.debug('calling callback');
                     callback();
                 }
             }
@@ -221,7 +221,7 @@ class EventsListener {
 
             // run callback of subscribers
             if(this.subscribers.hasOwnProperty('close') && this.subscribers['close'].length && !this.mute && !params.silent) {
-                console.log('eQ::_closeContext - running callbacks', params);
+                console.debug('eQ::_closeContext - running callbacks', params);
                 for(let callback of this.subscribers['close']) {
                     if( ({}).toString.call(callback) === '[object Function]') {
                         // run callback with empty context
@@ -300,7 +300,7 @@ class EventsListener {
          * A new context can be requested by ngx (menu or app) or by opening a sub-object
          */
         this.$sbEvents.on('_openContext', async (event:any, config:any, reset: boolean = false) => {
-            console.log('eQ: received _openContext', event, config, reset);
+            console.debug('eQ: received _openContext', event, config, reset);
             this._openContext(config, reset);
         });
 
@@ -324,12 +324,12 @@ class EventsListener {
      * Mark current context as changed (called from Frame class).
      */
     public async updated() {
-        console.log('EventsListener::updated');
+        console.debug('EventsListener::updated');
         await this._updatedContext();
     }
 
     public async closeAll(params:any={}) {
-        console.log('eQ:received closeAll');
+        console.debug('eQ:received closeAll');
         this.$sbEvents.trigger('_closeAll');
         await this._closeAll(params);
     }
@@ -346,7 +346,7 @@ class EventsListener {
      * @param context
      */
     public async open(context: any) {
-        console.log("eQ::open", context);
+        console.debug("eQ::open", context);
 
         EnvService.getEnv().then( (environment:any) => {
             // extend default params with received config

@@ -569,12 +569,13 @@ class UIHelper {
         // prevent menu from getting the focus
         fields_toggle_menu.setDefaultFocusState(DefaultFocusState.NONE);
 
+        // UI elements having a menu rely on this custom _toggle
         $elem.on('_toggle', () => {
-            // fields_toggle_menu.open = !$elem.hasClass('mdc-menu-surface--open');
+            fields_toggle_menu.open = !$elem.hasClass('mdc-menu-surface--open');
         });
 
         $elem.on('_open', (event: any) => {
-            console.log('MDCMenu _open');
+            console.debug('MDCMenu _open');
             event.stopPropagation();
             if(!fields_toggle_menu.open) {
                 fields_toggle_menu.open = true;
@@ -585,7 +586,7 @@ class UIHelper {
         });
 
         $elem.on('_close', (event: any) => {
-            console.log('MDCMenu _close');
+            console.debug('MDCMenu _close');
             // event.stopPropagation();
             // fields_toggle_menu.open = false;
         });

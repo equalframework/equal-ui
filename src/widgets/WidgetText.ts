@@ -64,7 +64,7 @@ export default class WidgetText extends Widget {
                                     [{ 'list': 'ordered'}, { 'list': 'bullet' }],
                                     [{ "align": '' }, { "align": 'center' }, { 'align': 'right' }],
                                     [{ 'size': ['small', false, 'large', 'huge'] }],
-                                    ['fullscreen']  
+                                    ['fullscreen']
                                 ]
                             }
                         });
@@ -73,11 +73,11 @@ export default class WidgetText extends Widget {
                             let elem: any = this.$elem[0];
                             if (elem.requestFullscreen) {
                                 elem.requestFullscreen();
-                            } 
+                            }
                             else if (elem.hasOwnProperty('webkitRequestFullscreen')) {
                                 elem['webkitRequestFullscreen']();
                             }
-                        });  
+                        });
 
                         this.$elem.find('.ql-formats *').attr('tabindex',-1);
 
@@ -99,10 +99,10 @@ export default class WidgetText extends Widget {
                                     this.$elem.trigger('_updatedWidget', [false]);
                                     // we set timeout to 1s because there is no hurry here and we want to minimize requests
                                 }, 1000);
-                            }                        
+                            }
                         })
 
-                    })                    
+                    })
                 }
                 break;
             case 'view':
@@ -114,9 +114,8 @@ export default class WidgetText extends Widget {
                 }
                 else {
                     this.$elem = $('<div class="sb-ui-textarea" />');
-                    this.$elem.append( $('<div class="textarea-content" />').html(value) );
+                    this.$elem.append( $('<div class="textarea-content" />').html(value.replace(/(?:\r\n|\r|\n)/g, '<br />')) );
                 }
-                
                 break;
         }
 

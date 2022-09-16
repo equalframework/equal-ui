@@ -22,6 +22,7 @@ export class _ApiService {
 
     private last_count: number;
     private last_status: number;
+    private last_headers: any;
 
 
     constructor() {
@@ -44,7 +45,8 @@ export class _ApiService {
         this.schemas = {};
 
         this.last_count = 0;
-        this.last_status = 0;        
+        this.last_status = 0;
+        this.last_headers = {};
     }
 
 
@@ -82,7 +84,7 @@ export class _ApiService {
                     this.schemas[package_name][class_name].resolve(json_data);
                 })
                 .catch( (response:any) => {
-                    console.log('ApiService::loadSchema error', response.responseJSON);
+                    console.debug('ApiService::loadSchema error', response.responseJSON);
                     this.schemas[package_name][class_name].resolve({});
                 });
             })
@@ -114,7 +116,7 @@ export class _ApiService {
                     this.views[package_name][class_name][view_id].resolve(json_data);
                 })
                 .catch( (response:any) => {
-                    console.log('ApiService::loadView error', response.responseJSON);
+                    console.debug('ApiService::loadView error', response.responseJSON);
                     this.views[package_name][class_name][view_id].resolve({});
                 });
             });
@@ -157,9 +159,27 @@ export class _ApiService {
     public getLastStatus() {
         return this.last_status;
     }
-    
+
     public getLastCount() {
         return this.last_count;
+    }
+
+    public getLastHeaders() {
+        return this.last_headers;
+    }
+
+    private setLastHeaders(headers: string) {
+        // convert headers string to an array
+        const headers_array: string[] = headers.trim().split(/[\r\n]+/);
+        // reset
+        this.last_headers = {};
+        // create a map of header names to values
+        headers_array.forEach((line) => {
+            const parts: string[] = line.split(': ');
+            const header: string = <string> parts.shift();
+            const value: string = parts.join(': ');
+            this.last_headers[header] = value;
+        });
     }
 
     public async getTranslation(entity:string, locale:string = '') {
@@ -221,7 +241,7 @@ export class _ApiService {
                 else {
                     xhr.responseType = "arraybuffer";
                 }
-                
+
                 xhr.withCredentials = true;
                 xhr.send(null);
 
@@ -235,6 +255,7 @@ export class _ApiService {
                         if(xhr.getResponseHeader('X-Total-Count')) {
                             this.last_count = parseInt( <string> xhr.getResponseHeader('X-Total-Count') );
                         }
+                        this.setLastHeaders(xhr.getAllResponseHeaders());
                         resolve(xhr.response);
                     }
                 };
@@ -375,7 +396,7 @@ export class _ApiService {
      * @param fields
      */
     public async update(entity:string, ids:any[], fields:any, force: boolean=false, lang: string = '') {
-        console.log('ApiService::update', entity, ids, fields);
+        console.debug('ApiService::update', entity, ids, fields);
         let result: any = true;
         try {
             const environment = await EnvService.getEnv();
@@ -437,7 +458,7 @@ export class _ApiService {
      * @returns     Promise     Upon success, the promise is resolved into an Array holding matching objects (collection).
      */
     public async collect(entity:string, domain:any[], fields:any[], order:string, sort:string, start:number, limit:number, lang: string = '') {
-        console.log('ApiService::collect', entity, domain, fields, order, sort, start, limit);
+        console.debug('ApiService::collect', entity, domain, fields, order, sort, start, limit);
         var result = [];
         try {
             const environment = await EnvService.getEnv();

@@ -28,7 +28,7 @@ export default class WidgetMany2Many extends Widget {
                     // update the actions of the "current selection" button
                     selection_actions: [
                         {
-                            title: 'SB_ACTIONS_BUTTON_REMOVE',
+                            label: 'SB_ACTIONS_BUTTON_REMOVE',
                             icon:  'delete',
                             handler: (selection:any) => {
                                 for(let id of selection) {

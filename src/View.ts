@@ -113,33 +113,33 @@ export class View {
             // list of actions available for applying to a selection (relational fields widgets define their own actions)
             selection_actions: [
                 {
-                    title: 'SB_ACTIONS_BUTTON_INLINE_UPDATE',
+                    label: 'SB_ACTIONS_BUTTON_INLINE_UPDATE',
                     icon:  'edit_attributes',
                     primary: false,
-                    handler: (selection:any) => this.actionListInlineEdit(selection)
+                    handler: (selection:any, item:any) => this.actionListInlineEdit(selection)
                 },
                 {
-                    title: 'SB_ACTIONS_BUTTON_BULK_ASSIGN',
+                    label: 'SB_ACTIONS_BUTTON_BULK_ASSIGN',
                     icon:  'dynamic_form',
                     primary: false,
                     visible: false,
-                    handler: (selection:any) => this.actionBulkAssign(selection)
+                    handler: (selection:any, item:any) => this.actionBulkAssign(selection)
                 },
                 {
                     id: "action.update",
-                    title: 'SB_ACTIONS_BUTTON_UPDATE',
+                    label: 'SB_ACTIONS_BUTTON_UPDATE',
                     icon:  'edit',
                     primary: true,
-                    handler: (selection:any) => {
+                    handler: (selection:any, item:any) => {
                         let selected_id = selection[0];
                         this.openContext({entity: this.entity, type: 'form', name: this.name, domain: ['id', '=', selected_id], mode: 'edit', purpose: 'update'});
                     }
                 },
                 {
-                    title: 'SB_ACTIONS_BUTTON_CLONE',
+                    label: 'SB_ACTIONS_BUTTON_CLONE',
                     icon:  'content_copy',
                     primary: false,
-                    handler: async (selection:any) => {
+                    handler: async (selection:any, item:any) => {
                         try {
                             // #todo - global loader: prevent any action (loader on context, frame, root)
                             // show loader
@@ -151,20 +151,21 @@ export class View {
                             await this.onchangeView();
                         }
                         catch(response) {
-                            console.log('unexpected error', response);
+                            console.warn('unexpected error', response);
                             try {
                                 await this.displayErrorFeedback(this.translation, response);
                             }
                             catch(error) {
+                                console.warn(error);
                             }
                         }
                     }
                 },
                 {
-                    title: 'SB_ACTIONS_BUTTON_ARCHIVE',
+                    label: 'SB_ACTIONS_BUTTON_ARCHIVE',
                     icon:  'archive',
                     primary: false,
-                    handler: async (selection:any) => {
+                    handler: async (selection:any, item:any) => {
                         // display confirmation dialog with checkbox for archive
                         let $dialog = UIHelper.createDialog('confirm_archive_dialog', TranslationService.instant('SB_ACTIONS_ARCHIVE_CONFIRM'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
                         $dialog.addClass('sb-view-dialog').appendTo(this.$container);
@@ -190,10 +191,10 @@ export class View {
                     }
                 },
                 {
-                    title: 'SB_ACTIONS_BUTTON_DELETE',
+                    label: 'SB_ACTIONS_BUTTON_DELETE',
                     icon:  'delete',
                     primary: true,
-                    handler: async (selection:any) => {
+                    handler: async (selection:any, item:any) => {
                         // display confirmation dialog with checkbox for permanent deletion
                         let $dialog = UIHelper.createDialog(this.uuid+'_confirm-deletion-dialog', TranslationService.instant('SB_ACTIONS_DELETION_CONFIRM'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
                         $dialog.addClass('sb-view-dialog').appendTo(this.$container);
@@ -292,7 +293,7 @@ export class View {
     }
 
     private async init() {
-        console.log('View::init');
+        console.debug('View::init');
         try {
 
             // assign schemas by copy
@@ -378,6 +379,35 @@ export class View {
                 }
             }
 
+            // support for custom selection_actions
+            // expect a controller to which the selected_ids will be relayed, upon response the list is refreshed
+            if(this.view_schema.hasOwnProperty('header') && this.view_schema.header.hasOwnProperty('selection')) {
+                if(this.view_schema.header.selection.hasOwnProperty('default') && !this.view_schema.header.selection.default) {
+                    // remove default actions
+                    this.config.selection_actions = [];
+                }
+                if(this.view_schema.header.selection.hasOwnProperty('actions')) {
+                    for(let action of this.view_schema.header.selection.actions) {
+                            action['handler'] = async (selection:any, item:any) => {
+                                if(item.hasOwnProperty('controller')) {
+                                    try {
+                                        const result = await ApiService.call("/?do="+item.controller, {
+                                            entity: this.getEntity(),
+                                            ids: selection,
+                                            lang: this.getLang()} );
+                                        this.onchangeView();
+
+                                    }
+                                    catch(response) {
+                                        console.warn(response);
+                                    }
+                                }
+                            };
+                        this.config.selection_actions.push(action);
+                    }
+                }
+            }
+
             // domain member is given by the context
             // if purpose is a non-widget list view then context domain is visible and can be changed by user
             // (otherwise, context domain is merged to view domain and cannot be changed by user)
@@ -393,7 +423,6 @@ export class View {
                         "description": description,
                         "clause": clause.toArray()
                     };
-                    console.log('###', filter);
                     // add filter to applied filters
                     this.filters[filter.id] = filter;
                     this.applied_filters_ids.push(filter.id);
@@ -432,7 +461,6 @@ export class View {
                 this.layoutFormHeader();
             }
             if(['chart'].indexOf(this.type) >= 0) {
-                console.log('######## chart', this);
                 if(this.mode == 'grid') {
                     this.layoutChartHeader();
                     this.$layoutContainer.addClass('sb-view-layout-list');
@@ -446,13 +474,12 @@ export class View {
             await this.model.init();
         }
         catch(err) {
-            console.log('Unable to init view ('+this.entity+'.'+this.getId()+')', err);
+            console.warn('Unable to init view ('+this.entity+'.'+this.getId()+')', err);
         }
 
         this.is_ready_promise.resolve();
 
         this.$container.show();
-        console.log('View::init - end');
     }
 
 
@@ -542,7 +569,7 @@ export class View {
      * @param config
      */
     public async openContext(config: any) {
-        console.log('View::openContext', config);
+        console.debug('View::openContext', config);
         await this.context.openContext(config);
     }
 
@@ -554,7 +581,7 @@ export class View {
      * Relay update notification (from View) to parent Frame.
      */
     public async updatedContext() {
-        console.log('View::updatedContext');
+        console.debug('View::updatedContext');
         await this.context.updatedContext();
     }
 
@@ -622,7 +649,7 @@ export class View {
      * Applicable domain for the View corresponds to initial domain (from parent Context) with additional filters currently applied on the View
      */
     public getDomain() {
-        console.log('View::getDomain', this.domain, this.applied_filters_ids);
+        console.debug('View::getDomain', this.domain, this.applied_filters_ids);
 
         let filters_domain = new Domain([]);
 
@@ -709,7 +736,7 @@ export class View {
      * and stores them in the `view_fields` map (does not maintain the field order)
      */
 	private loadViewFields(view_schema: any) {
-        console.log('View::loadFields', view_schema);
+        console.debug('View::loadFields', view_schema);
         this.view_fields = {};
         var stack = [];
         // view is valid
@@ -745,7 +772,7 @@ export class View {
      * and stores it in the `model_fields` member
      */
 	private loadModelFields(model_schema: any) {
-        console.log('View::loadVModelFields', model_schema);
+        console.debug('View::loadVModelFields', model_schema);
         this.model_fields = model_schema.fields;
     }
 
@@ -755,7 +782,7 @@ export class View {
     }
 
     private layoutListHeader() {
-        console.log('View::layoutListHeader');
+        console.debug('View::layoutListHeader');
 
         // apend header structure
         this.$headerContainer.append(' \
@@ -961,7 +988,8 @@ export class View {
         });
         $search_input.find('input').on('blur', (e) => {
             setTimeout( () => {
-                let value = <string> $search_input.find('input').val();
+                let value = String($search_input.find('input').val()).trim();
+
                 if(value.length) {
                     let filter = {
                         "id": "filter_search_on_name",
@@ -1129,7 +1157,7 @@ export class View {
     }
 
     private layoutChartHeader() {
-        console.log('View::layoutChartHeader');
+        console.debug('View::layoutChartHeader');
 
         // apend header structure
         this.$headerContainer.append(' \
@@ -1150,8 +1178,6 @@ export class View {
         let $std_actions = $('<div />').addClass('sb-view-header-actions-std').appendTo($actions_set);
         // right side : the actions specific to the view, and depenging on object status
         let $view_actions = $('<div />').addClass('sb-view-header-actions-view').appendTo($actions_set);
-
-
 
         // append advanced layout if requested
         if(this.hasAdvancedFilters()) {
@@ -1275,7 +1301,7 @@ export class View {
      * @param full
      */
     private layoutListRefresh(full: boolean = false) {
-        console.log('View::layoutListRefresh', full);
+        console.debug('View::layoutListRefresh', full);
         // update footer indicators (total count)
         let limit: number = this.getLimit();
         let total: number = this.getTotal();
@@ -1361,13 +1387,21 @@ export class View {
 
                 // add actions defined in view
                 for(let item of this.config.selection_actions) {
-                    let $list_item = UIHelper.createListItem('SB_ACTION_ITEM-'+item.title, TranslationService.instant(item.title), item.icon)
-                    .on( 'click', (event:any) => item.handler(this.selected_ids) )
+                    let item_id = 'SB_ACTION_ITEM-'+item.label;
+                    let item_label = TranslationService.instant(item.label);
+
+                    // look for a translation based on id
+                    if(item.hasOwnProperty('id')) {
+                        item_id = 'SB_ACTION_ITEM-'+item.id;
+                        item_label = TranslationService.resolve(this.translation, 'view', [this.getId(), 'layout'], item.id, item_label);
+                    }
+                    let $list_item = UIHelper.createListItem(item_id, item_label, item.icon)
+                    .on( 'click', (event:any) => item.handler(this.selected_ids, item) )
                     .appendTo($list);
 
                     if(item.hasOwnProperty('primary') && item.primary) {
-                        $container.append(UIHelper.createButton('selection-action-'+item.title, item.title, 'icon', item.icon).on('click', (event:any) => item.handler(this.selected_ids)));
-                        let $tooltip = UIHelper.createTooltip('selection-action-'+item.title, TranslationService.instant(item.title));
+                        $container.append(UIHelper.createButton('selection-action-'+item.label, item.label, 'icon', item.icon).on('click', (event:any) => item.handler(this.selected_ids, item)));
+                        let $tooltip = UIHelper.createTooltip('selection-action-'+item.label, TranslationService.instant(item.label));
                         $container.append($tooltip);
                         UIHelper.decorateTooltip($tooltip);
                     }
@@ -1390,7 +1424,7 @@ export class View {
 
 
     private layoutChartRefresh(full: boolean = false) {
-        console.log('View::layoutChartRefresh', full);
+        console.debug('View::layoutChartRefresh', full);
         // update footer indicators (total count)
 
         let $action_set = this.$headerContainer.find('.sb-view-header-actions');
@@ -1671,7 +1705,7 @@ export class View {
                                         await save_action(header_actions["ACTION.SAVE"][i]);
                                     }
                                     catch(error) {
-                                        console.log(error);
+                                        console.warn(error);
                                     }
                                 }, 100);
                             })
@@ -1690,7 +1724,7 @@ export class View {
                                 await save_action(header_actions["ACTION.SAVE"][0]);
                             }
                             catch(error) {
-                                console.log(error);
+                                console.warn(error);
                             }
                         }, 100);
                     });
@@ -1837,7 +1871,6 @@ export class View {
         // setup handler for relaying value update to parent layout
         $select_field.addClass('dialog-select').find('input')
         .on('change', (event) => {
-            console.log('dialog select', event);
             let $this = $(event.currentTarget);
             selected_field = <string> $this.val();
 
@@ -1870,7 +1903,7 @@ export class View {
             $select_value = widget.render();
             $select_value.on('_updatedWidget', (event:any) => {
                 let value = widget.getValue();
-                console.log('_updatedWidget', value);
+                console.debug('_updatedWidget', value);
                 selected_value = value;
             });
             $elem.append($select_operator);
@@ -1956,7 +1989,7 @@ export class View {
      * @param values    object   map of fields names and their related values
      */
     public async onchangeViewModel(ids: Array<any>, values: object, refresh: boolean = true) {
-        console.log('View::onchangeViewModel', ids, values, refresh);
+        console.debug('View::onchangeViewModel', ids, values, refresh);
         this.model.change(ids, values);
         // model has changed : forms need to re-check the visibility attributes
         if(refresh) {
@@ -1979,7 +2012,7 @@ export class View {
      * @param full  boolean
      */
     public async onchangeModel(full: boolean = false) {
-        console.log('View::onchangeModel', full);
+        console.debug('View::onchangeModel', full);
         await this.layoutRefresh(full);
     }
 
@@ -1989,7 +2022,7 @@ export class View {
      * or from layout: context has been updated (sort column, sorting order, limit, page, ...)
      */
     public async onchangeView(full: boolean = false) {
-        console.log('View::onchangeView');
+        console.debug('View::onchangeView');
         // notify about context update
         this.context.updatedContext();
 
@@ -2007,14 +2040,14 @@ export class View {
      * @param selection
      */
     public onchangeSelection(selection: Array<any>) {
-        console.log('View::onchangeSelection', selection);
+        console.debug('View::onchangeSelection', selection);
         this.selected_ids = selection;
         this.layoutListRefresh();
     }
 
 
     private showFilter(filter_id:string) {
-        console.log('showFilter', this.filters, this.applied_filters_ids);
+        console.debug('View::showFilter', this.filters, this.applied_filters_ids);
         let filter = this.filters[filter_id];
         let $filters_set = this.$headerContainer.find('.sb-view-header-list-filters-set');
         // make sure not to append a chip for same filter twice
@@ -2068,7 +2101,7 @@ export class View {
     }
 
     private async actionBulkAssign(selection: any) {
-        console.log('opening bulk assign dialog');
+        console.debug('View::opening bulk assign dialog');
         this.$container.find('#'+this.uuid+'_bulk-assign-dialog').trigger('_open');
     }
 
@@ -2209,7 +2242,7 @@ export class View {
      * @returns
      */
     public async displayErrorFeedback(translation: any, response:any, object:any = null, snack:boolean = true) {
-        console.log('displayErrorFeedback', translation, response, object, snack);
+        console.debug('View::displayErrorFeedback', translation, response, object, snack);
         let delay = 4000;
 
         if(response && response.hasOwnProperty('errors')) {
@@ -2377,7 +2410,7 @@ export class View {
     private async translateFilterClause(clause: Clause) {
         let result = '';
 
-        console.log('translateFilterClause', clause)
+        console.debug('View::translateFilterClause', clause)
         for(let conditionObj of clause.getConditions()) {
             let condition = conditionObj.toArray();
             if(condition.length == 3) {

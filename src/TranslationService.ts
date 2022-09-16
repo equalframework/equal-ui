@@ -4,10 +4,10 @@ import { $ } from "./jquery-lib";
 /**
  * This service is in charge of loading the UI translations and provide getters to retrieve requested values.
  * It expects .json translation files in the /assets/i18n/ folder.
- * 
+ *
  */
 export class _TranslationService {
-        
+
     // promise object
     private translations: any;
 
@@ -37,10 +37,10 @@ export class _TranslationService {
             }
             else {
                 this.translations.resolve({});
-            }        
+            }
         })
         .catch( (err:any) => {
-            console.log('error fetch UI translation file');
+            console.warn('error fetch UI translation file');
             this.translations.resolve({});
         });
 
@@ -48,7 +48,7 @@ export class _TranslationService {
 
     /**
      * Handle an asynchronous request for translation.
-     * 
+     *
      * @param   value    string       The string identifier to translate using current locale.
      * @returns Promise
      */
@@ -66,10 +66,10 @@ export class _TranslationService {
 
 
     /**
-     * Handle instant request for translation (non-blocking). 
+     * Handle instant request for translation (non-blocking).
      * If no value is found the given string is returned as result.
-     * 
-     * @param   value   string   
+     *
+     * @param   value   string
      * @returns string
      */
     public instant(value:string, _default:string = '') : string {
@@ -81,27 +81,27 @@ export class _TranslationService {
         }
         return translation;
     }
-   
+
 
     /**
      * Helper method for resolution from a `translation` object (as provided by the ApiService)
-     * 
+     *
      * @param translation   Object holding the translations values (as returned by `ApiService::getTranslation()`).
      * @param type          Kind of terms we want to perform (''<root>, 'model','view','error').
      * @param path          An array describing the path to follow within the translation map, if any.
      * @param id            The identifier of the item we want to translate.
      * @param value         Default value, if any, to fall back to in case translation fails.
      * @param property      The translation section we're looking for, for the considered value ('label', 'help', ...).
-     * 
+     *
      * @returns The translated value, or the original value if translation fails.
-     */ 
+     */
     public resolve(translation:any, type:string, path: string[], id: string, value: any = '', property:string = 'label') {
         let result = value;
 
         if (typeof value === 'string' || value instanceof String) {
             result = value.charAt(0).toUpperCase() + value.replace(/_/g, ' ').slice(1);
         }
-        
+
         if(type.length) {
             if(translation.hasOwnProperty(type)) {
                 let map = translation[type];
@@ -111,24 +111,24 @@ export class _TranslationService {
                     }
                     else {
                         break;
-                    }                
+                    }
                 }
-    
+
                 if(map && map.hasOwnProperty(id)) {
                     if(map[id].hasOwnProperty(property)) {
                         result = map[id][property];
                     }
                 }
-            }    
+            }
         }
         else {
             if(translation.hasOwnProperty(property)) {
-                result = translation[property];                
+                result = translation[property];
             }
         }
         return result;
     }
-    
+
 }
 
 

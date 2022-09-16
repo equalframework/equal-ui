@@ -41,7 +41,7 @@ export class Model {
             await this.refresh();
         }
         catch(err) {
-            console.log('Something went wrong ', err);
+            console.warn('Something went wrong ', err);
         }
     }
 
@@ -130,7 +130,7 @@ export class Model {
     }
 
     public export(object:any) {
-        console.log('Model::export', object);
+        console.debug('Model::export', object);
         let result:any = {};
         let schema = this.view.getModelFields();
         for(let field in schema) {
@@ -159,7 +159,7 @@ export class Model {
      * Update model by requesting data from server using parent View parameters
     */
     public async refresh(full: boolean = false) {
-        console.log('Model::refresh');
+        console.debug('Model::refresh');
 
         // fetch fields that are present in the parent View
         let view_fields: any[] = <[]>Object.keys(this.view.getViewFields());
@@ -171,15 +171,16 @@ export class Model {
 
             let field = view_fields[i];
             if(!schema || !schema.hasOwnProperty(field)) {
-                console.log('unknown field', field);
+                console.warn('unknown field', field);
                 continue;
             }
+            let type = this.getFinalType(field);
             // append `name` subfield for relational fields, using the dot notation
-            if( 'many2one' == schema[field]['type'] ) {
+            if( 'many2one' == type ) {
                 fields.push(field + '.name');
             }
-            // we do not load relational fields, these can result in potentially long lists and are handled by the Widgets
-            else if(['one2many', 'many2many'].indexOf(schema[field]['type']) > -1) {
+            // we do not load relational fields, these can result in potentially long lists which are handled by the Widgets
+            else if(['one2many', 'many2many'].indexOf(type) > -1) {
                 delete fields[i];
             }
             else {
@@ -203,7 +204,7 @@ export class Model {
             this.loaded_promise.resolve();
         }
         catch(response) {
-            console.log('Unable to fetch Collection from server', response);
+            console.warn('Unable to fetch Collection from server', response);
             this.objects = [];
             this.loaded_promise.resolve();
             this.total = 0;
@@ -218,7 +219,7 @@ export class Model {
      *
      */
     public change(ids: Array<any>, values: any) {
-        console.log('Model::change', ids, values);
+        console.debug('Model::change', ids, values);
         let schema = this.view.getModelFields();
         for (let index in this.objects) {
             let object = this.objects[index];
@@ -247,7 +248,7 @@ export class Model {
      * @param values
      */
     public reset(id: number, values: any) {
-        console.log('Model::reset', values);
+        console.debug('Model::reset', values);
         for (let index in this.objects) {
             let object = this.objects[index];
             if(object.hasOwnProperty('id') && object.id == id) {
@@ -273,7 +274,7 @@ export class Model {
      * @param ids array list of objects identifiers that must be returned
      */
     public get(ids:any[] = []) {
-        console.log('Model::get', this.objects, this.has_changed);
+        console.debug('Model::get', this.objects, this.has_changed);
         let promise = $.Deferred();
         this.loaded_promise.
         then( () => {

@@ -8,20 +8,20 @@ import { Domain, Clause, Condition, Reference } from "../Domain";
 export class LayoutSearch extends Layout {
 
     public async init() {
-        console.log('LayoutSearch::init');
+        console.debug('LayoutSearch::init');
         try {
             // initialize the layout
             this.layout();
         }
         catch(err) {
-            console.log('Something went wrong ', err);
+            console.warn('Something went wrong ', err);
         }
     }
 
     // refresh layout
     // this method is called in response to parent View `onchangeModel` method
     public async refresh(full: boolean = false) {
-        console.log('LayoutSearch::refresh');
+        console.debug('LayoutSearch::refresh');
 
         // also re-generate the layout
         if(full) {
@@ -40,7 +40,7 @@ export class LayoutSearch extends Layout {
      *
      */
     protected layout() {
-        console.log('LayoutSearch::layout');
+        console.debug('LayoutSearch::layout');
         let $elem = $('<div/>').css({"width": "100%"});
 
         let view_schema = this.view.getViewSchema();
@@ -171,7 +171,7 @@ export class LayoutSearch extends Layout {
     }
 
     protected async feed(objects: any) {
-        console.log('LayoutSearch::feed', objects);
+        console.debug('LayoutSearch::feed', objects);
 
         // display the first object from the collection
 
@@ -194,7 +194,6 @@ export class LayoutSearch extends Layout {
                 let $tab = $(elem);
                 let visible = $tab.attr('data-visible');
                 if(visible != undefined) {
-                    console.log('section visible', visible);
                     let domain = new Domain(JSON.parse(visible));
                     if(domain.evaluate(object)) {
                         $tab.show();
@@ -330,7 +329,7 @@ export class LayoutSearch extends Layout {
                         let $widget = widget.render();
                         // Handle Widget update handler
                         $widget.on('_updatedWidget', async (event:any, refresh: boolean = true) => {
-                            console.log("Layout::feedForm : received _updatedWidget", field, widget.getValue(), refresh);
+                            console.debug("Layout::feedForm : received _updatedWidget", field, widget.getValue(), refresh);
                             // update object with new value
                             let values:any = {};
                             values[field] = widget.getValue();

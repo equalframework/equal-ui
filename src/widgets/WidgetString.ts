@@ -71,8 +71,8 @@ export default class WidgetString extends Widget {
                     }
                     else {
                         this.$elem = UIHelper.createInputView('', this.label, value, this.config.description);
-                        this.$elem.attr('title', value);
                     }
+                    this.$elem.attr('title', value);
                 }
                 break;
         }

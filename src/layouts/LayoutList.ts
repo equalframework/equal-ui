@@ -9,20 +9,20 @@ import moment from 'moment/moment.js';
 export class LayoutList extends Layout {
 
     public async init() {
-        console.log('LayoutList::init');
+        console.debug('LayoutList::init');
         try {
             // initialize the layout
             this.layout();
         }
         catch(err) {
-            console.log('Something went wrong ', err);
+            console.warn('Something went wrong ', err);
         }
     }
 
     // refresh layout
     // this method is called in response to parent View `onchangeModel` method
     public async refresh(full: boolean = false) {
-        console.log('LayoutList::refresh');
+        console.debug('LayoutList::refresh');
 
         // also re-generate the layout
         if(full) {
@@ -134,10 +134,11 @@ export class LayoutList extends Layout {
             }
         }
 
+        let first_column: boolean = true;
         for(let item of view_schema.layout.items) {
             let field = item.value;
             let config = WidgetFactory.getWidgetConfig(this.view, field, translation, model_fields, view_fields);
-
+            // append only visible columns
             if(config && (!config.hasOwnProperty('visible') || config.visible)) {
                 let width = Math.floor(10 * item.width) / 10;
                 let $cell = $('<th/>').attr('name', field)
@@ -163,15 +164,15 @@ export class LayoutList extends Layout {
                     }
                 });
 
-                if(['float', 'integer'].indexOf(config.type) >= 0 && field != 'id') {
+                if(['float', 'integer'].indexOf(config.type) >= 0 && !first_column) {
                     $cell.css({'text-align': 'right', 'padding-right': '16px'});
                 }
                 if(config.sortable) {
                     $cell.addClass('sortable').attr('data-sort', '');
                 }
                 $hrow.append($cell);
+                first_column = false;
             }
-
         }
 
         $thead.append($hrow);
@@ -233,7 +234,7 @@ export class LayoutList extends Layout {
     }
 
     protected async feed(objects: any) {
-        console.log('LayoutList::feed', objects);
+        console.debug('LayoutList::feed', objects);
 
         this.$layout.find("tbody").remove();
 
@@ -255,7 +256,9 @@ export class LayoutList extends Layout {
         let stack = (group_by.length == 0)?[objects]:[groups];
 
         while(true) {
-            if(stack.length == 0) break;
+            if(stack.length == 0) {
+                break;
+            }
 
             let group = stack.pop();
 
@@ -450,7 +453,7 @@ export class LayoutList extends Layout {
         })
         // toggle mode for all cells in row
         .on( '_toggle_mode', (event:any, mode: string = 'view') => {
-            console.log('Layout - received toggle_mode', mode);
+            console.debug('Layout - received toggle_mode', mode);
             let $this = $(event.currentTarget);
 
             $this.find('td.sb-widget-cell').each( (index: number, elem: any) => {
@@ -471,7 +474,7 @@ export class LayoutList extends Layout {
 
                 if(mode == 'edit') {
                     $widget.on('_updatedWidget', (event:any) => {
-                        console.log('Layout - received _updatedWidget event', widget.getValue());
+                        console.debug('Layout - received _updatedWidget event', widget.getValue());
                         let value:any = {};
                         value[field] = widget.getValue();
                         // propagate model change, without requesting a layout refresh
@@ -532,8 +535,8 @@ export class LayoutList extends Layout {
 
                 // by convention, `name` subfield is always loaded for relational fields
                 if(config.type == 'many2one') {
-                    value = object[item.value]['name'];
-                    config.object_id = object[item.value]['id'];
+                    value = (object[item.value] && object[item.value].hasOwnProperty('name'))?object[item.value]['name']:'';
+                    config.object_id = (object[item.value] && object[item.value].hasOwnProperty('id'))?object[item.value]['id']:0;
                 }
                 else {
                     // Model do not load o2m and m2m fields : these are handled by sub-views

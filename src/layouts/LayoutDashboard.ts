@@ -9,20 +9,20 @@ import { Domain, Clause, Condition, Reference } from "../Domain";
 export class LayoutDashboard extends Layout {
 
     public async init() {
-        console.log('LayoutDashboard::init');
+        console.debug('LayoutDashboard::init');
         try {
             // initialize the layout
             this.layout();
         }
         catch(err) {
-            console.log('Something went wrong ', err);
+            console.warn('Something went wrong ', err);
         }
     }
 
     // refresh layout
     // this method is called in response to parent View `onchangeModel` method
     public async refresh(full: boolean = false) {
-        console.log('LayoutDashboard::refresh');
+        console.debug('LayoutDashboard::refresh');
 
         // also re-generate the layout
         if(full) {
@@ -39,7 +39,7 @@ export class LayoutDashboard extends Layout {
      *
      */
     protected layout() {
-        console.log('LayoutDashboard::layout');
+        console.debug('LayoutDashboard::layout');
 
         let $elem = $('<div/>').css({"width": "100%"});
 

@@ -24,7 +24,7 @@ export default class WidgetSelect extends Widget {
                 }
                 // setup handler for relaying value update to parent layout
                 this.$elem.find('input').on('change', (event) => {
-                    console.log('WidgetSelect : received change event');
+                    console.debug('WidgetSelect : received change event');
                     let $this = $(event.currentTarget);
                     this.value = $this.val();
                     this.$elem.trigger('_updatedWidget');

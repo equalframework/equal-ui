@@ -191,7 +191,7 @@ export default class WidgetMany2One extends Widget {
 
                         }
                         catch(response) {
-                            console.log('request failed', response);
+                            console.warn('request failed', response);
                         }
                     }
 
@@ -293,7 +293,6 @@ export default class WidgetMany2One extends Widget {
                     $select.find('input')
                     .on('keyup', (event:any) => {
                         if(event.which == 9) {
-                            console.log('tab', this.getLabel());
                             // if clicked ok, if tab only not
                             $select.trigger('click');
                             // prevent double handling tab
@@ -325,7 +324,7 @@ export default class WidgetMany2One extends Widget {
 
                     // upon value change, relay updated value to parent layout
                     $select.on('update', (event) => {
-                        console.log('WidgetMany2One : received change event', $select.attr('data-selected'));
+                        console.debug('WidgetMany2One : received change event', $select.attr('data-selected'));
                         // m2o relations are always loaded as an object with {id:, name:}
                         let object:any = objects.find( o => o.id == $select.attr('data-selected'));
                         if(object) {
@@ -384,9 +383,13 @@ export default class WidgetMany2One extends Widget {
                         if(this.is_first) {
                             this.$elem.addClass('is-first');
                         }
-                        else {
+
+                        this.$elem.text(value.toString());
+                        this.$elem.css({"width": "100%", "height": "auto", "max-height": "calc(44px - 2px)", "white-space": "break-spaces", "overflow": "hidden", "cusor": "pointer"});
+
+                        if(!this.is_first) {
                             // open targeted object in new context
-                            $input.on('click', async (event: any) => {
+                            this.$elem.on('click', async (event: any) => {
                                 this.getLayout().openContext({
                                     entity: this.config.foreign_object,
                                     type: 'form',
@@ -396,7 +399,6 @@ export default class WidgetMany2One extends Widget {
                                 event.stopPropagation();
                             });
                         }
-                        this.$elem.append($input);
                 }
                 break;
         }

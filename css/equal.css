@@ -642,11 +642,11 @@ body, html {
     box-shadow: none;
 }
 
-.sb-view-layout-list .sb-widget.sb-widget-type-many2one.sb-widget-mode-view:not(.is-first) input {
+.sb-view-layout-list .sb-widget.sb-widget-type-many2one.sb-widget-mode-view:not(.is-first) {
     cursor: pointer;
 }
 
-.sb-view-layout-list .sb-widget.sb-widget-type-many2one.sb-widget-mode-view:not(.is-first) input:hover {
+.sb-view-layout-list .sb-widget.sb-widget-type-many2one.sb-widget-mode-view:not(.is-first):hover {
     text-decoration: underline;
 }
 
@@ -685,6 +685,9 @@ body, html {
 .sb-widget .sb-ui-switch {
     height: 56px;
     line-height: 56px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-left: 16px;
 }
 
 /* Material Components customizations */
@@ -774,13 +777,13 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
 
 .sb-view-layout-form .sb-widget.sb-widget-type-boolean {
     height: 56px;
-    padding-left: 16px;
     width: 100%;
+    white-space: nowrap;
 }
 
 .sb-view-layout-list .sb-widget.sb-widget-type-boolean {
     height: 44px;
-    /* cannot identify the reason why this was necessary at some point */
+    /* #memo - cannot identify the reason why this was necessary at some point */
     /* padding-top: 14px; */
 }
 
@@ -1128,6 +1131,8 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
 
 .mdc-layout-grid__cell {
     position: relative;
+    /* #memo - cannot hide overflow : some elements depend on it */
+    /* overflow: hidden; */
 }
 
 .mdc-text-field-helper-line {
@@ -1182,7 +1187,7 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
 }
 
 
-.mdc-text-field--invalid:not(.mdc-text-field--disabled) .mdc-text-field-helper-line .mdc-text-field-helper-text--validation-msg {
+.mdc-text-field--invalid .mdc-text-field-helper-line .mdc-text-field-helper-text--validation-msg {
     color: var(--mdc-theme-error, #b00020) !important;
 }
 

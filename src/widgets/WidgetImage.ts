@@ -65,7 +65,6 @@ export default class WidgetImage extends Widget {
                         event.stopPropagation();
                         this.$elem.removeClass("highlight");
                         if(event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length) {
-                            console.log('event datatransfer', event.dataTransfer.files);
                             // we want to store the data inside the Model field
                             let file = event.dataTransfer.files[0];
                             let value = await ( ( blob:any ) => {

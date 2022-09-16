@@ -43,7 +43,7 @@ export class Controller {
     }
 
     private async init() {
-        console.log('Controller::init');
+        console.debug('Controller::init');
 
         // 2) retrieve announcement from the target action controller
         let params: any = {

@@ -40,7 +40,7 @@ export class Context {
      * 
      */
     constructor(frame: Frame, entity: string, type: string, name: string, domain: any[], mode: string = 'view', purpose: string = 'view', lang: string = '', callback: (data:any) => void = (data:any=null) => {}, config: any = null) {
-        console.log('Context - opening context', entity, type, name, domain, mode, purpose, lang, config);
+        console.debug('Context::Construct - opening context', entity, type, name, domain, mode, purpose, lang, config);
         this.$container = $('<div />').addClass('sb-context');
 
         this.callback = callback;
@@ -67,7 +67,7 @@ export class Context {
      *
      */
     public close(data:any) {
-        console.log('Context::close', data);
+        console.debug('Context::close', data);
         // remove Context container
         this.$container.remove();
         // invoke callback to relay events across contexts (select, add, ...)
@@ -82,7 +82,7 @@ export class Context {
      *
      */
     public destroy() {
-        console.log('Context::destroy');
+        console.debug('Context::destroy');
         // remove Context container
         this.$container.remove();
     }
@@ -100,7 +100,7 @@ export class Context {
      * Relay update notification (from View) to parent Frame.
      */
     public async updatedContext() {
-        console.log('Context::updatedContext');
+        console.debug('Context::updatedContext');
         await this.frame.updatedContext();
     }
 

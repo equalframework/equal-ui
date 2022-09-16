@@ -13,20 +13,20 @@ export class LayoutChart extends Layout {
     private parsed_datasets: any = {};
 
     public async init() {
-        console.log('LayoutChart::init');
+        console.debug('LayoutChart::init');
         try {
             // initialize the layout
             this.layout();
         }
         catch(err) {
-            console.log('Something went wrong ', err);
+            console.warn('Something went wrong ', err);
         }
     }
 
     // refresh layout
     // this method is called in response to parent View `onchangeModel` method
     public async refresh(full: boolean = false) {
-        console.log('LayoutChart::refresh');
+        console.debug('LayoutChart::refresh');
 
         // also re-generate the layout
         if(full) {
@@ -45,7 +45,7 @@ export class LayoutChart extends Layout {
      *
      */
     protected async layout() {
-        console.log('LayoutChart::layout');
+        console.debug('LayoutChart::layout');
 
         let view_schema = this.view.getViewSchema();
         let layout = view_schema.layout;
@@ -54,7 +54,7 @@ export class LayoutChart extends Layout {
             type: 'bar',
             stacked: false,
             group_by: 'range',
-            field: 'created',            
+            field: 'created',
             range_interval: 'month',
             range_from: 'date.this.year.first',
             range_to: 'date.this.year.last',
@@ -62,7 +62,7 @@ export class LayoutChart extends Layout {
         }
 
         // parse schema to get the operations (datasets), relative dates : range_from, range_to
-        this.parsed_datasets = layout.datasets.map( (a:any, index: number) => { 
+        this.parsed_datasets = layout.datasets.map( (a:any, index: number) => {
             let dataset:any = {
                 label: 'label',
                 operation: ['COUNT', 'object.id'],
@@ -81,13 +81,11 @@ export class LayoutChart extends Layout {
 
     protected async feed(objects: any) {
 
-        // #todo : split between layout and feed 
+        // #todo : split between layout and feed
 
         this.$layout.empty();
 
-        console.log('LayoutChart::feed ###', objects);
         // display the first object from the collection
-
         let view_schema = this.view.getViewSchema();
         let layout = view_schema.layout;
 
@@ -109,7 +107,7 @@ export class LayoutChart extends Layout {
                 });
         }
         catch(response) {
-            console.log(response);
+            console.warn(response);
             return;
         }
 
@@ -126,7 +124,7 @@ export class LayoutChart extends Layout {
             let $tbody = $('<tbody/>').appendTo($table);
 
             let object = result[0];
-            
+
             let $hrow = $('<tr/>').appendTo($thead);
             let i = 0;
             let keys = Object.keys(object).sort();
@@ -160,7 +158,7 @@ export class LayoutChart extends Layout {
             ];
 
             let datasets: any, options: any;
-            
+
             if(['pie', 'doughnut', 'polarArea'].indexOf(this.config.type) >= 0) {
                 datasets = result.datasets.map( (a:any, index: number) => { return {label: layout.datasets[index].label, data: a, backgroundColor: CHART_COLORS}; });
                 options = {

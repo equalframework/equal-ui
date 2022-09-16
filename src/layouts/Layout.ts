@@ -22,7 +22,7 @@ import { saveAs } from 'file-saver';
 export interface LayoutInterface {
     init(): any;
     refresh(full: boolean): any;
-    loading(loading: boolean): any;    
+    loading(loading: boolean): any;
     // #todo - add other public methods
 }
 
@@ -62,7 +62,7 @@ export class Layout implements LayoutInterface{
     protected async feed(objects: any) {}
 
 
-    
+
 
     public getView() {
         return this.view;
@@ -78,7 +78,7 @@ export class Layout implements LayoutInterface{
      * @param config
      */
     public openContext(config: any) {
-        console.log("Layout::openContext", config);
+        console.debug("Layout::openContext", config);
         this.view.openContext(config);
     }
 
@@ -88,7 +88,7 @@ export class Layout implements LayoutInterface{
      * @param message
      */
     public markFieldAsInvalid(object_id: number, field: string, message: string) {
-        console.log('Layout::markFieldAsInvalid', object_id, field);
+        console.debug('Layout::markFieldAsInvalid', object_id, field);
         if(this.view.getType() == 'form') {
             // by convention, form widgets are strored in first index
             object_id = 0;
@@ -138,7 +138,7 @@ export class Layout implements LayoutInterface{
     }
 
     public setSelection(selection: Array<any>) {
-        console.log('Layout::setSelection', selection);
+        console.debug('Layout::setSelection', selection);
         let $tbody = this.$layout.find("tbody");
 
         $tbody.find('input[type="checkbox"]').each( (i:number, elem:any) => {
@@ -159,7 +159,7 @@ export class Layout implements LayoutInterface{
     }
 
     public addToSelection(selection: Array<any>) {
-        console.log('Layout::addToSelection', selection);
+        console.debug('Layout::addToSelection', selection);
         let $tbody = this.$layout.find("tbody");
 
         $tbody.find('input[type="checkbox"]').each( (i:number, elem:any) => {
@@ -178,7 +178,7 @@ export class Layout implements LayoutInterface{
     }
 
     public removeFromSelection(selection: Array<any>) {
-        console.log('Layout::removeFromSelection', selection);
+        console.debug('Layout::removeFromSelection', selection);
         let $tbody = this.$layout.find("tbody");
 
         $tbody.find('input[type="checkbox"]').each( (i:number, elem:any) => {
@@ -211,8 +211,6 @@ export class Layout implements LayoutInterface{
     protected async decorateActionButton($button: JQuery, action: any, object: any = {}) {
         $button.on('click', async () => {
             try {
-                console.log("click action button ", object);
-
                 let resulting_params:any = {};
                 let missing_params:any = {};
                 let user = this.view.getUser();
@@ -337,7 +335,7 @@ export class Layout implements LayoutInterface{
                 });
             }
             catch(response) {
-                console.log('unknown error', response);
+                console.warn('unknown error', response);
                 // restore action button
                 $button.closest('button').removeClass('mdc-button--spinner');
                 await this.view.displayErrorFeedback(this.view.getTranslation(), response);
@@ -398,7 +396,7 @@ export class Layout implements LayoutInterface{
     }
 
     protected async performViewAction(action:any, params:any, translation: any, response_descr: any = {}) {
-        console.log('Layout::performViewAction');
+        console.debug('Layout::performViewAction');
         try {
             let content_type:string = 'application/json';
 
@@ -408,13 +406,13 @@ export class Layout implements LayoutInterface{
 
             const result = await ApiService.fetch("/", {do: action.controller, ...params}, content_type);
             const status = ApiService.getLastStatus();
-
+            const headers = ApiService.getLastHeaders();
             // handle binary data response
             if(content_type != 'application/json') {
                 let blob = new Blob([result], {type: content_type});
                 let filename = "file.download";
-                if(response_descr.hasOwnProperty('content-disposition')) {
-                    const parts = response_descr['content-disposition'].split('=');
+                if(headers.hasOwnProperty('content-disposition')) {
+                    const parts = headers['content-disposition'].split('=');
                     if(parts.length > 1) {
                         filename = parts[1].slice(1, -1);
                     }

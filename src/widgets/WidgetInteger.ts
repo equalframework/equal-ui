@@ -31,7 +31,7 @@ export default class WidgetInteger extends WidgetString {
         }
         else if(this.mode == 'view') {
             // for lists, item is a DIV
-            if(this.config.layout == 'list') {
+            if(this.config.field != 'id' && this.config.layout == 'list') {
                 this.$elem.css({'text-align': 'right'});
             }
 

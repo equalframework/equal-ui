@@ -19,7 +19,7 @@ export default class WidgetDate extends Widget {
 
     public render(): JQuery {
         let date = new Date(this.value);
-        let value:any;    
+        let value:any;
 
         switch(this.mode) {
             case 'edit':
@@ -51,7 +51,7 @@ export default class WidgetDate extends Widget {
                 break;
             case 'view':
             default:
-                value = (this.value)?moment(date).format('LL'):'';
+                value = (this.value)?moment(date).format('ll'):'';
                 this.$elem = UIHelper.createInputView('', this.label, value, this.config.description);
                 break;
         }

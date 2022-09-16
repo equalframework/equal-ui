@@ -158,7 +158,7 @@ config: {
         }
         else {
             // we shouldn't end up here : malformed schema
-            console.log('ERROR - malformed schema for field '+field);
+            console.warn('ERROR - malformed schema for field '+field);
             return config;
         }
 

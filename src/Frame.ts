@@ -179,7 +179,7 @@ export class Frame {
      * @returns
      */
     private async updateHeader() {
-        console.log('update header');
+        console.debug('Frame::update header');
 
         let $domContainer = $(this.domContainerSelector);
 
@@ -364,7 +364,7 @@ export class Frame {
     }
 
     public async updatedContext() {
-        console.log('Frame::updatedContext');
+        console.debug('Frame::updatedContext');
         await this.eq.updated();
     }
 
@@ -412,7 +412,7 @@ export class Frame {
      * @param config
      */
     public async _openContext(config: any) {
-        console.log('Frame: received _openContext', config);
+        console.debug('Frame::_openContext', config);
 
         const environment = await EnvService.getEnv();
         // extend default params with received config
@@ -443,7 +443,7 @@ export class Frame {
 
         // create a draft object if required: Edition is based on asynchronous creation: a draft is created (or recylcled) and is turned into an instance if 'update' action is triggered.
         if(config.purpose == 'create') {
-            console.log('requesting draft object');
+            console.debug('requesting draft object');
             let defaults    = await this.getNewObjectDefaults(config.entity, config.domain);
             let object      = await ApiService.create(config.entity, defaults);
             config.domain   = [['id', '=', object.id], ['state', '=', 'draft']];
@@ -458,7 +458,7 @@ export class Frame {
 
         try {
             await this.context.isReady();
-            console.log('context ready');
+            console.debug('context ready');
             for(let ctx of this.stack) {
                 if(ctx && typeof ctx.getContainer === 'function') {
                     // containers are hidden and not detached in order to maintain the listeners
@@ -481,7 +481,7 @@ export class Frame {
             await this.closeContext(null, true);
         }
 
-        console.log("Frame::closeAll - closed all contexts", this.context, this.stack);
+        console.debug("Frame::closeAll - closed all contexts", this.context, this.stack);
     };
 
     /**
@@ -523,7 +523,7 @@ export class Frame {
             // if we closed the lastest Context from the stack, relay data to the outside
             // #todo - is this still necessary ? (since we run callbacks in eventlisteners)
             if(!this.stack.length) {
-                // console.log('Frame::_closeContext - stack empty, closing');
+                // console.debug('Frame::_closeContext - stack empty, closing');
                 // $(this.domContainerSelector).hide().trigger('_close', [ data ]);
             }
         }
