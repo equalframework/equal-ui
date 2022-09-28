@@ -2402,6 +2402,15 @@ export class View {
                     }
                 }
             }
+            else if(errors.hasOwnProperty('SQL_ERROR')) {
+                if(snack) {
+                    let title = TranslationService.instant('SB_ERROR_SQL_ERROR');
+                    // try to resolve the error message
+                    let msg = TranslationService.resolve(translation, 'error', [], 'errors', errors['SQL_ERROR'], errors['SQL_ERROR']);
+                    let $snack = UIHelper.createSnackbar(title+' '+msg, TranslationService.instant('SB_ERROR_ERROR'), '', 4000);
+                    this.$container.append($snack);
+                }
+            }
         }
         return false;
     }

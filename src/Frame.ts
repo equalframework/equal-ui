@@ -74,7 +74,7 @@ export class Frame {
 
         // get list of available languages for Models
         const languages = await ApiService.collect('core\\Lang', [], ['id', 'code', 'name'], 'name', 'asc', 0, 100, this.environment.locale);
-    
+
         for(let lang of languages) {
             this.languages[lang.code] = lang.name;
         }
@@ -276,17 +276,17 @@ export class Frame {
         }
 
 
-        if(this.display_mode == 'popup') {            
+        if(this.display_mode == 'popup') {
             let model_schema = await ApiService.getSchema(this.context.getEntity());
             let objects:any = await this.context.getView().getModel().get();
-            let link = model_schema.link.replace(/object\.id/, objects[0].id);
-            $('<a>'+current_purpose_string+'</a>').attr('href', link).attr('target', '_blank').prependTo($elem);
+            if(objects.length && objects[0].hasOwnProperty('id')) {
+                let link = model_schema.link.replace(/object\.id/, objects[0].id);
+                $('<a>'+current_purpose_string+'</a>').attr('href', link).attr('target', '_blank').prependTo($elem);
+            }
         }
         else {
             $('<span>'+current_purpose_string+'</span>').appendTo($elem);
         }
-        
-
 
         if(this.stack.length > 1 || this.display_mode == 'popup' || this.close_button) {
             // #memo - for integration, we need to let user close any context
@@ -308,7 +308,7 @@ export class Frame {
         const environment = await EnvService.getEnv();
 
         let locale = environment.locale;
-        
+
         // if there is a current context, use its lang
         if(this.context.hasOwnProperty('$container')) {
             locale = this.context.getLang();
@@ -501,7 +501,7 @@ export class Frame {
                     if(ctx.hasOwnProperty('$container')) {
                         ctx.setChanged();
                     }
-                }                
+                }
             }
 
             // destroy current context and run callback, if any
