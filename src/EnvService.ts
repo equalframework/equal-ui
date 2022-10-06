@@ -31,8 +31,18 @@ export class _EnvService {
                     resolve(this.environment);
                 }
                 catch(response) {
-                    this.environment = {...this.default};
-                    resolve(this.environment);
+                    // config.json not found, fallback to default.json
+                    try {
+                        const response:Response = await fetch('/assets/env/default.json');
+                        const env = await response.json();
+                        this.environment = {...this.default, ...env};
+                        resolve(this.environment);
+                    }
+                    catch(response) {
+                        // default.json not found, fallback to default values
+                        this.environment = {...this.default};
+                        resolve(this.environment);
+                    }
                 }
             });
         }

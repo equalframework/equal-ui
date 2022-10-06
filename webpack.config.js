@@ -1,6 +1,6 @@
  var path = require('path');
  var webpack = require('webpack');
- 
+
  module.exports = {
     entry: './build/EventsListener.js',
     output: {
@@ -23,7 +23,7 @@
     },
     module: {
         rules: [
-            // should we need to make specific Classes available as standalone modules, it has to be defined here        
+            // should we need to make specific Classes available as standalone modules, it has to be defined here
             {
                 test: require.resolve("jquery"),
                 loader: "expose-loader",
@@ -43,7 +43,7 @@
                         options: {
                             esModule: false,
                         }
-                    }                
+                    }
                 ],
             },
 */
@@ -53,7 +53,7 @@
                 'style-loader',
                 'css-loader',
                 ],
-            }            
+            }
         ]
     },
     plugins: [
@@ -64,6 +64,6 @@
         })
     ],
     optimization: {
-        minimize: false
+        minimize: true
     }
  };
