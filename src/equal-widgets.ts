@@ -179,6 +179,7 @@ config: {
             config.type = 'select';
             let translated = TranslationService.resolve(translation, 'model', [], field, config.selection, 'selection');
             let values = translated;
+            // normalize translation map
             if(Array.isArray(translated)) {
                 // convert array to a Map (original values as keys and translations as values)
                 values = {};

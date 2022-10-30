@@ -2475,6 +2475,7 @@ export class View {
                         let values = translated;
                         // normalize translation map
                         if(Array.isArray(translated)) {
+                            // convert array to a Map (original values as keys and translations as values)
                             values = {};
                             for(let i = 0, n = model_fields[field].selection.length; i < n; ++i) {
                                 values[model_fields[field].selection[i]] = translated[i];

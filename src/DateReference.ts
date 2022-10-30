@@ -84,6 +84,10 @@ export class DateReference {
                             }
                             break;
                     }
+                    // remove TZ offset (date is given as UTC)
+                    let timestamp = this.date.getTime();
+                    let offset_tz = this.date.getTimezoneOffset()*60*1000;
+                    this.date = new Date(timestamp-offset_tz);
                 }
             }
         }

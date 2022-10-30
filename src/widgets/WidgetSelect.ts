@@ -4,7 +4,7 @@ import { View, Layout } from "../equal-lib";
 import { UIHelper } from '../material-lib';
 
 export default class WidgetSelect extends Widget {
-        
+
     constructor(layout: Layout, label: string, value: any, config: any) {
         super(layout, 'select', label, value, config);
     }
@@ -32,7 +32,7 @@ export default class WidgetSelect extends Widget {
                 break;
             case 'view':
             default:
-                let val:string = Array.isArray(this.config.values)?value:this.config.values[value];
+                let val:string = Array.isArray(this.config.values)?value:(this.config.values.hasOwnProperty(value))?this.config.values[value]:'';
                 this.$elem = UIHelper.createInputView('', this.label, val, this.config.description);
                 break;
         }
@@ -45,5 +45,5 @@ export default class WidgetSelect extends Widget {
 
         return this.$elem;
     }
-    
+
 }

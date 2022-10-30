@@ -198,7 +198,16 @@ export class LayoutForm extends Layout {
                     $status_container = $('<div style="margin-left: auto;"></div>').attr('id', this.uuid+'_status').append( $('<span style="line-height: 46px;margin-right: 12px; text-transform: capitalize;">'+status_title+': <span class="status-value"></span></span>') ).appendTo($view_actions);
                 }
 
-                let status_selection = TranslationService.resolve(translation, 'model', [], 'status', model_fields['status'].selection, 'selection');
+                let translated = TranslationService.resolve(translation, 'model', [], 'status', model_fields['status'].selection, 'selection');
+                let status_selection = translated;
+                // normalize translation map
+                if(Array.isArray(translated)) {
+                    // convert array to a Map (original values as keys and translations as values)
+                    status_selection = {};
+                    for(let i = 0, n = model_fields['status'].selection.length; i < n; ++i) {
+                        status_selection[model_fields['status'].selection[i]] = translated[i];
+                    }
+                }
                 let status_value = status_selection[object['status']];
                 $status_container.find('.status-value').empty().append($('<b>'+status_value+'</b>'));
             }

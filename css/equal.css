@@ -804,6 +804,10 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     border-radius: 0;
 }
 
+.sb-view-layout.sb-view-layout-list tr.sb-view-layout-list-row:hover td {
+	background: rgba(0,0,0,0.03);
+}
+
 .sb-view-layout-list .sb-group-row {
     background-color: rgba(0,0,0,0.03);
 }
