@@ -16,9 +16,8 @@ export default class WidgetInteger extends WidgetString {
         let $input = this.$elem.find('input');
 
         // numeric fields are aligned right (except for `id` column)
-        if(this.config.field != 'id') {
-            $input.css({'text-align': 'right'});
-        }
+        let align = this.config.hasOwnProperty('align')? this.config.align : ((this.config.field == 'id')?'left':'right');
+        $input.css({'text-align': align});
 
         if(this.mode == 'edit') {
             $input.attr( "type", "number" );

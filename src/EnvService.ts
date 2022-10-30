@@ -73,7 +73,7 @@ export class _EnvService {
         return value.toLocaleString();
     }
 
-    public formatCurrency(value:number, scale:number = 0, thousand_sep:string=',', decimal_sep:string='.') {
+    public formatCurrency(value:number, scale:number = 2, thousand_sep:string=',', decimal_sep:string='.') {
         let result = this.formatNumber(value, scale, thousand_sep, decimal_sep);
         if(this.environment.hasOwnProperty('core.units.currency')) {
             if(this.environment.hasOwnProperty('core.locale.currency.symbol_position') && this.environment['core.locale.currency.symbol_position'] == 'before') {
