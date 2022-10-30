@@ -1,0 +1,2266 @@
+/*!
+ * Chart.js v3.7.1
+ * https://www.chartjs.org
+ * (c) 2022 Chart.js Contributors
+ * Released under the MIT License
+ */
+
+/*!
+ * Quill Editor v1.3.7
+ * https://quilljs.com/
+ * Copyright (c) 2014, Jason Chen
+ * Copyright (c) 2013, salesforce.com
+ */
+
+/*!
+ * Sizzle CSS Selector Engine v2.3.6
+ * https://sizzlejs.com/
+ *
+ * Copyright JS Foundation and other contributors
+ * Released under the MIT license
+ * https://js.foundation/
+ *
+ * Date: 2021-02-16
+ */
+
+/*!
+ * jQuery JavaScript Library v3.6.0
+ * https://jquery.com/
+ *
+ * Includes Sizzle.js
+ * https://sizzlejs.com/
+ *
+ * Copyright OpenJS Foundation and other contributors
+ * Released under the MIT license
+ * https://jquery.org/license
+ *
+ * Date: 2021-03-02T17:08Z
+ */
+
+/*!
+ * jQuery UI :data 1.12.1
+ * http://jqueryui.com
+ *
+ * Copyright jQuery Foundation and other contributors
+ * Released under the MIT license.
+ * http://jquery.org/license
+ */
+
+/*!
+ * jQuery UI Button 1.12.1
+ * http://jqueryui.com
+ *
+ * Copyright jQuery Foundation and other contributors
+ * Released under the MIT license.
+ * http://jquery.org/license
+ */
+
+/*!
+ * jQuery UI Checkboxradio 1.12.1
+ * http://jqueryui.com
+ *
+ * Copyright jQuery Foundation and other contributors
+ * Released under the MIT license.
+ * http://jquery.org/license
+ */
+
+/*!
+ * jQuery UI Controlgroup 1.12.1
+ * http://jqueryui.com
+ *
+ * Copyright jQuery Foundation and other contributors
+ * Released under the MIT license.
+ * http://jquery.org/license
+ */
+
+/*!
+ * jQuery UI Datepicker 1.12.1
+ * http://jqueryui.com
+ *
+ * Copyright jQuery Foundation and other contributors
+ * Released under the MIT license.
+ * http://jquery.org/license
+ */
+
+/*!
+ * jQuery UI Dialog 1.12.1
+ * http://jqueryui.com
+ *
+ * Copyright jQuery Foundation and other contributors
+ * Released under the MIT license.
+ * http://jquery.org/license
+ */
+
+/*!
+ * jQuery UI Disable Selection 1.12.1
+ * http://jqueryui.com
+ *
+ * Copyright jQuery Foundation and other contributors
+ * Released under the MIT license.
+ * http://jquery.org/license
+ */
+
+/*!
+ * jQuery UI Draggable 1.12.1
+ * http://jqueryui.com
+ *
+ * Copyright jQuery Foundation and other contributors
+ * Released under the MIT license.
+ * http://jquery.org/license
+ */
+
+/*!
+ * jQuery UI Droppable 1.12.1
+ * http://jqueryui.com
+ *
+ * Copyright jQuery Foundation and other contributors
+ * Released under the MIT license.
+ * http://jquery.org/license
+ */
+
+/*!
+ * jQuery UI Focusable 1.12.1
+ * http://jqueryui.com
+ *
+ * Copyright jQuery Foundation and other contributors
+ * Released under the MIT license.
+ * http://jquery.org/license
+ */
+
+/*!
+ * jQuery UI Form Reset Mixin 1.12.1
+ * http://jqueryui.com
+ *
+ * Copyright jQuery Foundation and other contributors
+ * Released under the MIT license.
+ * http://jquery.org/license
+ */
+
+/*!
+ * jQuery UI Keycode 1.12.1
+ * http://jqueryui.com
+ *
+ * Copyright jQuery Foundation and other contributors
+ * Released under the MIT license.
+ * http://jquery.org/license
+ */
+
+/*!
+ * jQuery UI Labels 1.12.1
+ * http://jqueryui.com
+ *
+ * Copyright jQuery Foundation and other contributors
+ * Released under the MIT license.
+ * http://jquery.org/license
+ */
+
+/*!
+ * jQuery UI Mouse 1.12.1
+ * http://jqueryui.com
+ *
+ * Copyright jQuery Foundation and other contributors
+ * Released under the MIT license.
+ * http://jquery.org/license
+ */
+
+/*!
+ * jQuery UI Position 1.12.1
+ * http://jqueryui.com
+ *
+ * Copyright jQuery Foundation and other contributors
+ * Released under the MIT license.
+ * http://jquery.org/license
+ *
+ * http://api.jqueryui.com/position/
+ */
+
+/*!
+ * jQuery UI Resizable 1.12.1
+ * http://jqueryui.com
+ *
+ * Copyright jQuery Foundation and other contributors
+ * Released under the MIT license.
+ * http://jquery.org/license
+ */
+
+/*!
+ * jQuery UI Scroll Parent 1.12.1
+ * http://jqueryui.com
+ *
+ * Copyright jQuery Foundation and other contributors
+ * Released under the MIT license.
+ * http://jquery.org/license
+ */
+
+/*!
+ * jQuery UI Selectable 1.12.1
+ * http://jqueryui.com
+ *
+ * Copyright jQuery Foundation and other contributors
+ * Released under the MIT license.
+ * http://jquery.org/license
+ */
+
+/*!
+ * jQuery UI Sortable 1.12.1
+ * http://jqueryui.com
+ *
+ * Copyright jQuery Foundation and other contributors
+ * Released under the MIT license.
+ * http://jquery.org/license
+ */
+
+/*!
+ * jQuery UI Tabbable 1.12.1
+ * http://jqueryui.com
+ *
+ * Copyright jQuery Foundation and other contributors
+ * Released under the MIT license.
+ * http://jquery.org/license
+ */
+
+/*!
+ * jQuery UI Unique ID 1.12.1
+ * http://jqueryui.com
+ *
+ * Copyright jQuery Foundation and other contributors
+ * Released under the MIT license.
+ * http://jquery.org/license
+ */
+
+/*!
+ * jQuery UI Widget 1.12.1
+ * http://jqueryui.com
+ *
+ * Copyright jQuery Foundation and other contributors
+ * Released under the MIT license.
+ * http://jquery.org/license
+ */
+
+/*! !!../../css-loader/dist/cjs.js!./quill.core.css */
+
+/*! !!../../css-loader/dist/cjs.js!./quill.snow.css */
+
+/*! !!../node_modules/css-loader/dist/cjs.js!./equal.css */
+
+/*! !!../node_modules/css-loader/dist/cjs.js!./material-basics.css */
+
+/*! !../../style-loader/dist/runtime/injectStylesIntoStyleTag.js */
+
+/*! !../../style-loader/dist/runtime/insertBySelector.js */
+
+/*! !../../style-loader/dist/runtime/insertStyleElement.js */
+
+/*! !../../style-loader/dist/runtime/setAttributesWithoutAttributes.js */
+
+/*! !../../style-loader/dist/runtime/styleDomAPI.js */
+
+/*! !../../style-loader/dist/runtime/styleTagTransform.js */
+
+/*! !../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */
+
+/*! !../node_modules/style-loader/dist/runtime/insertBySelector.js */
+
+/*! !../node_modules/style-loader/dist/runtime/insertStyleElement.js */
+
+/*! !../node_modules/style-loader/dist/runtime/setAttributesWithoutAttributes.js */
+
+/*! !../node_modules/style-loader/dist/runtime/styleDomAPI.js */
+
+/*! !../node_modules/style-loader/dist/runtime/styleTagTransform.js */
+
+/*! *****************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+
+/*! -!./jquery.js */
+
+/*! ../../css-loader/dist/runtime/api.js */
+
+/*! ../../css-loader/dist/runtime/cssWithMappingToString.js */
+
+/*! ../../expose-loader/dist/runtime/getGlobalThis.js */
+
+/*! ../Domain */
+
+/*! ../css/equal.css */
+
+/*! ../css/material-basics.css */
+
+/*! ../data */
+
+/*! ../disable-selection */
+
+/*! ../dist/chart.esm */
+
+/*! ../equal-lib */
+
+/*! ../equal-services */
+
+/*! ../equal-widgets */
+
+/*! ../escape-selector */
+
+/*! ../focusable */
+
+/*! ../form-reset-mixin */
+
+/*! ../ie */
+
+/*! ../jquery-lib */
+
+/*! ../keycode */
+
+/*! ../labels */
+
+/*! ../material-lib */
+
+/*! ../moment */
+
+/*! ../node_modules/css-loader/dist/runtime/api.js */
+
+/*! ../node_modules/css-loader/dist/runtime/cssWithMappingToString.js */
+
+/*! ../node_modules/quill/dist/quill.core.css */
+
+/*! ../node_modules/quill/dist/quill.snow.css */
+
+/*! ../plugin */
+
+/*! ../position */
+
+/*! ../safe-active-element */
+
+/*! ../safe-blur */
+
+/*! ../scroll-parent */
+
+/*! ../tabbable */
+
+/*! ../unique-id */
+
+/*! ../version */
+
+/*! ../widget */
+
+/*! ../widgets/WidgetDashboardItem */
+
+/*! ./ApiService */
+
+/*! ./Context */
+
+/*! ./DateReference */
+
+/*! ./Domain */
+
+/*! ./EnvService */
+
+/*! ./Frame */
+
+/*! ./Layout */
+
+/*! ./Model */
+
+/*! ./TranslationService */
+
+/*! ./View */
+
+/*! ./Widget */
+
+/*! ./WidgetMany2Many */
+
+/*! ./WidgetString */
+
+/*! ./arrayLikeToArray.js */
+
+/*! ./arrayWithHoles.js */
+
+/*! ./assertThisInitialized.js */
+
+/*! ./button */
+
+/*! ./character-counter/component */
+
+/*! ./character-counter/foundation */
+
+/*! ./character-counter/index */
+
+/*! ./checkboxradio */
+
+/*! ./chunks/helpers.segment.js */
+
+/*! ./component */
+
+/*! ./constants */
+
+/*! ./controlgroup */
+
+/*! ./draggable */
+
+/*! ./equal-layouts */
+
+/*! ./equal-lib */
+
+/*! ./equal-services */
+
+/*! ./equal-widgets */
+
+/*! ./escape-selector */
+
+/*! ./events */
+
+/*! ./fading-foundation */
+
+/*! ./focusable */
+
+/*! ./form */
+
+/*! ./foundation */
+
+/*! ./getPrototypeOf.js */
+
+/*! ./helper-text/component */
+
+/*! ./helper-text/foundation */
+
+/*! ./helper-text/index */
+
+/*! ./i18n/jqueryui */
+
+/*! ./icon/component */
+
+/*! ./icon/index */
+
+/*! ./iterableToArrayLimit.js */
+
+/*! ./jquery-datepicker.js */
+
+/*! ./jquery-lib */
+
+/*! ./layouts/Layout */
+
+/*! ./layouts/LayoutChart */
+
+/*! ./layouts/LayoutDashboard */
+
+/*! ./layouts/LayoutForm */
+
+/*! ./layouts/LayoutList */
+
+/*! ./layouts/LayoutSearch */
+
+/*! ./material-lib */
+
+/*! ./mouse */
+
+/*! ./nonIterableRest.js */
+
+/*! ./resizable */
+
+/*! ./rtl-default-scroller */
+
+/*! ./rtl-negative-scroller */
+
+/*! ./rtl-reverse-scroller */
+
+/*! ./rtl-scroller */
+
+/*! ./setPrototypeOf.js */
+
+/*! ./sliding-foundation */
+
+/*! ./superPropBase.js */
+
+/*! ./typeahead */
+
+/*! ./unsupportedIterableToArray.js */
+
+/*! ./util */
+
+/*! ./version */
+
+/*! ./widgets/Widget */
+
+/*! ./widgets/WidgetBoolean */
+
+/*! ./widgets/WidgetDate */
+
+/*! ./widgets/WidgetDateTime */
+
+/*! ./widgets/WidgetFile */
+
+/*! ./widgets/WidgetFloat */
+
+/*! ./widgets/WidgetImage */
+
+/*! ./widgets/WidgetInteger */
+
+/*! ./widgets/WidgetLabel */
+
+/*! ./widgets/WidgetLink */
+
+/*! ./widgets/WidgetMany2Many */
+
+/*! ./widgets/WidgetMany2One */
+
+/*! ./widgets/WidgetOne2Many */
+
+/*! ./widgets/WidgetSelect */
+
+/*! ./widgets/WidgetString */
+
+/*! ./widgets/WidgetText */
+
+/*! @babel/runtime/helpers/assertThisInitialized */
+
+/*! @babel/runtime/helpers/asyncToGenerator */
+
+/*! @babel/runtime/helpers/classCallCheck */
+
+/*! @babel/runtime/helpers/createClass */
+
+/*! @babel/runtime/helpers/defineProperty */
+
+/*! @babel/runtime/helpers/get */
+
+/*! @babel/runtime/helpers/getPrototypeOf */
+
+/*! @babel/runtime/helpers/inherits */
+
+/*! @babel/runtime/helpers/interopRequireDefault */
+
+/*! @babel/runtime/helpers/possibleConstructorReturn */
+
+/*! @babel/runtime/helpers/slicedToArray */
+
+/*! @babel/runtime/helpers/typeof */
+
+/*! @babel/runtime/regenerator */
+
+/*! @material/animation/animationframe */
+
+/*! @material/animation/util */
+
+/*! @material/base/component */
+
+/*! @material/base/foundation */
+
+/*! @material/checkbox */
+
+/*! @material/checkbox/component */
+
+/*! @material/data-table */
+
+/*! @material/dialog */
+
+/*! @material/dom/events */
+
+/*! @material/dom/focus-trap */
+
+/*! @material/dom/keyboard */
+
+/*! @material/dom/ponyfill */
+
+/*! @material/floating-label/component */
+
+/*! @material/floating-label/foundation */
+
+/*! @material/form-field */
+
+/*! @material/line-ripple/component */
+
+/*! @material/linear-progress/component */
+
+/*! @material/list/component */
+
+/*! @material/list/constants */
+
+/*! @material/list/foundation */
+
+/*! @material/menu */
+
+/*! @material/menu-surface/component */
+
+/*! @material/menu-surface/constants */
+
+/*! @material/menu-surface/foundation */
+
+/*! @material/menu/component */
+
+/*! @material/menu/constants */
+
+/*! @material/notched-outline/component */
+
+/*! @material/ripple */
+
+/*! @material/ripple/component */
+
+/*! @material/ripple/foundation */
+
+/*! @material/select */
+
+/*! @material/snackbar */
+
+/*! @material/switch */
+
+/*! @material/tab-bar */
+
+/*! @material/tab-indicator/component */
+
+/*! @material/tab-scroller/component */
+
+/*! @material/tab/component */
+
+/*! @material/tab/foundation */
+
+/*! @material/textfield */
+
+/*! @material/tooltip */
+
+/*! chart.js/auto */
+
+/*! daterangepicker/daterangepicker.js */
+
+/*! file-saver */
+
+/*! jquery */
+
+/*! jquery-ui */
+
+/*! jquery-ui/ui/widgets/datepicker */
+
+/*! jquery-ui/ui/widgets/dialog */
+
+/*! jquery-ui/ui/widgets/draggable */
+
+/*! jquery-ui/ui/widgets/droppable */
+
+/*! jquery-ui/ui/widgets/resizable */
+
+/*! jquery-ui/ui/widgets/selectable */
+
+/*! jquery-ui/ui/widgets/sortable */
+
+/*! moment */
+
+/*! moment/moment.js */
+
+/*! quill */
+
+/*! regenerator-runtime */
+
+/*! tslib */
+
+/*!***********************!*\
+  !*** ./build/View.js ***!
+  \***********************/
+
+/*!***********************!*\
+  !*** ./css/equal.css ***!
+  \***********************/
+
+/*!************************!*\
+  !*** ./build/Frame.js ***!
+  \************************/
+
+/*!************************!*\
+  !*** ./build/Model.js ***!
+  \************************/
+
+/*!*************************!*\
+  !*** ./build/Domain.js ***!
+  \*************************/
+
+/*!**************************!*\
+  !*** ./build/Context.js ***!
+  \**************************/
+
+/*!****************************!*\
+  !*** ./build/equal-lib.js ***!
+  \****************************/
+
+/*!*****************************!*\
+  !*** ./build/ApiService.js ***!
+  \*****************************/
+
+/*!*****************************!*\
+  !*** ./build/EnvService.js ***!
+  \*****************************/
+
+/*!*****************************!*\
+  !*** ./build/jquery-lib.js ***!
+  \*****************************/
+
+/*!*******************************!*\
+  !*** ./build/material-lib.js ***!
+  \*******************************/
+
+/*!********************************!*\
+  !*** ./build/DateReference.js ***!
+  \********************************/
+
+/*!********************************!*\
+  !*** ./build/equal-layouts.js ***!
+  \********************************/
+
+/*!********************************!*\
+  !*** ./build/equal-widgets.js ***!
+  \********************************/
+
+/*!********************************!*\
+  !*** ./build/i18n/jqueryui.js ***!
+  \********************************/
+
+/*!*********************************!*\
+  !*** ./build/EventsListener.js ***!
+  \*********************************/
+
+/*!*********************************!*\
+  !*** ./build/equal-services.js ***!
+  \*********************************/
+
+/*!*********************************!*\
+  !*** ./build/layouts/Layout.js ***!
+  \*********************************/
+
+/*!*********************************!*\
+  !*** ./build/widgets/Widget.js ***!
+  \*********************************/
+
+/*!*********************************!*\
+  !*** ./css/material-basics.css ***!
+  \*********************************/
+
+/*!************************************!*\
+  !*** ./build/jquery-datepicker.js ***!
+  \************************************/
+
+/*!*************************************!*\
+  !*** ./build/TranslationService.js ***!
+  \*************************************/
+
+/*!*************************************!*\
+  !*** ./build/layouts/LayoutForm.js ***!
+  \*************************************/
+
+/*!*************************************!*\
+  !*** ./build/layouts/LayoutList.js ***!
+  \*************************************/
+
+/*!*************************************!*\
+  !*** ./build/widgets/WidgetDate.js ***!
+  \*************************************/
+
+/*!*************************************!*\
+  !*** ./build/widgets/WidgetFile.js ***!
+  \*************************************/
+
+/*!*************************************!*\
+  !*** ./build/widgets/WidgetLink.js ***!
+  \*************************************/
+
+/*!*************************************!*\
+  !*** ./build/widgets/WidgetText.js ***!
+  \*************************************/
+
+/*!**************************************!*\
+  !*** ./build/layouts/LayoutChart.js ***!
+  \**************************************/
+
+/*!**************************************!*\
+  !*** ./build/widgets/WidgetFloat.js ***!
+  \**************************************/
+
+/*!**************************************!*\
+  !*** ./build/widgets/WidgetImage.js ***!
+  \**************************************/
+
+/*!**************************************!*\
+  !*** ./build/widgets/WidgetLabel.js ***!
+  \**************************************/
+
+/*!***************************************!*\
+  !*** ./build/layouts/LayoutSearch.js ***!
+  \***************************************/
+
+/*!***************************************!*\
+  !*** ./build/widgets/WidgetSelect.js ***!
+  \***************************************/
+
+/*!***************************************!*\
+  !*** ./build/widgets/WidgetString.js ***!
+  \***************************************/
+
+/*!***************************************!*\
+  !*** ./node_modules/moment/moment.js ***!
+  \***************************************/
+
+/*!****************************************!*\
+  !*** ./build/widgets/WidgetBoolean.js ***!
+  \****************************************/
+
+/*!****************************************!*\
+  !*** ./build/widgets/WidgetInteger.js ***!
+  \****************************************/
+
+/*!*****************************************!*\
+  !*** ./build/widgets/WidgetDateTime.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./build/widgets/WidgetMany2One.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./build/widgets/WidgetOne2Many.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/jquery-ui/ui/ie.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/tslib/tslib.es6.js ***!
+  \*****************************************/
+
+/*!******************************************!*\
+  !*** ./build/layouts/LayoutDashboard.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./build/widgets/WidgetMany2Many.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/af.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/ar.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/az.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/be.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/bg.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/bm.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/bn.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/bo.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/br.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/bs.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/ca.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/cs.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/cv.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/cy.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/da.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/de.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/dv.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/el.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/eo.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/es.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/et.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/eu.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/fa.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/fi.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/fo.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/fr.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/fy.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/ga.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/gd.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/gl.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/gu.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/he.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/hi.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/hr.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/hu.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/id.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/is.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/it.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/ja.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/jv.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/ka.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/kk.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/km.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/kn.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/ko.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/ku.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/ky.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/lb.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/lo.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/lt.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/lv.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/me.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/mi.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/mk.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/ml.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/mn.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/mr.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/ms.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/mt.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/my.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/nb.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/ne.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/nl.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/nn.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/pl.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/pt.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/ro.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/ru.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/sd.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/se.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/si.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/sk.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/sl.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/sq.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/sr.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/ss.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/sv.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/sw.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/ta.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/te.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/tg.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/th.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/tk.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/tr.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/uk.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/ur.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/uz.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/vi.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/moment/locale/yo.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/quill/dist/quill.js ***!
+  \******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/jquery-ui/ui/data.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/jquery-ui/ui/form.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/moment/locale/fil.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/moment/locale/tet.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/moment/locale/tlh.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/moment/locale/tzl.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/moment/locale/tzm.js ***!
+  \*******************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/jquery/dist/jquery.js ***!
+  \********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/jquery-ui/ui/labels.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/jquery-ui/ui/plugin.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/jquery-ui/ui/widget.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/ar-dz.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/ar-kw.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/ar-ly.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/ar-ma.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/ar-sa.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/ar-tn.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/bn-bd.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/de-at.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/de-ch.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/en-au.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/en-ca.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/en-gb.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/en-ie.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/en-il.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/en-in.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/en-nz.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/en-sg.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/es-do.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/es-mx.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/es-us.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/fr-ca.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/fr-ch.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/hy-am.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/it-ch.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/ms-my.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/nl-be.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/pa-in.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/pt-br.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/tl-ph.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/ug-cn.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/zh-cn.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/zh-hk.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/zh-mo.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/moment/locale/zh-tw.js ***!
+  \*********************************************/
+
+/*!**********************************************!*\
+  !*** ./build/widgets/WidgetDashboardItem.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/@material/dom/events.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/@material/menu/index.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/jquery-ui/ui/keycode.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/jquery-ui/ui/version.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/moment/locale/oc-lnc.js ***!
+  \**********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/@material/dialog/util.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/@material/list/events.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/@material/ripple/util.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/jquery-ui/ui/position.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/jquery-ui/ui/tabbable.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/moment/locale/sr-cyrl.js ***!
+  \***********************************************/
+
+/*!***********************************************!*\
+  !*** ./node_modules/moment/locale/uz-latn.js ***!
+  \***********************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/@material/dialog/index.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/@material/dom/keyboard.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/@material/dom/ponyfill.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/@material/ripple/index.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/@material/select/index.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/@material/switch/index.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/chart.js/auto/auto.esm.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/jquery-ui/ui/focusable.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/jquery-ui/ui/safe-blur.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/jquery-ui/ui/unique-id.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/moment/locale/gom-deva.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/moment/locale/gom-latn.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/moment/locale/tzm-latn.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/moment/locale/x-pseudo.js ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/quill/dist/quill.core.css ***!
+  \************************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/quill/dist/quill.snow.css ***!
+  \************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/@material/snackbar/util.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/@material/tab-bar/index.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/@material/tab/component.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/@material/tab/constants.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/@material/tooltip/index.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/chart.js/dist/chart.esm.js ***!
+  \*************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/@material/animation/util.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/@material/base/component.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/@material/checkbox/index.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/@material/dom/focus-trap.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/@material/list/component.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/@material/list/constants.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/@material/list/typeahead.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/@material/menu/component.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/@material/menu/constants.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/@material/snackbar/index.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/@material/tab/foundation.js ***!
+  \**************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/@material/base/foundation.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/@material/list/foundation.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/@material/menu/foundation.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/@material/textfield/index.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/moment/locale/ sync ^\.\/.*$ ***!
+  \***************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/@babel/runtime/helpers/get.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/@material/data-table/index.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/@material/dialog/component.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/@material/dialog/constants.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/@material/form-field/index.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/@material/ripple/component.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/@material/ripple/constants.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/@material/select/component.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/@material/select/constants.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/@material/switch/component.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/@material/switch/constants.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/jquery-ui/ui/scroll-parent.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/jquery-ui/ui/widgets/mouse.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/jquery/dist/jquery-exposed.js ***!
+  \****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/@material/dialog/foundation.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/@material/ripple/foundation.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/@material/select/foundation.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/@material/select/icon/index.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/@material/switch/foundation.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/@material/tab-bar/component.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/@material/tab-bar/constants.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/@material/tab-scroller/util.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/@material/tooltip/component.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/@material/tooltip/constants.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/css-loader/dist/runtime/api.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/jquery-ui/ui/widgets/button.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/jquery-ui/ui/widgets/dialog.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/regenerator-runtime/runtime.js ***!
+  \*****************************************************/
+
+/*!******************************************************!*\
+  !*** ./node_modules/@material/checkbox/component.js ***!
+  \******************************************************/
+
+/*!******************************************************!*\
+  !*** ./node_modules/@material/checkbox/constants.js ***!
+  \******************************************************/
+
+/*!******************************************************!*\
+  !*** ./node_modules/@material/snackbar/component.js ***!
+  \******************************************************/
+
+/*!******************************************************!*\
+  !*** ./node_modules/@material/snackbar/constants.js ***!
+  \******************************************************/
+
+/*!******************************************************!*\
+  !*** ./node_modules/@material/tab-bar/foundation.js ***!
+  \******************************************************/
+
+/*!******************************************************!*\
+  !*** ./node_modules/@material/tooltip/foundation.js ***!
+  \******************************************************/
+
+/*!******************************************************!*\
+  !*** ./node_modules/jquery-ui/ui/escape-selector.js ***!
+  \******************************************************/
+
+/*!*******************************************************!*\
+  !*** ./node_modules/@babel/runtime/helpers/typeof.js ***!
+  \*******************************************************/
+
+/*!*******************************************************!*\
+  !*** ./node_modules/@material/checkbox/foundation.js ***!
+  \*******************************************************/
+
+/*!*******************************************************!*\
+  !*** ./node_modules/@material/snackbar/foundation.js ***!
+  \*******************************************************/
+
+/*!*******************************************************!*\
+  !*** ./node_modules/@material/textfield/component.js ***!
+  \*******************************************************/
+
+/*!*******************************************************!*\
+  !*** ./node_modules/@material/textfield/constants.js ***!
+  \*******************************************************/
+
+/*!*******************************************************!*\
+  !*** ./node_modules/file-saver/dist/FileSaver.min.js ***!
+  \*******************************************************/
+
+/*!*******************************************************!*\
+  !*** ./node_modules/jquery-ui/ui/form-reset-mixin.js ***!
+  \*******************************************************/
+
+/*!*******************************************************!*\
+  !*** ./node_modules/jquery-ui/ui/widgets/sortable.js ***!
+  \*******************************************************/
+
+/*!********************************************************!*\
+  !*** ./node_modules/@material/data-table/component.js ***!
+  \********************************************************/
+
+/*!********************************************************!*\
+  !*** ./node_modules/@material/data-table/constants.js ***!
+  \********************************************************/
+
+/*!********************************************************!*\
+  !*** ./node_modules/@material/form-field/component.js ***!
+  \********************************************************/
+
+/*!********************************************************!*\
+  !*** ./node_modules/@material/form-field/constants.js ***!
+  \********************************************************/
+
+/*!********************************************************!*\
+  !*** ./node_modules/@material/textfield/foundation.js ***!
+  \********************************************************/
+
+/*!********************************************************!*\
+  !*** ./node_modules/@material/textfield/icon/index.js ***!
+  \********************************************************/
+
+/*!********************************************************!*\
+  !*** ./node_modules/jquery-ui/ui/disable-selection.js ***!
+  \********************************************************/
+
+/*!********************************************************!*\
+  !*** ./node_modules/jquery-ui/ui/widgets/draggable.js ***!
+  \********************************************************/
+
+/*!********************************************************!*\
+  !*** ./node_modules/jquery-ui/ui/widgets/droppable.js ***!
+  \********************************************************/
+
+/*!********************************************************!*\
+  !*** ./node_modules/jquery-ui/ui/widgets/resizable.js ***!
+  \********************************************************/
+
+/*!*********************************************************!*\
+  !*** ./node_modules/@babel/runtime/helpers/inherits.js ***!
+  \*********************************************************/
+
+/*!*********************************************************!*\
+  !*** ./node_modules/@material/data-table/foundation.js ***!
+  \*********************************************************/
+
+/*!*********************************************************!*\
+  !*** ./node_modules/@material/form-field/foundation.js ***!
+  \*********************************************************/
+
+/*!*********************************************************!*\
+  !*** ./node_modules/@material/line-ripple/component.js ***!
+  \*********************************************************/
+
+/*!*********************************************************!*\
+  !*** ./node_modules/@material/line-ripple/constants.js ***!
+  \*********************************************************/
+
+/*!*********************************************************!*\
+  !*** ./node_modules/@material/select/icon/component.js ***!
+  \*********************************************************/
+
+/*!*********************************************************!*\
+  !*** ./node_modules/@material/select/icon/constants.js ***!
+  \*********************************************************/
+
+/*!*********************************************************!*\
+  !*** ./node_modules/daterangepicker/daterangepicker.js ***!
+  \*********************************************************/
+
+/*!*********************************************************!*\
+  !*** ./node_modules/jquery-ui/ui/widgets/datepicker.js ***!
+  \*********************************************************/
+
+/*!*********************************************************!*\
+  !*** ./node_modules/jquery-ui/ui/widgets/selectable.js ***!
+  \*********************************************************/
+
+/*!**********************************************************!*\
+  !*** ./node_modules/@babel/runtime/regenerator/index.js ***!
+  \**********************************************************/
+
+/*!**********************************************************!*\
+  !*** ./node_modules/@material/line-ripple/foundation.js ***!
+  \**********************************************************/
+
+/*!**********************************************************!*\
+  !*** ./node_modules/@material/menu-surface/component.js ***!
+  \**********************************************************/
+
+/*!**********************************************************!*\
+  !*** ./node_modules/@material/menu-surface/constants.js ***!
+  \**********************************************************/
+
+/*!**********************************************************!*\
+  !*** ./node_modules/@material/select/icon/foundation.js ***!
+  \**********************************************************/
+
+/*!**********************************************************!*\
+  !*** ./node_modules/@material/tab-scroller/component.js ***!
+  \**********************************************************/
+
+/*!**********************************************************!*\
+  !*** ./node_modules/@material/tab-scroller/constants.js ***!
+  \**********************************************************/
+
+/*!**********************************************************!*\
+  !*** ./node_modules/jquery-ui/ui/safe-active-element.js ***!
+  \**********************************************************/
+
+/*!***********************************************************!*\
+  !*** ./node_modules/@material/menu-surface/foundation.js ***!
+  \***********************************************************/
+
+/*!***********************************************************!*\
+  !*** ./node_modules/@material/tab-indicator/component.js ***!
+  \***********************************************************/
+
+/*!***********************************************************!*\
+  !*** ./node_modules/@material/tab-indicator/constants.js ***!
+  \***********************************************************/
+
+/*!***********************************************************!*\
+  !*** ./node_modules/@material/tab-scroller/foundation.js ***!
+  \***********************************************************/
+
+/*!***********************************************************!*\
+  !*** ./node_modules/jquery-ui/ui/widgets/controlgroup.js ***!
+  \***********************************************************/
+
+/*!************************************************************!*\
+  !*** ./node_modules/@babel/runtime/helpers/createClass.js ***!
+  \************************************************************/
+
+/*!************************************************************!*\
+  !*** ./node_modules/@material/animation/animationframe.js ***!
+  \************************************************************/
+
+/*!************************************************************!*\
+  !*** ./node_modules/@material/floating-label/component.js ***!
+  \************************************************************/
+
+/*!************************************************************!*\
+  !*** ./node_modules/@material/floating-label/constants.js ***!
+  \************************************************************/
+
+/*!************************************************************!*\
+  !*** ./node_modules/@material/select/helper-text/index.js ***!
+  \************************************************************/
+
+/*!************************************************************!*\
+  !*** ./node_modules/@material/tab-indicator/foundation.js ***!
+  \************************************************************/
+
+/*!************************************************************!*\
+  !*** ./node_modules/@material/textfield/icon/component.js ***!
+  \************************************************************/
+
+/*!************************************************************!*\
+  !*** ./node_modules/@material/textfield/icon/constants.js ***!
+  \************************************************************/
+
+/*!************************************************************!*\
+  !*** ./node_modules/jquery-ui/ui/widgets/checkboxradio.js ***!
+  \************************************************************/
+
+/*!*************************************************************!*\
+  !*** ./node_modules/@material/floating-label/foundation.js ***!
+  \*************************************************************/
+
+/*!*************************************************************!*\
+  !*** ./node_modules/@material/linear-progress/component.js ***!
+  \*************************************************************/
+
+/*!*************************************************************!*\
+  !*** ./node_modules/@material/linear-progress/constants.js ***!
+  \*************************************************************/
+
+/*!*************************************************************!*\
+  !*** ./node_modules/@material/notched-outline/component.js ***!
+  \*************************************************************/
+
+/*!*************************************************************!*\
+  !*** ./node_modules/@material/notched-outline/constants.js ***!
+  \*************************************************************/
+
+/*!*************************************************************!*\
+  !*** ./node_modules/@material/tab-scroller/rtl-scroller.js ***!
+  \*************************************************************/
+
+/*!*************************************************************!*\
+  !*** ./node_modules/@material/textfield/icon/foundation.js ***!
+  \*************************************************************/
+
+/*!*************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js!./css/equal.css ***!
+  \*************************************************************/
+
+/*!**************************************************************!*\
+  !*** ./node_modules/@babel/runtime/helpers/slicedToArray.js ***!
+  \**************************************************************/
+
+/*!**************************************************************!*\
+  !*** ./node_modules/@babel/runtime/helpers/superPropBase.js ***!
+  \**************************************************************/
+
+/*!**************************************************************!*\
+  !*** ./node_modules/@material/linear-progress/foundation.js ***!
+  \**************************************************************/
+
+/*!**************************************************************!*\
+  !*** ./node_modules/@material/notched-outline/foundation.js ***!
+  \**************************************************************/
+
+/*!**************************************************************!*\
+  !*** ./node_modules/chart.js/dist/chunks/helpers.segment.js ***!
+  \**************************************************************/
+
+/*!***************************************************************!*\
+  !*** ./node_modules/@babel/runtime/helpers/arrayWithHoles.js ***!
+  \***************************************************************/
+
+/*!***************************************************************!*\
+  !*** ./node_modules/@babel/runtime/helpers/classCallCheck.js ***!
+  \***************************************************************/
+
+/*!***************************************************************!*\
+  !*** ./node_modules/@babel/runtime/helpers/defineProperty.js ***!
+  \***************************************************************/
+
+/*!***************************************************************!*\
+  !*** ./node_modules/@babel/runtime/helpers/getPrototypeOf.js ***!
+  \***************************************************************/
+
+/*!***************************************************************!*\
+  !*** ./node_modules/@babel/runtime/helpers/setPrototypeOf.js ***!
+  \***************************************************************/
+
+/*!***************************************************************!*\
+  !*** ./node_modules/@material/textfield/helper-text/index.js ***!
+  \***************************************************************/
+
+/*!***************************************************************!*\
+  !*** ./node_modules/style-loader/dist/runtime/styleDomAPI.js ***!
+  \***************************************************************/
+
+/*!****************************************************************!*\
+  !*** ./node_modules/@babel/runtime/helpers/nonIterableRest.js ***!
+  \****************************************************************/
+
+/*!****************************************************************!*\
+  !*** ./node_modules/@material/select/helper-text/component.js ***!
+  \****************************************************************/
+
+/*!****************************************************************!*\
+  !*** ./node_modules/@material/select/helper-text/constants.js ***!
+  \****************************************************************/
+
+/*!*****************************************************************!*\
+  !*** ./node_modules/@babel/runtime/helpers/arrayLikeToArray.js ***!
+  \*****************************************************************/
+
+/*!*****************************************************************!*\
+  !*** ./node_modules/@babel/runtime/helpers/asyncToGenerator.js ***!
+  \*****************************************************************/
+
+/*!*****************************************************************!*\
+  !*** ./node_modules/@material/select/helper-text/foundation.js ***!
+  \*****************************************************************/
+
+/*!******************************************************************!*\
+  !*** ./node_modules/expose-loader/dist/runtime/getGlobalThis.js ***!
+  \******************************************************************/
+
+/*!*******************************************************************!*\
+  !*** ./node_modules/@material/tab-indicator/fading-foundation.js ***!
+  \*******************************************************************/
+
+/*!*******************************************************************!*\
+  !*** ./node_modules/@material/textfield/helper-text/component.js ***!
+  \*******************************************************************/
+
+/*!*******************************************************************!*\
+  !*** ./node_modules/@material/textfield/helper-text/constants.js ***!
+  \*******************************************************************/
+
+/*!********************************************************************!*\
+  !*** ./node_modules/@material/tab-indicator/sliding-foundation.js ***!
+  \********************************************************************/
+
+/*!********************************************************************!*\
+  !*** ./node_modules/@material/textfield/helper-text/foundation.js ***!
+  \********************************************************************/
+
+/*!********************************************************************!*\
+  !*** ./node_modules/style-loader/dist/runtime/insertBySelector.js ***!
+  \********************************************************************/
+
+/*!*********************************************************************!*\
+  !*** ./node_modules/@babel/runtime/helpers/iterableToArrayLimit.js ***!
+  \*********************************************************************/
+
+/*!*********************************************************************!*\
+  !*** ./node_modules/@material/tab-scroller/rtl-default-scroller.js ***!
+  \*********************************************************************/
+
+/*!*********************************************************************!*\
+  !*** ./node_modules/@material/tab-scroller/rtl-reverse-scroller.js ***!
+  \*********************************************************************/
+
+/*!*********************************************************************!*\
+  !*** ./node_modules/@material/textfield/character-counter/index.js ***!
+  \*********************************************************************/
+
+/*!*********************************************************************!*\
+  !*** ./node_modules/style-loader/dist/runtime/styleTagTransform.js ***!
+  \*********************************************************************/
+
+/*!**********************************************************************!*\
+  !*** ./node_modules/@babel/runtime/helpers/assertThisInitialized.js ***!
+  \**********************************************************************/
+
+/*!**********************************************************************!*\
+  !*** ./node_modules/@babel/runtime/helpers/interopRequireDefault.js ***!
+  \**********************************************************************/
+
+/*!**********************************************************************!*\
+  !*** ./node_modules/@material/tab-scroller/rtl-negative-scroller.js ***!
+  \**********************************************************************/
+
+/*!**********************************************************************!*\
+  !*** ./node_modules/style-loader/dist/runtime/insertStyleElement.js ***!
+  \**********************************************************************/
+
+/*!***********************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js!./css/material-basics.css ***!
+  \***********************************************************************/
+
+/*!************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/runtime/cssWithMappingToString.js ***!
+  \************************************************************************/
+
+/*!*************************************************************************!*\
+  !*** ./node_modules/@material/textfield/character-counter/component.js ***!
+  \*************************************************************************/
+
+/*!*************************************************************************!*\
+  !*** ./node_modules/@material/textfield/character-counter/constants.js ***!
+  \*************************************************************************/
+
+/*!**************************************************************************!*\
+  !*** ./node_modules/@babel/runtime/helpers/possibleConstructorReturn.js ***!
+  \**************************************************************************/
+
+/*!**************************************************************************!*\
+  !*** ./node_modules/@material/textfield/character-counter/foundation.js ***!
+  \**************************************************************************/
+
+/*!***************************************************************************!*\
+  !*** ./node_modules/@babel/runtime/helpers/unsupportedIterableToArray.js ***!
+  \***************************************************************************/
+
+/*!****************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js ***!
+  \****************************************************************************/
+
+/*!**********************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/runtime/setAttributesWithoutAttributes.js ***!
+  \**********************************************************************************/
+
+/*!**************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js!./node_modules/quill/dist/quill.core.css ***!
+  \**************************************************************************************/
+
+/*!**************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js!./node_modules/quill/dist/quill.snow.css ***!
+  \**************************************************************************************/
+
+/**
+ * @license
+ * Copyright 2016 Google Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+/**
+ * @license
+ * Copyright 2017 Google Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+/**
+ * @license
+ * Copyright 2018 Google Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+/**
+ * @license
+ * Copyright 2019 Google Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+/**
+ * @license
+ * Copyright 2020 Google Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+/**
+* @version: 3.1
+* @author: Dan Grossman http://www.dangrossman.info/
+* @copyright: Copyright (c) 2012-2019 Dan Grossman. All rights reserved.
+* @license: Licensed under the MIT license. See http://www.opensource.org/licenses/mit-license.php
+* @website: http://www.daterangepicker.com/
+*/
+
+//! moment.js
+
+//! moment.js locale configuration
