@@ -21,7 +21,7 @@ export class Context {
     private config: any;
 
     /**
-     * 
+     *
      * Contexts have a type and a mode, and are created for a purpose.
      * The purpose influences the need for available actions (buttons in the header),
      * and can be displayed to user as an indication of the expected action.
@@ -37,7 +37,7 @@ export class Context {
      *    * {mode = edit}
      *        * {purpose = create}: Create a new object : only available actions should be 'save' and 'cancel'
      *        * {purpose = update}: Update an existing object : only available actions should be 'save' and 'cancel'
-     * 
+     *
      */
     constructor(frame: Frame, entity: string, type: string, name: string, domain: any[], mode: string = 'view', purpose: string = 'view', lang: string = '', callback: (data:any) => void = (data:any=null) => {}, config: any = null) {
         console.debug('Context::Construct - opening context', entity, type, name, domain, mode, purpose, lang, config);
@@ -56,7 +56,7 @@ export class Context {
     public getEnv() {
         return this.frame.getEnv();
     }
-    
+
     public getUser() {
         return this.frame.getUser();
     }
