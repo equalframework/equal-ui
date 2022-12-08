@@ -208,9 +208,10 @@ export default class WidgetMany2One extends Widget {
                     }
 
                     if(value.length) {
+                        this.config.original_value = value;
                         this.$elem.append($button_reset);
                         // make room for reset button
-                        $select.find('input').css({'width': 'calc(100% - 50px)'});
+                        $select.find('input').prop('readonly', true).css({'width': 'calc(100% - 50px)'});
                     }
 
                     let has_focus:boolean = false;
@@ -223,7 +224,7 @@ export default class WidgetMany2One extends Widget {
                         // if keyboard, give back the focus to the input after refreshing the view (other object, same ID)
                         if (event.screenX == 0 && event.screenY == 0) {
                             setTimeout( () => {
-                                $('#m2o-input-'+this.id).find('input').trigger('focus');
+                                $('#m2o-input-'+this.id).find('input').prop('readonly', false).trigger('focus');
                                 $('#m2o-input-'+this.id).trigger('click');
                             }, 500);
                         }
@@ -293,10 +294,18 @@ export default class WidgetMany2One extends Widget {
                     $select.find('input')
                     .on('keyup', (event:any) => {
                         if(event.which == 9) {
-                            // if clicked ok, if tab only not
+                            // tab - give focus to select
                             $select.trigger('click');
                             // prevent double handling tab
                             return;
+                        }
+                        else if(event.which == 27) {
+                            // esc - revert to inital value, if any
+                            $select.trigger('click');
+                            let $input = $select.find('input');
+                            $input.prop('readonly', true).css({'width': 'calc(100% - 50px)'});
+                            $input.val(this.config.original_value).trigger('change');
+                            this.$elem.append($button_reset);
                         }
                         else if(event.which == 13) {
                             // enter
