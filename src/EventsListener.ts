@@ -86,7 +86,7 @@ class EventsListener {
         }
     }
 
-    public async getActionButton(entity: string, view_id: string, domain: any[]) {        
+    public async getActionButton(entity: string, view_id: string, domain: any[]) {
         let type = 'list';
         let name = 'default';
         if( view_id.length ) {
@@ -111,7 +111,7 @@ class EventsListener {
         $container.appendTo('body');
 
         let frame = new Frame(this, target);
-        await frame._openContext(config);        
+        await frame._openContext(config);
         // context has been created and is ready
         let $view_container = frame.getContext().getView().getContainer();
         return $view_container.find('.layout-actions');
@@ -161,7 +161,7 @@ class EventsListener {
 
         await this.frames[config.target]._openContext(config);
 
-        // run callback of subscribers 
+        // run callback of subscribers
         if(this.subscribers.hasOwnProperty('open') && this.subscribers['open'].length && !this.mute) {
             for(let callback of this.subscribers['open']) {
                 if( ({}).toString.call(callback) === '[object Function]') {
@@ -241,7 +241,7 @@ class EventsListener {
     /**
      * Close all contexts silently
      */
-    private async _closeAll(params: any) {            
+    private async _closeAll(params: any) {
         if(params && params.hasOwnProperty('target')) {
             if(this.frames.hasOwnProperty(params.target)) {
                 await this.frames[params.target]._closeContext(null, params.silent);
@@ -253,9 +253,9 @@ class EventsListener {
             }
         }
     }
-    
+
     /**
-     * Asynchronous initialisation of the eQ instance.
+     * Asynchronous initialization of the eQ instance.
      *
      */
     private async init() {
@@ -429,14 +429,14 @@ class EventsListener {
 
         let $wrapper = $('body').find('.sb-popup-wrapper');
         // pop last child of wrapper
-        $wrapper.find('.sb-popup').last().remove();        
+        $wrapper.find('.sb-popup').last().remove();
         // if there are no popup left, remove wrapper
         if(!this.popups.length) {
             $wrapper.remove();
         }
         // close context (update frame header if necessary)
         await frame._closeContext(params.data);
-    }    
+    }
 
     public getUser() {
         return this.user;
