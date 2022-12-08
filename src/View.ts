@@ -1555,7 +1555,8 @@ export class View {
                 }
                 break;
             case 'edit':
-                const save_method = async () => {
+                // define the save method (used for all action implying saving the object)
+                const save_method = async (action:any) => {
                     let objects;
                     if(this.purpose == 'create') {
                         // get the full collection, whatever the changes made by user
@@ -1572,9 +1573,17 @@ export class View {
                     else {
                         // we're in edit mode for single object (form)
                         let object = objects[0];
+                        let controller = (action && action.hasOwnProperty('controller'))?action.controller:'model_update';
                         try {
-                            // update new object (set to instance)
-                            const response = await ApiService.update(this.entity, [object['id']], this.model.export(object), false, this.getLang());
+                            // update new object using the resulting controller
+                            const response = await ApiService.call("/?do="+controller, {
+                                    entity: this.getEntity(),
+                                    ids: [object['id']],
+                                    fields: this.model.export(object),
+                                    force: false,
+                                    lang: this.getLang()
+                                });
+                            //const response = await ApiService.update(this.entity, [object['id']], this.model.export(object), false, this.getLang());
                             if(response && response.length) {
                                 // merge object with response (state and name fields might have changed)
                                 object = {...object, ...response[0]};
@@ -1590,7 +1599,7 @@ export class View {
                                 }
                             }
                             catch(error) {
-
+                                console.log('unexpected error: unable to display error feedback', error);
                             }
                         }
                     }
@@ -1599,7 +1608,7 @@ export class View {
 
                 const save_actions:any = {
                     "SAVE_AND_CONTINUE": async (action:any) => {
-                        let res:any = await save_method();
+                        let res:any = await save_method(action);
                         if(res && res.selection) {
                             let object_id = res.selection.pop();
                             // reset domain (drop state=draft condition)
@@ -1613,7 +1622,7 @@ export class View {
                         }
                     },
                     "SAVE_AND_VIEW": async (action:any) => {
-                        let res:any = await save_method();
+                        let res:any = await save_method(action);
                         if(res) {
                             let parent = this.context.getParent();
                             // if context has a parent, close and relay new object_id to parent view
@@ -1636,7 +1645,7 @@ export class View {
                         }
                     },
                     "SAVE_AND_EDIT": async (action:any) => {
-                        let res:any = await save_method();
+                        let res:any = await save_method(action);
                         if(res) {
                             await this.closeContext(null, true);
                             let object_id = res.selection[0];
@@ -1651,7 +1660,7 @@ export class View {
                         }
                     },
                     "SAVE_AND_CLOSE": async (action:any) => {
-                        let res:any = await save_method();
+                        let res:any = await save_method(action);
                         if(res) {
                             // relay new object_id to parent view
                             await this.closeContext(res);
@@ -2382,6 +2391,8 @@ export class View {
                             let confirmed = confirm(TranslationService.instant('SB_ACTIONS_MESSAGE_ERASE_CONCURRENT_CHANGES'));
                             return confirmed ? resolve(true) : reject(false);
                         });
+                        // #toto - this does not cover case where an action uses a custom controller
+                        // (saving should not occur here)
                         const response = await ApiService.update(this.entity, [object['id']], this.model.export(object), true, this.getLang());
                         // this.closeContext();
                         return response;
@@ -2407,6 +2418,15 @@ export class View {
                     let title = TranslationService.instant('SB_ERROR_SQL_ERROR');
                     // try to resolve the error message
                     let msg = TranslationService.resolve(translation, 'error', [], 'errors', errors['SQL_ERROR'], errors['SQL_ERROR']);
+                    let $snack = UIHelper.createSnackbar(title+' '+msg, TranslationService.instant('SB_ERROR_ERROR'), '', 4000);
+                    this.$container.append($snack);
+                }
+            }
+            else if(errors.hasOwnProperty('UNKNOWN_OBJECT')) {
+                if(snack) {
+                    let title = TranslationService.instant('SB_ERROR_UNKNOWN_OBJECT');
+                    // try to resolve the error message
+                    let msg = TranslationService.resolve(translation, 'error', [], 'errors', errors['UNKNOWN_OBJECT'], errors['UNKNOWN_OBJECT']);
                     let $snack = UIHelper.createSnackbar(title+' '+msg, TranslationService.instant('SB_ERROR_ERROR'), '', 4000);
                     this.$container.append($snack);
                 }

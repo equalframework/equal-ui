@@ -104,14 +104,14 @@ config: {
 
 
     /**
-     * Generate a widget config based on a layout item (from View schema)
+     * Generates a widget config based on a layout item (from View schema).
      *
-     * @param {View} view           View    field
-     * @param {string} field        Field name.
-     * @param {any} translation     View translation map.
-     * @param {any} model_fields    Associative array mapping fields with their model definition.
-     * @param {string} view_fields  Associative array mapping fields with their view definition.
-     * @return {}                   Returns a widget configuration object.
+     * @param {View}    view            View field
+     * @param {string}  field           Field name.
+     * @param {any}     translation     View translation map.
+     * @param {any}     model_fields    Associative array mapping fields with their model definition.
+     * @param {string}  view_fields     Associative array mapping fields with their view definition.
+     * @return {}                       Returns a widget configuration object.
      */
     public static getWidgetConfig(view: View, field: string, translation: any, model_fields: any, view_fields: any) :any {
         let config:any = {
@@ -267,7 +267,7 @@ config: {
             }
 
         }
-
+        console.debug('WidgetFactory::getWidgetConfig - field '+field, config);
         return config;
     }
 
