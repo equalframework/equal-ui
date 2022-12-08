@@ -3,7 +3,7 @@ import { ApiService } from "./equal-services";
 
 import { View, Layout } from "./equal-lib";
 /**
- * Class for Model intercations
+ * Class for Model interactions
  * Acts like server-side Collection.class.php
  */
 export class Model {
@@ -23,7 +23,7 @@ export class Model {
 
 
 
-    // Collecitons do not deal with lang: it is used from EnvService in ApiService
+    // Collections do not deal with lang: it is used from EnvService in ApiService
 
     constructor(view:View) {
         this.view = view;
@@ -200,7 +200,9 @@ export class Model {
             // fetch objects using controller given by View (default is core_model_collect)
             let response = await ApiService.fetch('/', body);
             this.total = ApiService.getLastCount();
-            this.objects = response;
+            if(response) {
+                this.objects = response;
+            }
             this.loaded_promise.resolve();
         }
         catch(response) {
@@ -299,6 +301,9 @@ export class Model {
      * @param object
      */
     public async set(ids:number[] = [], object: any) {
+        if(!ids) {
+            return;
+        }
         for(let id of ids) {
             let index = this.objects.findIndex( (o:any) => o.id == id );
             this.objects[index] = this.deepCopy(object);
@@ -313,6 +318,9 @@ export class Model {
      * @param ids array list of objects identifiers that must be returned (if changed)
      */
     public getChanges(ids:any[] = []) {
+        if(!ids) {
+            return [];
+        }
         let collection = [];
         for(let id in this.has_changed) {
             if(ids.length && ids.indexOf(+id) < 0) continue;
