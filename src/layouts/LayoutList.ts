@@ -262,6 +262,10 @@ export class LayoutList extends Layout {
 
             let group = stack.pop();
 
+            if(!group) {
+                break;
+            }
+
             if( Array.isArray(group) ) {
                 let $previous = $tbody.children().last();
                 let parent_group_id = '';
