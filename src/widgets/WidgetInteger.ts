@@ -6,7 +6,6 @@ import { UIHelper } from '../material-lib';
 
 export default class WidgetInteger extends WidgetString {
 
-
     constructor(layout: Layout, label: string, value: any, config: any) {
         super(layout, label, value, config);
     }
@@ -30,10 +29,7 @@ export default class WidgetInteger extends WidgetString {
         }
         else if(this.mode == 'view') {
             // for lists, item is a DIV
-            if(this.config.field != 'id' && this.config.layout == 'list') {
-                this.$elem.css({'text-align': 'right'});
-            }
-
+            this.$elem.css({'text-align': align});
         }
 
         return this.$elem;
