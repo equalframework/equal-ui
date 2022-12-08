@@ -94,6 +94,9 @@ config: {
             case 'text':
                 return new WidgetText(layout, label, value, config);
             case 'string':
+                if(config.hasOwnProperty('usage') && config.usage.substring(0, 5) == 'color') {
+                    // #todo - widgetSelect with predefined std colors
+                }
             default:
                 return new WidgetString(layout, label, value, config);
         }

@@ -14,8 +14,9 @@ export default class WidgetSelect extends Widget {
     }
 
     public render():JQuery {
-
         let value:string = this.value?this.value:'';
+        let usage = (this.config.hasOwnProperty('usage'))?this.config.usage:'';
+
         switch(this.mode) {
             case 'edit':
                 this.$elem = UIHelper.createSelect(this.getId(), this.label, this.config.values, value, this.config.description, this.readonly);
@@ -29,11 +30,25 @@ export default class WidgetSelect extends Widget {
                     this.value = $this.val();
                     this.$elem.trigger('_updatedWidget');
                 });
+
+                if(usage.indexOf('color') >= 0) {
+                    this.$elem.find('.mdc-select__selected-text').before( $('<span style="height: 20px;min-width: 20px;background: '+value+';border-radius: 50%;margin-right: 10px;transform: translateY(4px);"></span>') );
+                    this.$elem.find('li').each( (i, elem) => {
+                        let color = $(elem).data('value');
+                        $(elem).prepend( $('<span style="height: 20px;width: 20px;background: '+color+';border-radius: 50%;margin-right: 10px;"></span>') );
+                    });
+                }
+
                 break;
             case 'view':
             default:
                 let val:string = Array.isArray(this.config.values)?value:(this.config.values.hasOwnProperty(value))?this.config.values[value]:'';
                 this.$elem = UIHelper.createInputView('', this.label, val, this.config.description);
+
+                if(usage.indexOf('color') >= 0) {
+                    this.$elem.find('input').before( $('<span style="min-height: 20px;min-width: 20px;background: '+value+';border-radius: 50%;margin-right: 10px;transform: translateY(5px);"></span>') );
+                }
+
                 break;
         }
 
