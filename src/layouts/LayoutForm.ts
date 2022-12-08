@@ -255,6 +255,19 @@ export class LayoutForm extends Layout {
                                 visible = <boolean> action.visible;
                             }
                         }
+                        // if an access property is set, check that user is member of at least one of the granted groups
+                        if(action.hasOwnProperty('access') && action.access.hasOwnProperty('groups') && Array.isArray(action.access.groups)) {
+                            visible = false;
+                            const user = this.view.getUser();
+                            if(user.hasOwnProperty('groups') && Array.isArray(user.groups)) {
+                                for(let group of user.groups) {
+                                    if(action.access.groups.indexOf(group) >= 0) {
+                                        visible = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
                         if(visible) {
                             let action_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, action.label);
                             // let $button = UIHelper.createButton('action-view-'+action.id, action_title, 'outlined')
