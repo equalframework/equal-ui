@@ -18,6 +18,8 @@ export default class WidgetString extends Widget {
 
     public render():JQuery {
         let value:any = (typeof this.value != undefined && this.value != undefined)?this.value:'';
+        let usage = (this.config.hasOwnProperty('usage'))?this.config.usage:'';
+
         if(typeof value == 'string') {
             value = value.replace(/"/g, "&quot;");
         }
@@ -44,8 +46,7 @@ export default class WidgetString extends Widget {
             default:
                 let $link;
 
-                if(this.config.layout == 'list' && this.config.hasOwnProperty('usage')) {
-                    let usage = this.config.usage;
+                if(this.config.layout == 'list') {
                     if(usage.indexOf('phone') >= 0) {
                         $link = $('<a target="_blank" href="tel:'+value+'">'+value+'</a>');
                         $link.on('click', (event) => {
