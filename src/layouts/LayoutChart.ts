@@ -41,7 +41,7 @@ export class LayoutChart extends Layout {
 
     /**
      *
-     * This method also stores the list of instanciated widgets to allow switching from view mode to edit mode  (for a form or a cell)
+     * This method also stores the list of instantiated widgets to allow switching from view mode to edit mode  (for a form or a cell)
      *
      */
     protected async layout() {
@@ -93,7 +93,7 @@ export class LayoutChart extends Layout {
 
         try {
             result = await ApiService.fetch('/', {
-                    get: 'model_chart',
+                    get: 'core_model_chart',
                     type: this.config.type,
                     entity: this.config.entity,
                     group_by: this.config.group_by,
@@ -154,7 +154,10 @@ export class LayoutChart extends Layout {
                 'rgb(255, 159, 64)',    // orange
                 'rgb(153, 102, 255)',   // purple
                 'rgb(255, 205, 86)',    // yellow
-                'rgb(201, 203, 207)'    // grey
+                'rgb(201, 203, 207)',   // grey
+                'rgb(203, 101, 207)',   // violet
+                'rgb(153, 102, 255)',   // pink
+                'rgb(153, 102, 255)'    // darkgreen
             ];
 
             let datasets: any, options: any;
@@ -167,7 +170,7 @@ export class LayoutChart extends Layout {
                 };
             }
             else {
-                datasets = result.datasets.map( (a:any, index: number) => { return {label: layout.datasets[index].label, data: a, backgroundColor: CHART_COLORS[index%7]}; });
+                datasets = result.datasets.map( (a:any, index: number) => { return {label: layout.datasets[index].label, data: a, backgroundColor: CHART_COLORS[index%10]}; });
                 options = {
                     responsive: true,
                     maintainAspectRatio: false,
