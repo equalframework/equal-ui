@@ -25,7 +25,16 @@ export default class WidgetString extends Widget {
         }
         switch(this.mode) {
             case 'edit':
-                this.$elem = UIHelper.createInput('string_'+this.id, this.label, value, this.config.description, '', this.readonly);
+
+                // support for adding selection after onchange
+                // #todo - merge with WidgetSelect
+                if(this.config.hasOwnProperty('selection')) {
+                    this.$elem = UIHelper.createSelect(this.getId(), this.label, this.config.selection, value, this.config.description, this.readonly);
+                }
+                else {
+                    this.$elem = UIHelper.createInput('string_'+this.id, this.label, value, this.config.description, '', this.readonly);
+                }
+
                 if(this.config.layout == 'list') {
                     this.$elem.css({"width": "calc(100% - 10px)"});
                 }
@@ -67,8 +76,22 @@ export default class WidgetString extends Widget {
                 }
                 else {
                     if(this.config.layout == 'list') {
-                        this.$elem = $('<div />').html(value);
-                        this.$elem.css({"width": "100%", "height": "auto", "max-height": "calc(44px - 2px)", "white-space": "break-spaces", "overflow": "hidden"});
+                        if(usage.indexOf('icon') >= 0) {
+		                    let map_icons:any = {
+                                	success:  {icon: "check_circle", color: "green"},
+                                    info:     {icon: "info", color: "blue"},
+                                    warn:     {icon: "warning", color: "orange"},
+                                    major:    {icon: "error", color: "orangered"},
+                                    error:    {icon: "error", color: "orangered"}
+                                    // error:    {icon: "report_gmailerrorred", color: "red"}
+                            };
+                            this.$elem = $('<div />').append( $('<span class="material-icons">' + map_icons[value].icon + '</span>').css({color: map_icons[value].color}) );
+                            this.$elem.css({"width": "100%", "text-align": "center"});
+                        }
+                        else {
+                            this.$elem = $('<div />').html(value);
+                            this.$elem.css({"width": "100%", "height": "auto", "max-height": "calc(44px - 2px)", "white-space": "break-spaces", "overflow": "hidden"});
+                        }
                     }
                     else {
                         this.$elem = UIHelper.createInputView('', this.label, value, this.config.description);
