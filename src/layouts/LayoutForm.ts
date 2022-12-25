@@ -36,7 +36,7 @@ export class LayoutForm extends Layout {
 
     /**
      *
-     * This method also stores the list of instanciated widgets to allow switching from view mode to edit mode  (for a form or a cell)
+     * This method also stores the list of instantiated widgets to allow switching from view mode to edit mode  (for a form or a cell)
      *
      */
     protected layout() {
@@ -256,7 +256,7 @@ export class LayoutForm extends Layout {
                             }
                         }
                         // if an access property is set, check that user is member of at least one of the granted groups
-                        if(action.hasOwnProperty('access') && action.access.hasOwnProperty('groups') && Array.isArray(action.access.groups)) {
+                        if(visible && action.hasOwnProperty('access') && action.access.hasOwnProperty('groups') && Array.isArray(action.access.groups)) {
                             visible = false;
                             const user = this.view.getUser();
                             if(user.hasOwnProperty('groups') && Array.isArray(user.groups)) {
@@ -305,6 +305,11 @@ export class LayoutForm extends Layout {
             for(let widget_index of Object.keys(this.model_widgets[0])) {
 
                 let widget = this.model_widgets[0][widget_index];
+                // widget might be missing (if not visible)
+                if(!widget) {
+                    continue;
+                }
+
                 let config = widget.getConfig();
 
                 if( config['widget_type'] == 'label') {
@@ -331,8 +336,6 @@ export class LayoutForm extends Layout {
                 else {
 
                     let field = config.field;
-                    // widget might be missing (if not visible)
-                    if(!widget) continue;
 
                     let $parent = this.$layout.find('#'+widget.getId()).parent();
 
@@ -355,7 +358,7 @@ export class LayoutForm extends Layout {
                             config.domain = [];
                         }
 
-                        // if widget has a custom header defintion, parse subsequent domains, if any
+                        // if widget has a custom header definition, parse subsequent domains, if any
                         if(config.hasOwnProperty('header') && config.header.hasOwnProperty('actions') ) {
                             for (const [id, items] of Object.entries(config.header.actions)) {
                                 for(let index in (<Array<any>>items)) {
@@ -396,7 +399,12 @@ export class LayoutForm extends Layout {
                         }
                     }
 
+                    // #todo - systematize the way change is transmitted
                     has_changed = (!value || $parent.data('value') != JSON.stringify(value));
+                    if(widget.config.hasOwnProperty('changed') && widget.config.changed) {
+                        has_changed = true;
+                        widget.config.changed = false;
+                    }
 
                     widget.setConfig({...config, ready: true})
                     .setMode(this.view.getMode())
@@ -431,15 +439,25 @@ export class LayoutForm extends Layout {
                             // update object with new value
                             let values:any = {};
                             values[field] = widget.getValue();
+                            let model_fields:any = {};
                             // if value is less than 1k, relay onchange to server
                             // #todo - choose an objectivable limit
                             if(String(widget.getValue()).length < 1000) {
                                 // relay the change to back-end through onupdate
                                 try {
+                                    // #todo - add support for dynamic schema (ex. filter or update selection of selectable fields, based on value from other fields)
                                     const result = await ApiService.call("/?do=model_onchange", {entity: this.view.getEntity(), changes: this.view.getModel().export(values), values: this.view.getModel().export(object), lang: this.view.getLang()} );
                                     for(let field of Object.keys(result)) {
                                         // if some changes are returned from the back-end, append them to the view model update
-                                        values[field] = result[field];
+                                        if(typeof result[field] === 'object' && result[field] !== null) {
+                                            if(result[field].hasOwnProperty('value')) {
+                                                values[field] = result[field].value;
+                                            }
+                                            model_fields[field] = result[field];
+                                        }
+                                        else {
+                                            values[field] = result[field];
+                                        }
                                     }
                                 }
                                 catch(response) {
@@ -447,8 +465,27 @@ export class LayoutForm extends Layout {
                                     console.warn('unable to send onupdate request', response);
                                 }
                             }
+                            // update model schema of the view if necessary
+                            if(Object.keys(model_fields).length > 0) {
+                                // we need to retrieve the widget based on the field name
+                                for(let widget_index of Object.keys(this.model_widgets[0])) {
+                                    let widget = this.model_widgets[0][widget_index];
+                                    let field = widget.config.field;
+                                    if(model_fields.hasOwnProperty(field)) {
+                                        for(let property of Object.keys(model_fields[field])) {
+                                            widget.config[property] = model_fields[field][property];
+                                            widget.config.changed = true;
+                                        }
+                                    }
+                                }
+                            }
                             this.view.onchangeViewModel([object.id], values, refresh);
+                            // if we received changes to apply on the schema, we must force a re-feed on the Form
+                            if(Object.keys(model_fields).length > 0) {
+                                this.view.onchangeModel(false);
+                            }
                         });
+
                         // prevent refreshing objects that haven't changed
                         if(has_changed) {
                             // append rendered widget
