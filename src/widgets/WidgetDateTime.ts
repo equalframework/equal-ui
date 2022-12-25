@@ -89,9 +89,16 @@ export default class WidgetDateTime extends Widget {
                     if(this.config.usage == 'datetime/short') {
                         format = (moment.localeData().longDateFormat('L') + ' ' + moment.localeData().longDateFormat('LT')).replace(/YYYY/g,'YY');
                     }
-                    if(this.config.usage == 'datetime/full') {
+                    else if(this.config.usage == 'datetime/full') {
                         format = 'LLLL';
                     }
+                    else if(this.config.usage == 'date') {
+                        format = 'L';
+                    }
+                    else if(this.config.usage == 'time') {
+                        format = 'HH:mm';
+                    }
+
                 }
                 value = moment(date).format(format);
                 this.$elem = UIHelper.createInputView('', this.label, value, this.config.description);
