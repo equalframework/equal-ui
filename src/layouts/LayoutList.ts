@@ -66,7 +66,7 @@ export class LayoutList extends Layout {
         let $thead = $('<thead/>').appendTo($table);
         let $tbody = $('<tbody/>').appendTo($table);
 
-        // instanciate header row and the first column which contains the 'select-all' checkbox
+        // instantiate header row and the first column which contains the 'select-all' checkbox
         let $hrow = $('<tr/>');
 
         if(this.view.getPurpose() != 'widget' || this.view.getMode() == 'edit') {
@@ -163,9 +163,9 @@ export class LayoutList extends Layout {
                         });
                     }
                 });
-
-                if(['float', 'integer'].indexOf(config.type) >= 0 && !first_column) {
-                    $cell.css({'text-align': 'right', 'padding-right': '16px'});
+                $cell.css({'text-align': config.align});
+                if(config.align == 'right' || config.align == 'center') {
+                    $cell.css({'padding-right': '16px'});
                 }
                 if(config.sortable) {
                     $cell.addClass('sortable').attr('data-sort', '');
@@ -343,7 +343,7 @@ export class LayoutList extends Layout {
                                 else if(usage.indexOf('amount/money') >= 0) {
                                     value = EnvService.formatCurrency(value);
                                 }
-                                else if(usage.indexOf('numeric/integer') >= 0) {
+                                else if(usage.indexOf('numeric/integer') >= 0 || usage.indexOf('number/integer') >= 0) {
                                     value = value.toFixed(0);
                                 }
                             }
