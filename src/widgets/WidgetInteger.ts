@@ -14,9 +14,8 @@ export default class WidgetInteger extends WidgetString {
         this.$elem = super.render();
         let $input = this.$elem.find('input');
 
-        // numeric fields are aligned right (except for `id` column)
-        let align = this.config.hasOwnProperty('align')? this.config.align : ((this.config.field == 'id')?'left':'right');
-        $input.css({'text-align': align});
+        // #memo - numeric fields are aligned right (except for `id` column or if explicitly set otherwise in config), as set in getWidgetConfig
+        $input.css({'text-align': this.config.align});
 
         if(this.mode == 'edit') {
             $input.attr( "type", "number" );
@@ -29,7 +28,7 @@ export default class WidgetInteger extends WidgetString {
         }
         else if(this.mode == 'view') {
             // for lists, item is a DIV
-            this.$elem.css({'text-align': align});
+            this.$elem.css({'text-align': this.config.align});
         }
 
         return this.$elem;
