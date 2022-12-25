@@ -293,7 +293,7 @@ export class View {
     }
 
     private async init() {
-        console.debug('View::init');
+        console.debug('View::init', this.entity, this.type, this.name);
         try {
 
             // assign schemas by copy
@@ -320,6 +320,10 @@ export class View {
 
             this.loadViewFields(this.view_schema);
             this.loadModelFields(this.model_schema);
+
+            if(this.view_schema.hasOwnProperty("header")) {
+                this.config.header = this.view_schema.header;
+            }
 
             if(this.view_schema.hasOwnProperty("order")) {
                 this.order = this.view_schema.order;
@@ -641,6 +645,7 @@ export class View {
     public getViewSchema() {
         return this.view_schema;
     }
+
     public getModelSchema() {
         return this.model_schema;
     }
@@ -768,11 +773,10 @@ export class View {
     }
 
     /**
-     * Generates a map holding all fields in the current model schema
-     * and stores it in the `model_fields` member
+     * Stores a map holding all fields from given model schema in the `model_fields` member.
      */
 	private loadModelFields(model_schema: any) {
-        console.debug('View::loadVModelFields', model_schema);
+        console.debug('View::loadModelFields', model_schema);
         this.model_fields = model_schema.fields;
     }
 
@@ -1531,6 +1535,7 @@ export class View {
 
         let has_action_update = true;
 
+
         if(this.config.hasOwnProperty('header') && this.config.header.hasOwnProperty('actions')) {
             if(this.config.header.actions.hasOwnProperty('ACTION.EDIT')) {
                 has_action_update = (this.config.header.actions['ACTION.EDIT'])?true:false;
@@ -1992,9 +1997,9 @@ export class View {
 
     /**
      * Callback for requesting a Model update.
-     * Requested from layout when a change occured in the widgets.
+     * Requested from layout when a change occurred in the widgets.
      *
-     * @param ids       array   one or more objecft identifiers
+     * @param ids       array   one or more object identifiers
      * @param values    object   map of fields names and their related values
      */
     public async onchangeViewModel(ids: Array<any>, values: object, refresh: boolean = true) {
@@ -2002,8 +2007,8 @@ export class View {
         this.model.change(ids, values);
         // model has changed : forms need to re-check the visibility attributes
         if(refresh) {
-            await this.onchangeModel();
-            // notify subscribers
+            await this.onchangeModel(false);
+            // notify (external) subscribers
             for(let event of Object.keys(this.subscribers)) {
                 for(let callback of this.subscribers[event]) {
                     if( ({}).toString.call(callback) === '[object Function]') {
@@ -2016,7 +2021,7 @@ export class View {
 
     /**
      * Callback for requesting a Layout update: the widgets in the layout need to be refreshed.
-     * Requested from Model when a change occured in the Collection (as consequence of domain or params update).
+     * Requested from Model when a change occurred in the Collection (as consequence of domain or params update).
      * If `full`is set to true, then the layout is re-generated
      * @param full  boolean
      */
