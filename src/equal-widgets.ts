@@ -2,6 +2,7 @@ import Widget from "./widgets/Widget";
 
 import WidgetBoolean from "./widgets/WidgetBoolean";
 import WidgetDate from "./widgets/WidgetDate";
+import WidgetTime from "./widgets/WidgetTime";
 import WidgetDateTime from "./widgets/WidgetDateTime";
 import WidgetInteger from "./widgets/WidgetInteger";
 import WidgetFloat from "./widgets/WidgetFloat";
@@ -28,20 +29,21 @@ class WidgetFactory {
     widgets support two modes : view & edit, and are responsible for rendering accordingly
 
 
-    un widget à un type, un mode, une valeur (qui s'affiche selon le type et le mode)
-    et des infos de décoration: un label et un helper (facultatif)
+    A widget has a type, a mode and a value (displayed according to type and  mode)
+    and also holds decorator info: a label and a helper (optional).
 
     les widgets sont liés à des éléments (layout items) qui ont un type propre (fields, label, button, ...)
 
     les widgets liés à d'autres éléments que des fields disposent d'un ID qui permet de faire le lien avec la View parente et les infos additionnelles (aide, traduction)
 
 
-config: {
-    id:
-    helper:
-    view:
-    domain:
-}
+    config: {
+        id:
+        helper:
+        view:
+        domain:
+    }
+
     */
 
 
@@ -67,6 +69,8 @@ config: {
                 return new WidgetBoolean(layout, label, value, config);
             case 'date':
                 return new WidgetDate(layout, label, value, config);
+            case 'time':
+                return new WidgetTime(layout, label, value, config);
             case 'datetime':
                 return new WidgetDateTime(layout, label, value, config);
             case 'one2many':
@@ -199,7 +203,11 @@ config: {
         config.title = TranslationService.resolve(translation, 'model', [], field, label, 'label');
         config.description = TranslationService.resolve(translation, 'model', [], field, description, 'description');
         config.readonly = (def.hasOwnProperty('readonly'))?def.readonly:(item.hasOwnProperty('readonly'))?item['readonly']:false;
-        config.align = (item.hasOwnProperty('align'))?item.align:'left';
+        // default align is left, unless for integer fields (with an exception for 'id' field - which, by convention, should be first column)
+        config.align = item.hasOwnProperty('align')? item.align : ((item.field != 'id' && (config.type == 'integer' || config.type == 'float'))?'right':'left');
+        if(config.usage && config.usage == 'icon') {
+            config.align = 'center';
+        }
         config.sortable = (item.hasOwnProperty('sortable') && item.sortable);
 
         // only 'list' and 'form' are supported for widgets
@@ -267,7 +275,7 @@ config: {
             }
 
         }
-        console.debug('WidgetFactory::getWidgetConfig - field '+field, config);
+        console.debug('WidgetFactory::getWidgetConfig - field '+field, config, model_fields, view_fields);
         return config;
     }
 
