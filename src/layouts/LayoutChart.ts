@@ -91,9 +91,15 @@ export class LayoutChart extends Layout {
 
         let result:any;
 
+        let controller = 'core_model_chart';
+
+        if(view_schema.hasOwnProperty('controller')) {
+            controller = view_schema.controller;
+        }
+
         try {
             result = await ApiService.fetch('/', {
-                    get: 'core_model_chart',
+                    get: controller,
                     type: this.config.type,
                     entity: this.config.entity,
                     group_by: this.config.group_by,
@@ -163,14 +169,18 @@ export class LayoutChart extends Layout {
             let datasets: any, options: any;
 
             if(['pie', 'doughnut', 'polarArea'].indexOf(this.config.type) >= 0) {
-                datasets = result.datasets.map( (a:any, index: number) => { return {label: layout.datasets[index].label, data: a, backgroundColor: CHART_COLORS}; });
+                datasets = result.datasets.map( (a:any, index: number) => { return {label: (layout.datasets[index])?layout.datasets[index].label:'', data: a, backgroundColor: CHART_COLORS}; });
                 options = {
                     responsive: true,
                     maintainAspectRatio: false
                 };
             }
             else {
-                datasets = result.datasets.map( (a:any, index: number) => { return {label: layout.datasets[index].label, data: a, backgroundColor: CHART_COLORS[index%10]}; });
+                datasets = result.datasets.map( (a:any, index: number) => { return {
+                        label: (result.legends && result.legends[index])? result.legends[index] : ((layout.datasets[index])?layout.datasets[index].label:''),
+                        data: a,
+                        backgroundColor: CHART_COLORS[index%10]
+                    }; });
                 options = {
                     responsive: true,
                     maintainAspectRatio: false,
