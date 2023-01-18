@@ -656,6 +656,12 @@ PERFORMANCE OF THIS SOFTWARE.
 
 /*! moment */
 
+/*! moment/locale/es */
+
+/*! moment/locale/fr */
+
+/*! moment/locale/nl */
+
 /*! moment/moment.js */
 
 /*! quill */

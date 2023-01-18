@@ -5,6 +5,9 @@ import { UIHelper } from './material-lib';
 import { ApiService, EnvService, TranslationService} from "./equal-services";
 
 import moment from 'moment/moment.js';
+import 'moment/locale/fr';
+import 'moment/locale/nl';
+import 'moment/locale/es';
 
 require("../css/material-basics.css");
 require("../css/equal.css");
@@ -35,7 +38,7 @@ class EventsListener {
     // stack of popups (when forcing opening in popups)
     private popups: any[] = [];
 
-    // User (requested as instanciation of the View). This value can be applied on subsequent Domain objects.
+    // User (requested as instantiation of the View). This value can be applied on subsequent Domain objects.
     private user: any = {id: 0};
 
     // global environment object
@@ -266,7 +269,7 @@ class EventsListener {
             this.user = await ApiService.getUser();
 
             if(this.user.hasOwnProperty('language')) {
-                EnvService.setEnv('locale', this.user.language);
+                EnvService.setEnv('lang', this.user.language);
                 TranslationService.init();
             }
             // attempt to retrieve app config
@@ -283,7 +286,26 @@ class EventsListener {
         const environment = await EnvService.getEnv();
 
         // init locale
-        moment.locale(environment.locale);
+        console.debug('Setting locale', environment.locale);
+
+        if(environment.locale != 'en') {
+            // #memo - this is the full list of locales for which a related moment locale `.js` file exists.
+            // var valid_locales = ['af','ar-dz','ar-kw','ar-ly','ar-ma','ar-sa','ar-tn','ar','az','be','bg','bm','bn','bo','br','bs','ca','cs','cv','cy','da','de-at','de-ch','de','dv','el','en-au','en-ca','en-gb','en-ie','en-il','en-nz','en-SG','eo','es-do','es-us','es','et','eu','fa','fi','fo','fr-ca','fr-ch','fr','fy','ga','gd','gl','gom-latn','gu','he','hi','hr','hu','hy-am','id','is','it-ch','it','ja','jv','ka','kk','km','kn','ko','ku','ky','lb','lo','lt','lv','me','mi','mk','ml','mn','mr','ms-my','ms','mt','my','nb','ne','nl-be','nl','nn','pa-in','pl','pt-br','pt','ro','ru','sd','se','si','sk','sl','sq','sr-cyrl','sr','ss','sv','sw','ta','te','tet','tg','th','tl-ph','tlh','tr','tzl','tzm-latn','tzm','ug-cn','uk','ur','uz-latn','uz','vi','x-pseudo','yo','zh-cn','zh-hk','zh-tw'];
+
+            const accepted_locales = ['fr', 'nl', 'es'];
+
+            if(accepted_locales.indexOf(environment.locale) > -1) {
+                if(moment.locale(environment.locale) == environment.locale) {
+                    console.debug('Locale set');
+                }
+                else {
+                    console.warn('Unable to load requested locale');
+                }
+            }
+            else {
+                console.debug('Invalid locale requested: ignoring');
+            }
+        }
 
         // overload environment lang if set in URL
         const queryString = window.location.search;
