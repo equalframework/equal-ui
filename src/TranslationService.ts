@@ -27,7 +27,7 @@ export class _TranslationService {
         const environment:any = await EnvService.getEnv();
 
         // load i18n file from server
-        fetch('/assets/i18n/'+environment.locale+'.json')
+        fetch('/assets/i18n/'+environment.lang+'.json')
         .then( (response) => {
             if(response.ok) {
                 response.json().then( (data) => {
@@ -49,7 +49,7 @@ export class _TranslationService {
     /**
      * Handle an asynchronous request for translation.
      *
-     * @param   value    string       The string identifier to translate using current locale.
+     * @param   value    string       The string identifier to translate using current language.
      * @returns Promise
      */
     public async translate(value:string) {
