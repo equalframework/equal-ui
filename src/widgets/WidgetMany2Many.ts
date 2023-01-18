@@ -18,36 +18,52 @@ export default class WidgetMany2Many extends Widget {
 
         this.$elem = $('<div />');
 
-        // make sure view is not instanciated during 'layout' phase (while config is still incomplete)
+        // make sure view is not instantiated during 'layout' phase (while config is still incomplete)
         if(this.config.hasOwnProperty('ready') && this.config.ready) {
+            // assign config by copy
+            let view_config = {...this.config};
 
-            let view_config = {
-                ...this.config,
-                ...{
-                    show_actions: true,
-                    // update the actions of the "current selection" button
-                    selection_actions: [
-                        {
-                            label: 'SB_ACTIONS_BUTTON_REMOVE',
-                            icon:  'delete',
-                            handler: (selection:any) => {
-                                for(let id of selection) {
-                                    let index = this.value.indexOf(id);
-                                    if( index > -1 ) {
-                                        this.value.splice(index, 1);
+            console.log('### m2m', view_config);
+            if(!this.config.hasOwnProperty('header') || !this.config.header.hasOwnProperty('selection') || !this.config.header.selection.hasOwnProperty('default') || this.config.header.selection.default) {
+                console.log('### adding remove');
+                view_config = {
+                    ...this.config,
+                    ...{
+                        show_actions: true,
+                        // update the actions of the "current selection" button
+                        selection_actions: [
+                            {
+                                label: 'SB_ACTIONS_BUTTON_REMOVE',
+                                icon:  'delete',
+                                handler: (selection:any) => {
+                                    for(let id of selection) {
+                                        let index = this.value.indexOf(id);
+                                        if( index > -1 ) {
+                                            this.value.splice(index, 1);
+                                        }
+                                        index = this.value.indexOf(-id);
+                                        if( index > -1 ) {
+                                            this.value.splice(index, 1);
+                                        }
+                                        this.value.push(-id);
                                     }
-                                    index = this.value.indexOf(-id);
-                                    if( index > -1 ) {
-                                        this.value.splice(index, 1);
-                                    }
-                                    this.value.push(-id);
+                                    this.$elem.trigger('_updatedWidget');
                                 }
-                                this.$elem.trigger('_updatedWidget');
                             }
-                        }
-                    ]
-                }
-            };
+                        ]
+                    }
+                };
+            }
+            else {
+                console.log('### skipping remove');
+                view_config = {
+                    ...this.config,
+                    ...{
+                        show_actions: false,
+                        selection_actions: []
+                    }
+                };
+            }
 
             let domain: Domain = new Domain(this.config.domain);
 
@@ -62,7 +78,7 @@ export default class WidgetMany2Many extends Widget {
                 }
             }
 
-            // domain is updated based on user actions: an additional clause for + (accept these whatever the other conditions) and addtional conditions for - (prevent these whatever the other conditions)
+            // domain is updated based on user actions: an additional clause for + (accept these whatever the other conditions) and additional conditions for - (prevent these whatever the other conditions)
             if(this.config.hasOwnProperty('ids_to_add') && this.config.ids_to_add.length) {
                 domain.addClause(new Clause([new Condition("id", "in", this.config.ids_to_add)]));
             }
