@@ -100,7 +100,7 @@ export default class WidgetDateTime extends Widget {
                     }
 
                 }
-                value = moment(date).format(format);
+                value = (this.value)?moment(date).format(format):'';
                 this.$elem = UIHelper.createInputView('', this.label, value, this.config.description);
                 break;
         }
