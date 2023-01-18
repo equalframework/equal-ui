@@ -242,7 +242,8 @@ export class LayoutForm extends Layout {
                         $actions_button = UIHelper.createDropDown(this.uuid+'_actions-dropdown', 'Actions', 'text', '', '').addClass('layout-actions').appendTo($view_actions);
                     }
                     $actions_button.find('.menu-list').empty();
-
+                    // keep track of empty lists
+                    let has_none = true;
                     for(let action of view_schema.actions) {
                         let visible = true;
                         if(action.hasOwnProperty('visible')) {
@@ -269,6 +270,7 @@ export class LayoutForm extends Layout {
                             }
                         }
                         if(visible) {
+                            has_none = false;
                             let action_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, action.label);
                             // let $button = UIHelper.createButton('action-view-'+action.id, action_title, 'outlined')
                             // this.decorateActionButton($button, action, object);
@@ -277,6 +279,10 @@ export class LayoutForm extends Layout {
                             this.decorateActionButton($item, action, object);
                             $actions_button.find('.menu-list').append($item);
                         }
+                    }
+
+                    if(has_none) {
+                        $actions_button.remove();
                     }
                 }
             }
