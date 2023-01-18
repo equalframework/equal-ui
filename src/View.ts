@@ -659,7 +659,7 @@ export class View {
         let filters_domain = new Domain([]);
 
         for(let filter_id of this.applied_filters_ids) {
-            // filters clauses are cumulatives (conjunctions conditions)
+            // filters clauses are cumulative (conjunctions conditions)
             filters_domain.merge(new Domain(this.filters[filter_id].clause))
         }
 
@@ -1690,6 +1690,9 @@ export class View {
                     }
                 });
 
+                // overlay to cover the buttons and prevent additional click while action is processing
+                let $disable_overlay = $('<div />').addClass('disable-overlay');
+
                 let $save_button = $();
 
                 if(header_actions["ACTION.SAVE"].length <= 1) {
@@ -1716,7 +1719,11 @@ export class View {
                                 // #memo - delay action so that widgets onchange handlers are processed
                                 setTimeout( async () => {
                                     try {
+                                        // disable header buttons
+                                        $disable_overlay.show();
                                         await save_action(header_actions["ACTION.SAVE"][i]);
+                                        // delay 2 seconds after response before re-enabling
+                                        setTimeout( () => $disable_overlay.hide(), 2000);
                                     }
                                     catch(error) {
                                         console.warn(error);
@@ -1735,7 +1742,11 @@ export class View {
                         // #memo - delay action so that widgets onchange handlers are processed
                         setTimeout( async () => {
                             try {
+                                // disable header buttons
+                                $disable_overlay.show();
                                 await save_action(header_actions["ACTION.SAVE"][0]);
+                                // delay 2 seconds after response before re-enabling
+                                setTimeout( () => $disable_overlay.hide(), 2000);
                             }
                             catch(error) {
                                 console.warn(error);
@@ -1746,6 +1757,7 @@ export class View {
 
 
                 $std_actions
+                .append($disable_overlay)
                 .append($save_button)
                 .append($cancel_button);
                 break;

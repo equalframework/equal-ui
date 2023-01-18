@@ -568,6 +568,17 @@ body, html {
     display: flex;
 }
 
+
+.sb-view-header-actions .sb-view-header-actions-std .disable-overlay {
+    display: none;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 3;
+    opacity: 0.5;
+    background: white;
+}
+
 .sb-view-header-actions .sb-view-header-actions-std button {
     margin-right: 12px;
 }
