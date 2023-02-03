@@ -84,7 +84,7 @@ export class View {
      * @param entity    entity (package\Class) to be loaded: should be set only once (depend on the related view)
      * @param type      type of the view ('list', 'form', ...)
      * @param name      name of the view (eg. 'default')
-     * @param domain    Array of conditions (disjunctions clauses of conjonctions conditions): predefined domain from the Context.
+     * @param domain    Array of conditions (disjunctions clauses of conjunctions conditions): predefined domain from the Context.
      * @param mode      ('view', 'edit')
      * @param purpose   ('view', 'select', 'add', 'create', 'update', 'widget')
      * @param lang
@@ -298,7 +298,7 @@ export class View {
 
             // assign schemas by copy
 
-            const translation = await ApiService.getTranslation(this.entity, this.getLocale());
+            const translation = await ApiService.getTranslation(this.entity, this.getLang());
             this.translation = this.deepCopy(translation);
 
             const model = await ApiService.getSchema(this.entity);
@@ -788,7 +788,7 @@ export class View {
     private layoutListHeader() {
         console.debug('View::layoutListHeader');
 
-        // apend header structure
+        // append header structure
         this.$headerContainer.append(' \
             <div class="sb-view-header-list"> \
                 <div class="sb-view-header-actions"></div> \
@@ -805,7 +805,7 @@ export class View {
 
         // left side : standard actions for views
         let $std_actions = $('<div />').addClass('sb-view-header-actions-std').appendTo($actions_set);
-        // right side : the actions specific to the view, and depenging on object status
+        // right side : the actions specific to the view, and depending on object status
         let $view_actions = $('<div />').addClass('sb-view-header-actions-view').appendTo($actions_set);
 
         let has_action_create = true;
@@ -1163,7 +1163,7 @@ export class View {
     private layoutChartHeader() {
         console.debug('View::layoutChartHeader');
 
-        // apend header structure
+        // append header structure
         this.$headerContainer.append(' \
             <div class="sb-view-header-list"> \
                 <div class="sb-view-header-actions"></div> \

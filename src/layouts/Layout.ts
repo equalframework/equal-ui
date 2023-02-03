@@ -254,7 +254,7 @@ export class Layout implements LayoutInterface{
                 }
 
                 // 3) retrieve translation related to action, if any
-                let translation = await ApiService.getTranslation(action.controller.replaceAll('_', '\\'), this.view.getLocale());
+                let translation = await ApiService.getTranslation(action.controller.replaceAll('_', '\\'), this.view.getLang());
 
 
                 // check presence of description and fallback to controller description
@@ -350,7 +350,7 @@ export class Layout implements LayoutInterface{
         let widgets:any = {};
 
         // load translation related to controller
-        let translation = await ApiService.getTranslation(action.controller.replaceAll('_', '\\'), this.view.getLocale());
+        let translation = await ApiService.getTranslation(action.controller.replaceAll('_', '\\'), this.view.getLang());
 
         for(let field of Object.keys(params)) {
 

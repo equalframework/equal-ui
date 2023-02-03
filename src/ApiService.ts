@@ -124,36 +124,36 @@ export class _ApiService {
         return this.views[package_name][class_name][view_id];
     }
 
-    private loadTranslation(entity:string, locale:string) {
+    private loadTranslation(entity:string, lang:string) {
         var package_name = this.getPackageName(entity);
         var class_name = this.getClassName(entity);
 
         if(typeof(this.translations[package_name]) == 'undefined'
         || typeof(this.translations[package_name][class_name]) == 'undefined'
-        || typeof(this.translations[package_name][class_name][locale]) == 'undefined') {
+        || typeof(this.translations[package_name][class_name][lang]) == 'undefined') {
             if(typeof(this.translations[package_name]) == 'undefined') {
                 this.translations[package_name] = {};
             }
             if(typeof(this.translations[package_name][class_name]) == 'undefined') {
                 this.translations[package_name][class_name] = {};
             }
-            this.translations[package_name][class_name][locale] = $.Deferred();
+            this.translations[package_name][class_name][lang] = $.Deferred();
 
             EnvService.getEnv().then( (environment:any) => {
                 $.get({
-                    url: environment.backend_url+'/?get=config_i18n&entity='+entity+'&lang='+locale
+                    url: environment.backend_url+'/?get=config_i18n&entity='+entity+'&lang='+lang
                 })
                 .then( (json_data) => {
-                    this.translations[package_name][class_name][locale].resolve(json_data);
+                    this.translations[package_name][class_name][lang].resolve(json_data);
                 })
                 .catch( (response:any) => {
-                    this.translations[package_name][class_name][locale].resolve({});
+                    this.translations[package_name][class_name][lang].resolve({});
                 });
             });
         }
         // stored object is a promise, that might or might not be resolved,
         // with either translation object or empty object if no translation was found
-        return this.translations[package_name][class_name][locale];
+        return this.translations[package_name][class_name][lang];
     }
 
     public getLastStatus() {
@@ -182,9 +182,9 @@ export class _ApiService {
         });
     }
 
-    public async getTranslation(entity:string, locale:string = '') {
+    public async getTranslation(entity:string, lang:string = '') {
         const environment = await EnvService.getEnv();
-        const translation = await this.loadTranslation(entity, (locale.length)?locale:environment.locale);
+        const translation = await this.loadTranslation(entity, (lang.length)?lang:environment.lang);
         return translation;
     }
 

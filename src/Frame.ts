@@ -73,7 +73,7 @@ export class Frame {
         this.environment = await EnvService.getEnv();
 
         // get list of available languages for Models
-        const languages = await ApiService.collect('core\\Lang', [], ['id', 'code', 'name'], 'name', 'asc', 0, 100, this.environment.locale);
+        const languages = await ApiService.collect('core\\Lang', [], ['id', 'code', 'name'], 'name', 'asc', 0, 100, this.environment.lang);
 
         for(let lang of languages) {
             this.languages[lang.code] = lang.name;
@@ -109,8 +109,8 @@ export class Frame {
         const environment = await EnvService.getEnv();
 
         let view_schema = await ApiService.getView(entity, type+'.'+name);
-        // get translation from currently selected locale
-        let translation = await ApiService.getTranslation(entity, environment.locale);
+        // get translation from currently selected lang
+        let translation = await ApiService.getTranslation(entity, environment.lang);
 
         if(translation.hasOwnProperty('name')) {
             entity = translation['name'];
@@ -164,7 +164,9 @@ export class Frame {
                 let object = objects[0];
                 // by convention, collections should always request the `name` field
                 if(object.hasOwnProperty('name') && purpose != 'create') {
-                    result += ' <small>[' + object['name'] + ' - ' + object['id'] + ']</small>';
+                    // escape HTML and limit name length
+                    let name = $('<a>'+object['name']+'</a>').text().substring(0, 25);
+                    result += ' <small>[' + name + ' - ' + object['id'] + ']</small>';
                 }
             }
         }
@@ -185,7 +187,7 @@ export class Frame {
 
         if(!$domContainer) return;
 
-        // instanciate header upon first call
+        // instantiate header upon first call
         this.$headerContainer = $domContainer.find('.sb-container-header');
         if(this.$headerContainer.length == 0) {
             this.$headerContainer = $('<div/>').addClass('sb-container-header').prependTo($domContainer);
@@ -307,16 +309,16 @@ export class Frame {
         // lang selector controls the current context and is used for opening subsequent contexts
         const environment = await EnvService.getEnv();
 
-        let locale = environment.locale;
+        let lang = environment.lang;
 
         // if there is a current context, use its lang
         if(this.context.hasOwnProperty('$container')) {
-            locale = this.context.getLang();
+            lang = this.context.getLang();
         }
 
-        let $lang_selector = UIHelper.createSelect('lang-selector', '', this.languages, locale);
+        let $lang_selector = UIHelper.createSelect('lang-selector', '', this.languages, lang);
         $lang_selector.addClass('lang-selector');
-        $lang_selector.find('.mdc-select__selected-text').css({'text-transform': 'uppercase'}).text(locale);
+        $lang_selector.find('.mdc-select__selected-text').css({'text-transform': 'uppercase'}).text(lang);
 
         $lang_selector.on('change', () => {
             // when the lang selector is changed by user, update current context
@@ -405,7 +407,7 @@ export class Frame {
     }
 
     /**
-     * Instanciate a new context and push it on the contexts stack (top-down).
+     * Instantiate a new context and push it on the contexts stack (top-down).
      *
      * This method is meant to be called by the eventListener only (eQ object).
      *
@@ -441,7 +443,7 @@ export class Frame {
             config.lang = this.context.getLang();
         }
 
-        // create a draft object if required: Edition is based on asynchronous creation: a draft is created (or recylcled) and is turned into an instance if 'update' action is triggered.
+        // create a draft object if required: Edition is based on asynchronous creation: a draft is created (or recycled) and is turned into an instance if 'update' action is triggered.
         if(config.purpose == 'create') {
             console.debug('requesting draft object');
             let defaults    = await this.getNewObjectDefaults(config.entity, config.domain);
@@ -520,7 +522,7 @@ export class Frame {
                 this.updateHeader();
             }
 
-            // if we closed the lastest Context from the stack, relay data to the outside
+            // if we closed the latest Context from the stack, relay data to the outside
             // #todo - is this still necessary ? (since we run callbacks in eventlisteners)
             if(!this.stack.length) {
                 // console.debug('Frame::_closeContext - stack empty, closing');

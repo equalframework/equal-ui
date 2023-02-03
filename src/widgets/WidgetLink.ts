@@ -15,7 +15,7 @@ export default class WidgetLink extends Widget {
 
     public render():JQuery {
         let value:string = (typeof this.value != undefined && this.value != undefined)?this.value:'';
-        let $button_open = UIHelper.createButton('link-actions-open-'+this.id, '', 'icon', 'open_in_new');
+        let $button_open = UIHelper.createButton('link-actions-open-'+this.id, '', 'icon', 'link').addClass('widget-link-btn');
 
         // open target in new window
         $button_open.on('click', async (event) => {
@@ -27,10 +27,9 @@ export default class WidgetLink extends Widget {
                 }
             }
         });
-        
+
         switch(this.mode) {
             case 'edit':
-                
                 if(this.config.layout == 'list') {
                     this.$elem = UIHelper.createInput('', this.label, value, this.config.description, '', this.readonly);
                     this.$elem.css({"width": "calc(100% - 10px)"});
@@ -54,17 +53,23 @@ export default class WidgetLink extends Widget {
                 this.$elem = $('<div />');
 
                 if(this.config.layout == 'list') {
-                    let $link = $('<a target="_blank" href="'+value+'">'+value+'</a>');
-                    $link.on('click', (event) => {
-                        event.stopPropagation();
-                    })
-                    this.$elem.append($link);
+                    if(value.length > 0) {
+                        if(this.config.hasOwnProperty('link') && this.config.link == 'icon'){
+                            this.$elem.append($button_open);
+                        }
+                        else {
+                            let $link = $('<a target="_blank" href="'+value+'">'+value+'</a>');
+                            $link.on('click', (event) => {
+                                event.stopPropagation();
+                            })
+                            this.$elem.append($link);
+                        }
+                    }
                 }
                 else {
                     let $input = UIHelper.createInputView('', this.label, value, this.config.description).css({"width": "calc(100% - 48px)", "display": "inline-block"});
                     this.$elem.append($input).append($button_open);
                 }
-
                 break;
         }
 

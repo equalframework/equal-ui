@@ -96,9 +96,10 @@ body, html {
 }
 
 .sb-container-header h3 {
+    height: 48px;
     line-height: 48px;
     white-space: nowrap;
-    overflow: hidden;
+    overflow: hidden !important;
     text-overflow: ellipsis;
 }
 
@@ -767,6 +768,9 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     height: 30px;
 }
 
+.sb-widget button.widget-link-btn {
+    color: var(--mdc-theme-primary);
+}
 
 .sb-view-layout-form {
     overflow-y: scroll;
