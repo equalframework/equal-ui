@@ -127,7 +127,10 @@ export class Domain {
                     let tmp = object[target];
                     // target points to an object with subfields
                     if(typeof tmp === 'object' && !Array.isArray(tmp)) {
-                        if(tmp.hasOwnProperty('id')) {
+                        if(tmp === null) {
+                            continue;
+                        }
+                        else if(tmp.hasOwnProperty('id')) {
                             value = tmp.id;
                         }
                         else if(tmp.hasOwnProperty('name')) {
@@ -183,6 +186,74 @@ export class Domain {
                 }
 
                 let operand = object[condition.operand];
+                let operator = condition.operator;
+                let value = condition.value;
+
+                let cc_res: boolean;
+
+                // handle special cases
+                if(operator == '=') {
+                    operator = '==';
+                }
+                else if(operator == '<>') {
+                    operator = '!=';
+                }
+
+                if(operator == 'is' && typeof value == 'number') {
+                    operator = '==';
+                }
+
+                if(operator == 'is') {
+                    if( value === true ) {
+                        cc_res = operand;
+                    }
+                    else if( [false, null, 'null', 'empty'].includes(value) ) {
+                        cc_res = (['', false, undefined, null].includes(operand) || (Array.isArray(operand) && !operand.length) );
+                    }
+                    else {
+                        continue;
+                    }
+                }
+                else if(operator == 'in') {
+                    if(!Array.isArray(value)) {
+                        continue;
+                    }
+                    cc_res = (value.indexOf(operand) > -1);
+                }
+                else if(operator == 'not in') {
+                    if(!Array.isArray(value)) {
+                        continue;
+                    }
+                    cc_res = (value.indexOf(operand) == -1);
+                }
+                else {
+                    let c_condition = "( '" + operand + "' "+operator+" '" + value + "')";
+
+                    cc_res = <boolean>eval(c_condition);
+                }
+                c_res = c_res && cc_res;
+            }
+            res = res || c_res;
+        }
+        return res;
+    }
+
+    /**
+     * Returns the resulting boolean value of the domain.
+     * @returns boolean
+     */
+    public test() : boolean {
+        let res = false;
+        if(this.clauses.length == 0) {
+            return true;
+        }
+        // parse any reference to object in conditions
+        // evaluate clauses (OR) and conditions (AND)
+        for(let clause of this.clauses) {
+            let c_res = true;
+            for(let condition of clause.getConditions()) {
+
+                let operand = condition.operand;
                 let operator = condition.operator;
                 let value = condition.value;
 
