@@ -7,7 +7,7 @@ import { Widget, WidgetFactory } from "./equal-widgets";
 import { LayoutFactory } from "./equal-layouts";
 import { Clause } from "./Domain";
 
-
+import { saveAs } from 'file-saver';
 export class View {
 
     private uuid: string;
@@ -111,14 +111,18 @@ export class View {
             show_filter: true,
             show_pagination: true,
             // list of actions available for applying to a selection (relational fields widgets define their own actions)
-            selection_actions: [
+            selection_actions: [],
+            // #todo - move this elsewhere
+            selection_actions_default: [
                 {
+                    id: "ACTION.EDIT_INLINE",
                     label: 'SB_ACTIONS_BUTTON_INLINE_UPDATE',
                     icon:  'edit_attributes',
                     primary: false,
                     handler: (selection:any, item:any) => this.actionListInlineEdit(selection)
                 },
                 {
+                    id: "ACTION.EDIT_BULK",
                     label: 'SB_ACTIONS_BUTTON_BULK_ASSIGN',
                     icon:  'dynamic_form',
                     primary: false,
@@ -126,7 +130,7 @@ export class View {
                     handler: (selection:any, item:any) => this.actionBulkAssign(selection)
                 },
                 {
-                    id: "action.update",
+                    id: "ACTION.EDIT",
                     label: 'SB_ACTIONS_BUTTON_UPDATE',
                     icon:  'edit',
                     primary: true,
@@ -136,6 +140,7 @@ export class View {
                     }
                 },
                 {
+                    id: "ACTION.CLONE",
                     label: 'SB_ACTIONS_BUTTON_CLONE',
                     icon:  'content_copy',
                     primary: false,
@@ -152,6 +157,8 @@ export class View {
                         }
                         catch(response) {
                             console.warn('unexpected error', response);
+                            // hide loader
+                            this.layout.loading(false);
                             try {
                                 await this.displayErrorFeedback(this.translation, response);
                             }
@@ -162,6 +169,7 @@ export class View {
                     }
                 },
                 {
+                    id: "ACTION.ARCHIVE",
                     label: 'SB_ACTIONS_BUTTON_ARCHIVE',
                     icon:  'archive',
                     primary: false,
@@ -178,7 +186,7 @@ export class View {
                                 await ApiService.archive(this.entity, selection);
                                 // refresh the model
                                 await this.onchangeView();
-                                }
+                            }
                             catch(response) {
                                 try {
                                     await this.displayErrorFeedback(this.translation, response);
@@ -191,6 +199,7 @@ export class View {
                     }
                 },
                 {
+                    id: "ACTION.DELETE",
                     label: 'SB_ACTIONS_BUTTON_DELETE',
                     icon:  'delete',
                     primary: true,
@@ -222,6 +231,7 @@ export class View {
                     }
                 }
             ]
+            // #todo - selection by section (grouped lines)
             // selected_sections: {1: 2}
         };
 
@@ -384,32 +394,104 @@ export class View {
             }
 
             // support for custom selection_actions
-            // expect a controller to which the selected_ids will be relayed, upon response the list is refreshed
+            // expects a controller to which the selected_ids will be relayed, upon response the list is refreshed
             if(this.view_schema.hasOwnProperty('header') && this.view_schema.header.hasOwnProperty('selection')) {
-                if(this.view_schema.header.selection.hasOwnProperty('default') && !this.view_schema.header.selection.default) {
-                    // remove default actions
-                    this.config.selection_actions = [];
+                if(!this.view_schema.header.selection.hasOwnProperty('default') || this.view_schema.header.selection.default == true) {
+                    // use default actions unless default explicitly set to false
+                    this.config.selection_actions = this.config.selection_actions_default;
                 }
-                if(this.view_schema.header.selection.hasOwnProperty('actions')) {
+                if(this.view_schema.header.selection.hasOwnProperty('actions') && Array.isArray(this.view_schema.header.selection.actions)) {
                     for(let action of this.view_schema.header.selection.actions) {
-                            action['handler'] = async (selection:any, item:any) => {
-                                if(item.hasOwnProperty('controller')) {
-                                    try {
-                                        const result = await ApiService.call("/?do="+item.controller, {
+                        // enrich the item with an action handler based on given controller, if any
+                        action['handler'] = async (selection:any, item:any) => {
+                            if(item.hasOwnProperty('controller')) {
+                                try {
+                                    let content_type: string = 'application/json';
+                                    // #todo - use Controller class
+                                    // new Controller('action', item.controller, this.lang);
+                                    const controller = await ApiService.fetch("/", {do: item.controller, announce: true});
+                                    if(controller.hasOwnProperty('announcement') && controller.announcement.hasOwnProperty('response') && controller.announcement.response.hasOwnProperty('content-type')) {
+                                        content_type = controller.announcement.response['content-type'];
+                                    }
+                                    const result = await ApiService.call("/?do="+item.controller, {
                                             entity: this.getEntity(),
                                             ids: selection,
-                                            lang: this.getLang()} );
-                                        this.onchangeView();
-
+                                            lang: this.getLang()
+                                        },
+                                        content_type);
+                                    const status = ApiService.getLastStatus();
+                                    const headers = ApiService.getLastHeaders();
+                                    // handle binary data response
+                                    if(content_type != 'application/json') {
+                                        let blob = new Blob([result], {type: content_type});
+                                        let filename = "file.download";
+                                        if(headers.hasOwnProperty('content-disposition')) {
+                                            const parts = headers['content-disposition'].split('=');
+                                            if(parts.length > 1) {
+                                                filename = parts[1].slice(1, -1);
+                                            }
+                                        }
+                                        saveAs(blob, filename);
                                     }
-                                    catch(response) {
-                                        console.warn(response);
+                                    // handle HTTP 202 (accepted - no change)
+                                    if(status == 202) {
+                                        // nothing to do
+                                        let $snack = UIHelper.createSnackbar(TranslationService.instant('SB_ACTIONS_NOTIFY_ACTION_SENT', 'Action request sent.'), '', '', 4000);
+                                        this.$container.append($snack);
+                                    }
+                                    // handle HTTP 205 (reset content)
+                                    else if(status == 205) {
+                                        // context is no longer valid : close context
+                                        await this.closeContext();
+                                    }
+                                    else {
+                                        // refresh the view
+                                        // #memo - this will trigger updatedContext
+                                        await this.onchangeView();
                                     }
                                 }
-                            };
-                        this.config.selection_actions.push(action);
+                                catch(response) {
+                                    console.warn('unexpected error', response);
+                                    try {
+                                        await this.displayErrorFeedback(this.translation, response);
+                                    }
+                                    catch(error) {
+                                        console.warn(error);
+                                    }
+                                }
+                            }
+                        };
+                        if(action.hasOwnProperty('id')) {
+                            // check amongst actions already added (defaults ?)
+                            let index = this.config.selection_actions.findIndex( (item:any) => item.id == action.id );
+                            if(index >= 0) {
+                                if(action.hasOwnProperty('controller')) {
+                                    // overload a default action
+                                    this.config.selection_actions[index] = action;
+                                }
+                            }
+                            else {
+                                let index = this.config.selection_actions_default.findIndex( (item:any) => item.id == action.id );
+                                if(index >= 0) {
+                                    // id matches a default action: use action from defaults
+                                    this.config.selection_actions.push(this.config.selection_actions_default[index]);
+                                }
+                                else {
+                                    // unknown id: add action as-is
+                                    this.config.selection_actions.push(action);
+                                }
+                            }
+                        }
+                        else {
+                            // no id: add action as-is
+                            this.config.selection_actions.push(action);
+                        }
                     }
                 }
+            }
+            else {
+                // no header.selection property: assign default actions
+                this.config.selection_actions = this.config.selection_actions_default;
             }
 
             // domain member is given by the context
@@ -999,8 +1081,11 @@ export class View {
                         "id": "filter_search_on_name",
                         "label": "search",
                         "description": TranslationService.instant('SB_FILTERS_SEARCH_ON_NAME'),
-                        "clause": ['name', 'ilike', '%'+value+'%']
+                        "clause": ['name', '=', value]
                     };
+                    if(this.model_schema.fields['name'].type == 'string' || (this.model_schema.fields['name'].hasOwnProperty('result_type') && this.model_schema.fields['name'].result_type == 'string')) {
+                        filter['clause'] = ['name', 'ilike', '%'+value+'%'];
+                    }
                     // add filter to available filters
                     this.filters[filter.id] = filter;
                     this.applyFilter(filter.id);
@@ -1400,8 +1485,8 @@ export class View {
                         item_label = TranslationService.resolve(this.translation, 'view', [this.getId(), 'layout'], item.id, item_label);
                     }
                     let $list_item = UIHelper.createListItem(item_id, item_label, item.icon)
-                    .on( 'click', (event:any) => item.handler(this.selected_ids, item) )
-                    .appendTo($list);
+                        .on( 'click', (event:any) => item.handler(this.selected_ids, item) )
+                        .appendTo($list);
 
                     if(item.hasOwnProperty('primary') && item.primary) {
                         $container.append(UIHelper.createButton('selection-action-'+item.label, item.label, 'icon', item.icon).on('click', (event:any) => item.handler(this.selected_ids, item)));
@@ -1487,7 +1572,7 @@ export class View {
 
         // left side : standard actions for views
         let $std_actions = $('<div />').addClass('sb-view-header-actions-std').appendTo($actions_set);
-        // right side : the actions specific to the view, and depenging on object status
+        // right side : the actions specific to the view, and depending on object status
         let $view_actions = $('<div />').addClass('sb-view-header-actions-view').appendTo($actions_set);
 
         // possible values for header.actions
@@ -1534,11 +1619,19 @@ export class View {
         }
 
         let has_action_update = true;
-
-
         if(this.config.hasOwnProperty('header') && this.config.header.hasOwnProperty('actions')) {
             if(this.config.header.actions.hasOwnProperty('ACTION.EDIT')) {
                 has_action_update = (this.config.header.actions['ACTION.EDIT'])?true:false;
+                if(this.config.header.actions['ACTION.EDIT'].hasOwnProperty('visible')) {
+                    // visible attribute is a Domain
+                    if(Array.isArray(this.config.header.actions['ACTION.EDIT'].visible)) {
+                        let domain = new Domain(this.config.header.actions['ACTION.EDIT'].visible);
+                        has_action_update = domain.parse({}, this.getUser()).test();
+                    }
+                    else {
+                        has_action_update = <boolean>this.config.header.actions['ACTION.EDIT'].visible;
+                    }
+                }
             }
         }
 
@@ -1549,7 +1642,7 @@ export class View {
                     .append(
                         UIHelper.createButton(this.uuid+'_action-edit', TranslationService.instant('SB_ACTIONS_BUTTON_UPDATE'), 'raised')
                         .on('click', async () => {
-                            // #todo - allow overloading default action controller ('ACTION.UPDATE')
+                            // #todo - allow overloading default action controller ('ACTION.EDIT')
                             await this.openContext({
                                 entity: this.entity, type: this.type, name: this.name, domain: this.getDomain(), mode: 'edit', purpose: 'update',
                                 // for UX consistency, inject current view widget context (currently selected tabs, ...)
@@ -1622,7 +1715,7 @@ export class View {
                             // #memo - we don't want to refresh the view (would lose the current tab)
                             // this.onchangeView(true);
                             // feedback the user (since we're not closing the context)
-                            let $snack = UIHelper.createSnackbar('Modifications enregistrées', '', '', 4000);
+                            let $snack = UIHelper.createSnackbar(TranslationService.instant('SB_ACTIONS_NOTIFY_CHANGES_SAVED', 'Changes saved.'), '', '', 4000);
                             this.$container.append($snack);
                         }
                     },
@@ -1631,10 +1724,10 @@ export class View {
                         if(res) {
                             let parent = this.context.getParent();
                             // if context has a parent, close and relay new object_id to parent view
-                            if(Object.keys(parent).length) {
+                            if(Object.keys(parent).length && this.purpose != 'create') {
                                 await this.closeContext(res);
                             }
-                            // if there's no parent, silently close it and instanciate a new context
+                            // if there's no parent or if we're creating a new object, silently close and instantiate a new context
                             else {
                                 await this.closeContext(null, true);
                                 let object_id = res.selection[0];
@@ -1838,7 +1931,7 @@ export class View {
                     });
                     break;
                 case 'many2one':
-                // #todo - select amongst exisiting objects typeahead
+                // #todo - select amongst existing objects typeahead
                 case 'string':
                 // #todo - display selection if any
                 case 'integer':
@@ -1884,57 +1977,64 @@ export class View {
         });
 
         let fields:any = {};
+        const filterable_types = ['integer', 'float', 'boolean', 'string', 'date', 'time', 'datetime', 'many2one'];
 
         for(let item of this.view_schema.layout.items ) {
-            if(this.model_schema.fields.hasOwnProperty(item.value)
-            && ['integer', 'float', 'boolean', 'string', 'date', 'time', 'datetime', 'many2one'].indexOf(this.model_schema.fields[item.value].type) >= 0) {
-                let label = (item.hasOwnProperty('label'))?item.label:item.value;
-                fields[item.value] = TranslationService.resolve(this.translation, 'model', [], item.value, label, 'label');
+            let field = item.value;
+            let field_type = this.model.getFinalType(field);
+            if(this.model_schema.fields.hasOwnProperty(field) && filterable_types.indexOf(field_type) >= 0) {
+                let label = (item.hasOwnProperty('label'))?item.label:field;
+                fields[field] = TranslationService.resolve(this.translation, 'model', [], field, label, 'label');
             }
         }
 
         $select_field = UIHelper.createSelect(this.uuid+'_custom-filter-select-field', TranslationService.instant('SB_FILTERS_DIALOG_FIELD'), fields, Object.keys(fields)[0]).appendTo($elem);
         // setup handler for relaying value update to parent layout
         $select_field.addClass('dialog-select').find('input')
-        .on('change', (event) => {
-            let $this = $(event.currentTarget);
-            selected_field = <string> $this.val();
-
-            $elem.find('#'+this.uuid+'_custom-filter-select-operator').remove();
-            $elem.find('.sb-widget').remove();
-
-            let field_type = this.model.getFinalType(selected_field);
-            let operators: any[] = this.model.getOperators(field_type);
-            selected_operator = operators[0];
-            $select_operator = UIHelper.createSelect(this.uuid+'_custom-filter-select-operator', TranslationService.instant('SB_FILTERS_DIALOG_OPERATOR'), operators, operators[0]);
-            // setup handler for relaying value update to parent layout
-            $select_operator.addClass('dialog-select').find('input').on('change', (event) => {
+            .on('change', (event) => {
                 let $this = $(event.currentTarget);
-                selected_operator = <string> $this.val();
+                selected_field = <string> $this.val();
+
+                $elem.find('#'+this.uuid+'_custom-filter-select-operator').remove();
+                $elem.find('.sb-widget').remove();
+
+                let field_type = this.model.getFinalType(selected_field);
+                let operators: any[] = this.model.getOperators(field_type);
+                selected_operator = operators[0];
+                $select_operator = UIHelper.createSelect(this.uuid+'_custom-filter-select-operator', TranslationService.instant('SB_FILTERS_DIALOG_OPERATOR'), operators, operators[0]);
+                // setup handler for relaying value update to parent layout
+                $select_operator.addClass('dialog-select').find('input').on('change', (event) => {
+                    let $this = $(event.currentTarget);
+                    selected_operator = <string> $this.val();
+                });
+
+                let config = WidgetFactory.getWidgetConfig(this, selected_field, this.translation, this.model_fields, this.view_fields);
+                // form form layout
+                config.layout = 'form';
+
+                let value:any = '';
+                if(['date', 'datetime'].indexOf(config.type) >= 0) {
+                    value = new Date();
+                    selected_value  = value.toISOString();
+                }
+                else if(['one2many', 'many2one', 'many2many'].indexOf(config.type) >= 0) {
+                    // limit relational widgets to direct selection only
+                    config.has_action_create = false;
+                    config.has_action_open = false;
+                    config.has_action_select = false;
+                }
+                let widget:Widget = WidgetFactory.getWidget(this, config.type, fields[selected_field], value, config);
+                widget.setMode('edit');
+                widget.setReadonly(false);
+
+                $select_value = widget.render();
+                $select_value.on('_updatedWidget', (event:any) => {
+                    // relay the value whatever the type (m2o handling will be done afterwards)
+                    selected_value = widget.getValue();
+                });
+                $elem.append($select_operator);
+                $elem.append($select_value);
             });
-
-            let config = WidgetFactory.getWidgetConfig(this, selected_field, this.translation, this.model_fields, this.view_fields);
-            // form form layout
-            config.layout = 'form';
-
-            let value:any = '';
-            if(['date', 'datetime'].indexOf(config.type) >= 0) {
-                value = new Date();
-                selected_value  = value.toISOString();
-            }
-            let widget:Widget = WidgetFactory.getWidget(this, config.type, fields[selected_field], value, config);
-            widget.setMode('edit');
-            widget.setReadonly(false);
-
-            $select_value = widget.render();
-            $select_value.on('_updatedWidget', (event:any) => {
-                let value = widget.getValue();
-                console.debug('_updatedWidget', value);
-                selected_value = value;
-            });
-            $elem.append($select_operator);
-            $elem.append($select_value);
-        });
 
         $dialog.find('.mdc-dialog__content').append($elem);
 
@@ -1946,7 +2046,8 @@ export class View {
             let operator = selected_operator;
             let value:any = selected_value;
 
-            if(this.model_schema.fields[selected_field].type == 'many2one') {
+            // handle object as selection
+            if(typeof selected_value == 'object' && selected_value !== null && selected_value.hasOwnProperty('id')) {
                 value = selected_value.id;
             }
 
@@ -2048,7 +2149,7 @@ export class View {
      * or from layout: context has been updated (sort column, sorting order, limit, page, ...)
      */
     public async onchangeView(full: boolean = false) {
-        console.debug('View::onchangeView');
+        console.debug('View::onchangeView', full);
         // notify about context update
         this.context.updatedContext();
 
