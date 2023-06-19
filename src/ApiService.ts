@@ -168,6 +168,10 @@ export class _ApiService {
         return this.last_headers;
     }
 
+    private setLastStatus(last_status: number) {
+        this.last_status = last_status;
+    }
+
     private setLastHeaders(headers: string) {
         // convert headers string to an array
         const headers_array: string[] = headers.trim().split(/[\r\n]+/);
@@ -235,18 +239,25 @@ export class _ApiService {
                 var xhr = new XMLHttpRequest();
                 xhr.open('GET', environment.backend_url+route+'?'+jQuery.param(body), true);
 
+                // default to JSON
                 if(content_type == 'application/json') {
                     xhr.responseType = "json";
                 }
-                else {
+                // by convention, for application/* content, we request a conversion to ArrayBuffer
+                else if(['text/plain', 'text/html'].indexOf(content_type) < 0) {
                     xhr.responseType = "arraybuffer";
+                }
+                // fallback to plain text (to support 'text/plain' and 'text/html')
+                else {
+                    xhr.responseType = "text";
                 }
 
                 xhr.withCredentials = true;
                 xhr.send(null);
 
                 xhr.onload = () => {
-                    this.last_status = xhr.status;
+                    this.setLastStatus(xhr.status);
+                    this.setLastHeaders(xhr.getAllResponseHeaders());
 
                     if(xhr.status < 200 || xhr.status > 299) {
                         reject(xhr.response)
@@ -255,7 +266,6 @@ export class _ApiService {
                         if(xhr.getResponseHeader('X-Total-Count')) {
                             this.last_count = parseInt( <string> xhr.getResponseHeader('X-Total-Count') );
                         }
-                        this.setLastHeaders(xhr.getAllResponseHeaders());
                         resolve(xhr.response);
                     }
                 };
@@ -266,7 +276,7 @@ export class _ApiService {
         });
     }
 
-    public call(route:string, body:any = {}) {
+    public call(route:string, body:any = {}, content_type:string = 'application/json') {
         return new Promise<any>( async (resolve, reject) => {
             try {
                 const environment = await EnvService.getEnv();
@@ -274,11 +284,27 @@ export class _ApiService {
                 xhr.open('POST', environment.backend_url+route, true);
                 xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
                 var params = jQuery.param(body);
-                xhr.responseType = "json";
+
+                // default to JSON
+                if(content_type == 'application/json') {
+                    xhr.responseType = "json";
+                }
+                // by convention, for application/* content, we request a conversion to ArrayBuffer
+                else if(['text/plain', 'text/html'].indexOf(content_type) < 0) {
+                    xhr.responseType = "arraybuffer";
+                }
+                // fallback to plain text (to support 'text/plain' and 'text/html')
+                else {
+                    xhr.responseType = "text";
+                }
+
                 xhr.withCredentials = true;
                 xhr.send(params);
 
                 xhr.onload = () => {
+                    this.setLastStatus(xhr.status);
+                    this.setLastHeaders(xhr.getAllResponseHeaders());
+
                     if(xhr.status < 200 || xhr.status > 299) {
                         reject(xhr.response)
                     }
