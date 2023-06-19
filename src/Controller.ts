@@ -7,7 +7,7 @@ import { Context, Layout, Model, Domain } from "./equal-lib";
 
 /*
     Class holding a back-end controller representation.
-    A controller can be handled the same way as a Model defintion (both are called 'entity')
+    A controller can be handled the same way as a Model definition (both are called 'entity')
 */
 
 
