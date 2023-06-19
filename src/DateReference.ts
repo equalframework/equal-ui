@@ -1,17 +1,17 @@
 /**
  * Class for Date descriptors parsing
- * 
- * 
- 
+ *
+ *
+
     ## date parser
 
-    * soit une chaine ISO
-    * soit une description au format relatif à NOW
+    * either an ISO string
+    * either a description with a format relating to NOW
 
     Result of the parsing is always a date.
 
 
-    Syntaxe:
+    Syntax:
     date.[this|prev|next].[day|week|month|quarter|semester|year].[first|last]
 
 
