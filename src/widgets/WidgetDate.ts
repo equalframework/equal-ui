@@ -20,10 +20,12 @@ export default class WidgetDate extends Widget {
     public render(): JQuery {
         let date = new Date(this.value);
         let value:any;
-
+         // moment 'll': Jun 8, 2023
+        let format = 'll';
         switch(this.mode) {
             case 'edit':
-                value = moment(date).format('L');
+                format = 'L';
+                value = moment(date).format(format);
                 this.$elem = UIHelper.createInput('date_'+this.id, this.label, value, this.config.description, 'calendar_today', this.readonly);
                 if(this.config.layout == 'list') {
                     this.$elem.css({"width": "calc(100% - 10px)"});
@@ -51,8 +53,28 @@ export default class WidgetDate extends Widget {
                 break;
             case 'view':
             default:
-                value = (this.value)?moment(date).format('ll'):'';
-                this.$elem = UIHelper.createInputView('', this.label, value, this.config.description);
+                // #todo - adapt and complete based on retrieved locale from equal (@see packages/core/i18n/fr/locale.json)
+                if(this.config.hasOwnProperty('usage')) {
+                    if(this.config.usage == 'date' || this.config.usage == 'date/medium') {
+                        // 06/08/2023
+                        format = 'L';
+                    }
+                    else if(this.config.usage == 'date/short') {
+                        // 06/08/23
+                        format = (moment.localeData().longDateFormat('L')).replace(/YYYY/g,'YY');
+                    }
+                }
+
+                // convert date to string, according to locale and usage
+                value = (this.value)?moment(date).format(format):'';
+
+                // by convention, first column of each row opens the object no matter the type of the field
+                if(this.is_first) {
+                    this.$elem = $('<div />').addClass('is-first').text(value);
+                }
+                else {
+                    this.$elem = UIHelper.createInputView('', this.label, value, this.config.description);
+                }
                 break;
         }
 

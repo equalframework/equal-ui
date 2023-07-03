@@ -220,6 +220,7 @@ export class _ApiService {
     public async getSettings() {
         let result: any;
         try {
+            // #todo - replace with envinfo
             const environment = await EnvService.getEnv();
             const response = await $.get({
                 url: environment.backend_url+'/appinfo'

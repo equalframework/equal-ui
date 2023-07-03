@@ -87,21 +87,31 @@ export default class WidgetDateTime extends Widget {
             default:
                 if(this.config.hasOwnProperty('usage')) {
                     if(this.config.usage == 'datetime/short') {
+                        // 06/08/23
                         format = (moment.localeData().longDateFormat('L') + ' ' + moment.localeData().longDateFormat('LT')).replace(/YYYY/g,'YY');
                     }
                     else if(this.config.usage == 'datetime/full') {
                         format = 'LLLL';
                     }
-                    else if(this.config.usage == 'date') {
+                    else if(this.config.usage == 'date' || this.config.usage == 'date/medium') {
+                        // 06/08/2023
                         format = 'L';
                     }
                     else if(this.config.usage == 'time') {
                         format = 'HH:mm';
                     }
-
                 }
+
+                // convert datetime to string, according to locale and usage
                 value = (this.value)?moment(date).format(format):'';
-                this.$elem = UIHelper.createInputView('', this.label, value, this.config.description);
+
+                // by convention, first column of each row opens the object no matter the type of the field
+                if(this.is_first) {
+                    this.$elem = $('<div />').addClass('is-first').text(value);
+                }
+                else {
+                    this.$elem = UIHelper.createInputView('', this.label, value, this.config.description);
+                }
                 break;
         }
 

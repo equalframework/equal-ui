@@ -142,27 +142,27 @@ export class LayoutList extends Layout {
             if(config && (!config.hasOwnProperty('visible') || config.visible)) {
                 let width = Math.floor(10 * item.width) / 10;
                 let $cell = $('<th/>').attr('name', field)
-                // .attr('width', width+'%')
-                .css({width: width+'%'})
-                .append(config.title)
-                .on('click', (event:any) => {
-                    let $this = $(event.currentTarget);
-                    if($this.hasClass('sortable')) {
-                        // unselect all lines
-                        $('td:first-child', this.$layout.find('tbody')).each( (i:number, elem:any) => {
-                            $('input[type="checkbox"]', elem).prop('checked', false).prop('indeterminate', false);
-                        });
-                        $thead.find('th:first-child').find('input').trigger('refresh');
+                    // .attr('width', width+'%')
+                    .css({width: width+'%'})
+                    .append(config.title)
+                    .on('click', (event:any) => {
+                        let $this = $(event.currentTarget);
+                        if($this.hasClass('sortable')) {
+                            // unselect all lines
+                            $('td:first-child', this.$layout.find('tbody')).each( (i:number, elem:any) => {
+                                $('input[type="checkbox"]', elem).prop('checked', false).prop('indeterminate', false);
+                            });
+                            $thead.find('th:first-child').find('input').trigger('refresh');
 
-                        // wait for handling of sort toggle (table decorator)
-                        setTimeout( () => {
-                            // change sortname and/or sortorder
-                            this.view.setOrder(<string>$this.attr('name'));
-                            this.view.setSort(<string>$this.attr('data-sort'));
-                            this.view.onchangeView();
-                        });
-                    }
-                });
+                            // wait for handling of sort toggle (table decorator)
+                            setTimeout( () => {
+                                // change sortname and/or sortorder
+                                this.view.setOrder(<string>$this.attr('name'));
+                                this.view.setSort(<string>$this.attr('data-sort'));
+                                this.view.onchangeView();
+                            });
+                        }
+                    });
                 $cell.css({'text-align': config.align});
                 if(config.align == 'right' || config.align == 'center') {
                     $cell.css({'padding-right': '16px'});
@@ -266,19 +266,17 @@ export class LayoutList extends Layout {
                 break;
             }
 
+            // group is an array of objects: render a row for each object
             if( Array.isArray(group) ) {
-                let $previous = $tbody.children().last();
                 let parent_group_id = '';
+                let $previous = $tbody.children().last();
                 if($previous && $previous.hasClass('sb-group-row')) {
                     parent_group_id = <string> $previous.attr('data-id');
                 }
-                // group is an array of objects: render a row for each object
                 for (let object of group) {
                     let $row = this.feedListCreateObjectRow(object, parent_group_id);
                     $tbody.append($row);
                 }
-
-                // #todo - if operations are defined, add a line for each group
             }
             else if(group.hasOwnProperty('_is_group')) {
                 let $row = this.feedListCreateGroupRow(group, $tbody);
@@ -288,7 +286,10 @@ export class LayoutList extends Layout {
                 // #memo - keys must be strings
                 let keys = Object.keys(group).sort().reverse();
                 for(let key of keys) {
-                    if(['_id', '_parent_id', '_key', '_label'].indexOf(key) >= 0) continue;
+                    // ignore special keys (used for group properties)
+                    if(key.charAt(0) == '_') {
+                        continue;
+                    }
                     // add object or array
                     if(group[key].hasOwnProperty('_data')) {
                         stack.push(group[key]['_data']);
@@ -374,7 +375,9 @@ export class LayoutList extends Layout {
         for (let object of objects) {
             const n = group_by.length;
             let parent = groups;
+            // #memo - we prepend parent_id to subgroups ids
             let parent_id = '';
+            let level = 0;
 
             for(let i = 0; i < n; ++i) {
                 let field, group:any = group_by[i];
@@ -413,10 +416,14 @@ export class LayoutList extends Layout {
 
                 if(!parent.hasOwnProperty(key)) {
                     if(i < n-1) {
-                        parent[key] = {'_id': parent_id+key, '_parent_id': parent_id, '_key': key, '_label': label};
+                        //  no data (data are stored in children)
+                        parent[key] = {'_id': parent_id+key, '_parent_id': parent_id, '_key': key, '_label': label, '_level': level};
+                        if(typeof group == 'object' && group.hasOwnProperty('operation')) {
+                            parent[key]['_operation'] = group.operation;
+                        }
                     }
                     else {
-                        parent[key] = {'_id': parent_id+key, '_parent_id': parent_id, '_key': key, '_label': label, '_data': []};
+                        parent[key] = {'_id': parent_id+key, '_parent_id': parent_id, '_key': key, '_label': label, '_level': level, '_data': []};
                         if(typeof group == 'object' && group.hasOwnProperty('operation')) {
                             parent[key]['_operation'] = group.operation;
                         }
@@ -424,6 +431,7 @@ export class LayoutList extends Layout {
                 }
                 parent_id = parent_id+key;
                 parent = parent[key];
+                ++level;
             }
             if( parent.hasOwnProperty('_data') && Array.isArray(parent['_data']) ) {
                 parent['_data'].push(object);
@@ -432,6 +440,12 @@ export class LayoutList extends Layout {
         return groups;
     }
 
+    /**
+     *
+     * @param object
+     * @param parent_group_id A string used as DOM id that allows to retrieve parent node.
+     * @returns
+     */
     private feedListCreateObjectRow(object:any, parent_group_id:string) {
         let schema = this.view.getViewSchema();
 
@@ -569,7 +583,7 @@ export class LayoutList extends Layout {
 
             $row.append($cell);
         }
-        if(parent_group_id.length) {
+        if(parent_group_id && parent_group_id.length) {
             $row.hide();
         }
         return $row;
@@ -578,14 +592,15 @@ export class LayoutList extends Layout {
     private feedListCreateGroupRow(group:any, $tbody:any) {
         let schema = this.view.getViewSchema();
 
-        let label:string = group['_label'];
+        let label:string = (group.hasOwnProperty('_label'))?group['_label']:'';
+        let level:string = (group.hasOwnProperty('_level'))?group['_level']:'';
         let prefix:string = '';
         let suffix:string = '';
 
         let children_count = 0;
         let parent_group_id = group['_parent_id'];
 
-        if(parent_group_id.length > 0) {
+        if(parent_group_id && parent_group_id.length > 0) {
             let $prev_td = $tbody.find("[data-id='" + parent_group_id + "']").find('.sb-group-cell-label').first();
             if($prev_td) {
                 prefix = <string> $prev_td.attr('title') + ' › ';
@@ -594,35 +609,49 @@ export class LayoutList extends Layout {
 
         if(group.hasOwnProperty('_data')) {
             children_count = group['_data'].length;
-
-            if(group.hasOwnProperty('_operation')) {
-                let op_result = 0;
-                let op_type = group._operation[0];
-                let op_field = (group._operation[1].split('.'))[1];
-                for(let obj of group['_data']) {
-                    if(obj.hasOwnProperty(op_field)) {
-                        // #todo - handle all cases of operations
-                        op_result += obj[op_field];
-                    }
-                }
-                suffix = '['+op_result+']';
-            }
-            else {
-                suffix = '['+children_count+']';
-            }
         }
-        else {
-            // sum children groups
+
+        if(group.hasOwnProperty('_operation')) {
+            let op_operator = group._operation[0];
+            let op_field = (group._operation[1].split('.'))[1];
+            let data: any[] = this.getGroupData(group, op_field);
+            let op_result = 0;
+            for(let val of data) {
+                switch(op_operator) {
+                    case 'COUNT':
+                        ++op_result;
+                        break;
+                    case 'MIN':
+                        if(val < op_result) {
+                            op_result = val;
+                        }
+                        break;
+                    case 'MAX':
+                        if(val > op_result) {
+                            op_result = val;
+                        }
+                        break;
+                    case 'AVG':
+                    case 'SUM':
+                        op_result += val;
+                        break;
+                }
+            }
+            if(op_operator == 'AVG') {
+                op_result /= data.length;
+            }
+            suffix = '['+op_result+']';
         }
 
         let $row = $('<tr/>')
-        .addClass('sb-view-layout-list-row sb-group-row folded')
-        .attr('data-parent-id', parent_group_id)
-        .attr('data-id', group['_id'])
-        .attr('data-key', group['_key'])
-        .attr('data-label', group['_label'])
-        .attr('data-children-count', children_count)
-        .attr('id', UIHelper.getUUID());
+            .addClass('sb-view-layout-list-row sb-group-row folded')
+            .attr('data-parent-id', parent_group_id)
+            .attr('data-id', group['_id'])
+            .attr('data-key', group['_key'])
+            .attr('data-label', group['_label'])
+           .attr('data-level', group['_level'])
+            .attr('data-children-count', children_count)
+            .attr('id', UIHelper.getUUID());
 
         if(this.view.getPurpose() != 'widget' || this.view.getMode() == 'edit') {
             let $checkbox = UIHelper.createTableCellCheckbox().addClass('sb-view-layout-list-row-checkbox');
@@ -657,7 +686,7 @@ export class LayoutList extends Layout {
             $row.append($checkbox);
         }
 
-        $row.append( $('<td />').addClass('sb-group-cell').append( $('<i/>').addClass('material-icons sb-toggle-button').text('chevron_right') ) );
+        $row.append( $('<td />').addClass('sb-group-cell').css({'padding-left': ''+(12+parseInt(level)*4)+'px)'}).append( $('<i/>').addClass('material-icons sb-toggle-button').text('chevron_right') ) );
         $row.append( $('<td/>')
                         .attr('title', prefix + label)
                         .attr('colspan', schema.layout.items.length)
@@ -725,11 +754,33 @@ export class LayoutList extends Layout {
             });
         });
 
-        if(parent_group_id.length) {
+        if(parent_group_id && parent_group_id.length) {
             $row.hide();
         }
 
         return $row;
     }
 
+    private getGroupData(group: any, field: string) {
+        let data: any[] = [];
+        if(group.hasOwnProperty('_data')) {
+            for(let obj of group['_data']) {
+                if(obj.hasOwnProperty(field)) {
+                    data.push(obj[field]);
+                }
+            }
+        }
+        else {
+            let keys = Object.keys(group);
+            for(let key of keys) {
+                // ignore special keys (used for group properties)
+                if(key.charAt(0) == '_') {
+                    continue;
+                }
+                // add object or array
+                data = [...data, ...this.getGroupData(group[key], field)];
+            }
+        }
+        return data;
+    }
 }

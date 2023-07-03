@@ -450,7 +450,6 @@ class UIHelper {
 
     public static createList(id:string, label:string='', values:any=[]) {
         let $elem = $('<ul id="'+id+'" tabindex="-1" role="menu" class="mdc-list"></ul>');
-
         return $elem;
     }
 
@@ -458,7 +457,6 @@ class UIHelper {
         let $elem = $('<div id="'+id+'" tabindex="-1" class="sb-ui-menu mdc-menu mdc-menu-surface mdc-menu-surface--fixed"></div>');
         return $elem;
     }
-
 
     public static createTabBar(id:string, label:string, value:string) {
         let $elem = $('\
@@ -564,7 +562,9 @@ class UIHelper {
  */
 
     public static decorateMenu($elem:any) {
-        if(!$elem.length) return;
+        if(!$elem.length) {
+            return;
+        }
         let fields_toggle_menu = new MDCMenu($elem[0]);
         // prevent menu from getting the focus
         fields_toggle_menu.setDefaultFocusState(DefaultFocusState.NONE);

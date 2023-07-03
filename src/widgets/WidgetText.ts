@@ -40,6 +40,10 @@ export default class WidgetText extends Widget {
                 else {
                     this.$elem = $('<div class="sb-ui-textarea" />');
 
+                    if(this.config.hasOwnProperty('height') && this.config.height > 0) {
+                        this.$elem.css({height: this.config.height+'px'});
+                    }
+
                     let $editor = $('<div quill__editor></div>');
 
                     this.$elem.append($editor);
@@ -47,7 +51,7 @@ export default class WidgetText extends Widget {
                     this.getLayout().getView().isReady().then( () => {
                         // init inline styling
                         var ColorClass = Quill.import('attributors/class/color');
-                        var SizeStyle = Quill.import('attributors/style/size');
+                        var SizeStyle  = Quill.import('attributors/style/size');
                         var AlignStyle = Quill.import('attributors/style/align');
                         Quill.register(ColorClass, true);
                         Quill.register(SizeStyle, true);
@@ -102,7 +106,7 @@ export default class WidgetText extends Widget {
                             }
                         })
 
-                    })
+                    });
                 }
                 break;
             case 'view':
@@ -115,6 +119,9 @@ export default class WidgetText extends Widget {
                 else {
                     this.$elem = $('<div class="sb-ui-textarea" />');
                     this.$elem.append( $('<div class="textarea-content" />').html(value.replace(/(?:\r\n|\r|\n)/g, '<br />')) );
+                    if(this.config.hasOwnProperty('height') && this.config.height > 0) {
+                        this.$elem.css({height: this.config.height+'px'});
+                    }
                 }
                 break;
         }

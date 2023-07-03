@@ -320,7 +320,7 @@ export class View {
                 // fallback to default view
                 view = await ApiService.getView(this.entity, this.type + '.default');
                 if(!Object.keys(view).length) {
-                    console.warn("invalid view, stop processing");
+                    console.warn("empty view for "+this.entity+"."+this.type+".default, stop processing");
                     return;
                 }
                 this.name = 'default';
@@ -677,6 +677,13 @@ export class View {
 
     public setMode(mode: string) {
         this.mode = mode;
+    }
+
+    /**
+     * Arbitrary mark parent context as changed (for requesting it to refresh parent contexts when view closes)
+     */
+    public setChanged() {
+        this.context.setChanged();
     }
 
     // either the model or the view itself can be marked as change (to control the parent context refresh)
@@ -1063,6 +1070,8 @@ export class View {
         let $filters_search = $('<div />').addClass('sb-view-header-list-filters-search');
         let $search_input = UIHelper.createInput('sb-view-header-search', TranslationService.instant('SB_FILTERS_SEARCH'), '', '', '', false, 'outlined', 'close').appendTo($filters_search);
 
+
+
         $search_input.addClass('dialog-select').find('.mdc-text-field__icon').on('click', async (e) => {
             // reset input value
             $search_input.find('input').val('').trigger('focus').trigger('blur');
@@ -1083,6 +1092,7 @@ export class View {
                         "description": TranslationService.instant('SB_FILTERS_SEARCH_ON_NAME'),
                         "clause": ['name', '=', value]
                     };
+                    // #todo - add support for name as alias field
                     if(this.model_schema.fields['name'].type == 'string' || (this.model_schema.fields['name'].hasOwnProperty('result_type') && this.model_schema.fields['name'].result_type == 'string')) {
                         filter['clause'] = ['name', 'ilike', '%'+value+'%'];
                     }
@@ -1232,7 +1242,10 @@ export class View {
 
         if(this.config.show_filter) {
             $level2.append( $filters_button );
-            $level2.append( $filters_search );
+            // add quick search if not prevented by view schema
+            if(!this.view_schema.hasOwnProperty('header') || !this.view_schema.header.hasOwnProperty('filters') || !this.view_schema.header.filters.hasOwnProperty('quicksearch') || this.view_schema.header.filters.quicksearch) {
+                $level2.append( $filters_search );
+            }
             $level2.append( $filters_set );
             // show pre-applied filters (@see init())
             for(let filter_id of this.applied_filters_ids) {

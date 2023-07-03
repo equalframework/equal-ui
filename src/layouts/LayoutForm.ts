@@ -81,6 +81,10 @@ export class LayoutForm extends Layout {
                 $group.append($tabs);
             }
 
+            if(group.hasOwnProperty('visible')) {
+                $group.attr('data-visible', JSON.stringify(group.visible));
+            }
+
             $.each(group.sections, (j:number, section) => {
                 let section_id = group_id+'-section-'+j;
 
@@ -187,7 +191,6 @@ export class LayoutForm extends Layout {
 
             // update actions in view header
             let view_schema = this.view.getViewSchema();
-
             let $view_actions = this.view.getContainer().find('.sb-view-header-actions-view');
 
             // show object status, if defined and present
@@ -213,10 +216,9 @@ export class LayoutForm extends Layout {
             }
 
             if(view_schema.hasOwnProperty('actions')) {
-                // there is a single action: show it as a button
-                if(view_schema.actions.length == 1) {
-                    $view_actions.empty();
-                    let action = view_schema.actions[0];
+                // filter actions and keep only visible ones (based on 'visible' and 'access' properties)
+                let actions = [];
+                for(let action of view_schema.actions) {
                     let visible = true;
                     if(action.hasOwnProperty('visible')) {
                         // visible attribute is a Domain
@@ -228,66 +230,84 @@ export class LayoutForm extends Layout {
                             visible = <boolean>action.visible;
                         }
                     }
-                    if(visible) {
-                        let action_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, action.label);
-                        let $button = UIHelper.createButton('action-view-'+action.id, action_title, 'outlined')
-                        this.decorateActionButton($button, action, object);
-                        $view_actions.append($button);
-                    }
-                }
-                // there are several actions: display a dropdown
-                else {
-                    let $actions_button = $view_actions.find('#'+this.uuid+'_actions-dropdown');
-                    if($actions_button.length == 0) {
-                        $actions_button = UIHelper.createDropDown(this.uuid+'_actions-dropdown', 'Actions', 'text', '', '').addClass('layout-actions').appendTo($view_actions);
-                    }
-                    $actions_button.find('.menu-list').empty();
-                    // keep track of empty lists
-                    let has_none = true;
-                    for(let action of view_schema.actions) {
-                        let visible = true;
-                        if(action.hasOwnProperty('visible')) {
-                            // visible attribute is a Domain
-                            if(Array.isArray(action.visible)) {
-                                let domain = new Domain(action.visible);
-                                visible = domain.evaluate(object);
-                            }
-                            else {
-                                visible = <boolean> action.visible;
-                            }
-                        }
-                        // if an access property is set, check that user is member of at least one of the granted groups
-                        if(visible && action.hasOwnProperty('access') && action.access.hasOwnProperty('groups') && Array.isArray(action.access.groups)) {
-                            visible = false;
-                            const user = this.view.getUser();
-                            if(user.hasOwnProperty('groups') && Array.isArray(user.groups)) {
-                                for(let group of user.groups) {
-                                    if(action.access.groups.indexOf(group) >= 0) {
-                                        visible = true;
-                                        break;
-                                    }
+                    if(visible && action.hasOwnProperty('access') && action.access.hasOwnProperty('groups') && Array.isArray(action.access.groups)) {
+                        visible = false;
+                        const user = this.view.getUser();
+                        if(user.hasOwnProperty('groups') && Array.isArray(user.groups)) {
+                            for(let group of user.groups) {
+                                if(action.access.groups.indexOf(group) >= 0) {
+                                    visible = true;
+                                    break;
                                 }
                             }
                         }
-                        if(visible) {
-                            has_none = false;
-                            let action_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, action.label);
-                            // let $button = UIHelper.createButton('action-view-'+action.id, action_title, 'outlined')
-                            // this.decorateActionButton($button, action, object);
-                            // $view_actions.append($button);
-                            let $item = UIHelper.createListItem(this.uuid+'_action-'+action.id.replace('.', '_'), action_title);
-                            this.decorateActionButton($item, action, object);
-                            $actions_button.find('.menu-list').append($item);
-                        }
                     }
+                    if(visible) {
+                        actions.push(action);
+                    }
+                }
 
-                    if(has_none) {
-                        $actions_button.remove();
+                // retrieve previously created elements, if any
+                let $action_button = $view_actions.find('#'+this.uuid+'_actions-button');
+                let $actions_dropdown = $view_actions.find('#'+this.uuid+'_actions-dropdown');
+
+                // there is a single action: show it as a button
+                if(actions.length == 1) {
+                    let action = actions[0];
+                    $actions_dropdown.remove();
+                    if($action_button.length == 0) {
+                        let action_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, action.label);
+                        $action_button = UIHelper.createButton(this.uuid+'_actions-button', action_title, 'outlined')
+                        this.decorateActionButton($action_button, action, object);
+                        $view_actions.append($action_button);
                     }
+                }
+                // there are several actions: display a dropdown
+                else if(actions.length > 1) {
+                    $action_button.remove();
+                    if($actions_dropdown.length == 0) {
+                        $actions_dropdown = UIHelper.createDropDown(this.uuid+'_actions-dropdown', 'Actions', 'text', '', '').addClass('layout-actions');
+                        $view_actions.append($actions_dropdown);
+                    }
+                    let $menu_list = $actions_dropdown.find('.menu-list').empty();
+                    // keep track of empty lists
+                    for(let action of actions) {
+                        let action_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, action.label);
+                        let $item = UIHelper.createListItem(this.uuid+'_action-'+action.id.replace('.', '_'), action_title);
+                        this.decorateActionButton($item, action, object);
+                        $menu_list.append($item);
+                    }
+                }
+                else {
+                    // no action available
+                    $action_button.remove();
+                    $actions_dropdown.remove();
                 }
             }
 
+            // update groups visibility, if any
+            let $groups = this.$layout.find('.sb-view-form-group');
+            $groups.each( (i:number, elem:any) => {
+                let $group = $(elem);
+                let visible = $group.attr('data-visible');
+                if(visible != undefined) {
+                    if(visible == 'false') {
+                        $group.hide();
+                    }
+                    else {
+                        let domain = new Domain(JSON.parse(visible));
+                        if(domain.evaluate(object)) {
+                            $group.show();
+                        }
+                        else {
+                            $group.hide();
+                        }
+                    }
+                }
+            });
+
             // update tabs visibility, if any
+            // #todo - handle standalone sections
             let $tabs = this.$layout.find('.mdc-tab.sb-view-form-section-tab');
             $tabs.each( (i:number, elem:any) => {
                 let $tab = $(elem);
@@ -454,10 +474,15 @@ export class LayoutForm extends Layout {
                                     // #todo - add support for dynamic schema (ex. filter or update selection of selectable fields, based on value from other fields)
                                     const result = await ApiService.call("/?do=model_onchange", {entity: this.view.getEntity(), changes: this.view.getModel().export(values), values: this.view.getModel().export(object), lang: this.view.getLang()} );
                                     for(let field of Object.keys(result)) {
+                                        // there are changes to apply on the schema: we must force a re-feed on the Form
+                                        refresh= true;
                                         // if some changes are returned from the back-end, append them to the view model update
                                         if(typeof result[field] === 'object' && result[field] !== null) {
                                             if(result[field].hasOwnProperty('value')) {
                                                 values[field] = result[field].value;
+                                            }
+                                            else {
+                                                values[field] = result[field];
                                             }
                                             model_fields[field] = result[field];
                                         }
@@ -486,12 +511,7 @@ export class LayoutForm extends Layout {
                                 }
                             }
                             this.view.onchangeViewModel([object.id], values, refresh);
-                            // if we received changes to apply on the schema, we must force a re-feed on the Form
-                            if(Object.keys(model_fields).length > 0) {
-                                this.view.onchangeModel(false);
-                            }
                         });
-
                         // prevent refreshing objects that haven't changed
                         if(has_changed) {
                             // append rendered widget

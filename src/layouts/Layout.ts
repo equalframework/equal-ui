@@ -319,8 +319,8 @@ export class Layout implements LayoutInterface{
 
                 defer.promise().then( async (result:any) => {
                     // mark action button as loading
-                    let $action_dropdown = $button.closest('button');
-                    $action_dropdown.addClass('mdc-button--spinner');
+                    let $action_button = $button.closest('button');
+                    $action_button.addClass('mdc-button--spinner');
                     try {
                         await this.performViewAction(action, {...resulting_params, ...result}, translation, response_descr);
                     }
@@ -328,7 +328,7 @@ export class Layout implements LayoutInterface{
 
                     }
                     // restore action button
-                    $action_dropdown.removeClass('mdc-button--spinner');
+                    $action_button.removeClass('mdc-button--spinner');
                 })
                 .catch( () => {
                     $button.closest('button').removeClass('mdc-button--spinner');
@@ -370,6 +370,10 @@ export class Layout implements LayoutInterface{
             let widget:Widget = WidgetFactory.getWidget(this, config.type, config.title, '', config);
             widget.setMode('edit');
             widget.setReadonly(config.readonly);
+
+            if(def.hasOwnProperty('default')) {
+                widget.setValue(def.default);
+            }
 
             let $node = widget.render();
             $node.css({'margin-bottom': '24px'});
@@ -420,12 +424,15 @@ export class Layout implements LayoutInterface{
                 saveAs(blob, filename);
             }
 
+            // handle HTTP 205 (reset content)
             if(status == 205) {
-                // context is no longer valid : close context
+                // mark context as changed to refresh parent lists or views showing deleted object
+                this.view.setChanged();
+                // close context
                 await this.view.closeContext();
             }
             else {
-                // refresh the view
+                // refresh current view
                 // #memo - this will trigger updatedContext
                 await this.view.onchangeView();
             }

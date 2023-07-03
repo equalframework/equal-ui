@@ -132,6 +132,9 @@ export default class WidgetMany2One extends Widget {
                                 // m2o relations are always loaded as an object with {id:, name:}
                                 let object = data.objects.find( (o:any) => o.id == data.selection[0] );
                                 this.value = {id: object.id, name: object.name};
+                                // update widget displayed value in case it is not part of a view (e.g. filters)
+                                $select.find('input').val(object.name).trigger('change');
+                                // trigger parent view refresh
                                 this.$elem.trigger('_updatedWidget');
                             }
                         }

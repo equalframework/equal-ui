@@ -82,10 +82,18 @@ export default class WidgetString extends Widget {
                                     info:     {icon: "info", color: "blue"},
                                     warn:     {icon: "warning", color: "orange"},
                                     major:    {icon: "error", color: "orangered"},
-                                    error:    {icon: "error", color: "orangered"}
-                                    // error:    {icon: "report_gmailerrorred", color: "red"}
+                                    error:    {icon: "report", color: "red"},
+                                    paid:  {icon: "paid", color: "green"},
+                                    due:  {icon: "money_off", color: "red"},
                             };
-                            this.$elem = $('<div />').append( $('<span class="material-icons">' + map_icons[value].icon + '</span>').css({color: map_icons[value].color}) );
+
+                            this.$elem = $('<div />');
+                            if(map_icons.hasOwnProperty(value)) {
+                                this.$elem.append( $('<span class="material-icons">' + map_icons[value].icon + '</span>').css({color: map_icons[value].color}) );
+                            }
+                            else {
+                                this.$elem.append( $('<span class="material-icons">' + value + '</span>') );
+                            }
                             this.$elem.css({"width": "100%", "text-align": "center"});
                         }
                         else {

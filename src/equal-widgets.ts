@@ -135,21 +135,37 @@ class WidgetFactory {
         let helper = (item.hasOwnProperty('help'))?item.help:(def.hasOwnProperty('help'))?def['help']:'';
         let description = (item.hasOwnProperty('description'))?item.description:(def.hasOwnProperty('description'))?def['description']:'';
 
+        // #todo - this should be done for the whole config (@see notes below)
+        if(def.hasOwnProperty('usage')) {
+            config.usage = def.usage;
+        }
+        // #memo - Widget overloads the Model
+        if(item.hasOwnProperty('widget') && item.widget.hasOwnProperty('usage')) {
+            // overload config with widget config, if any
+            config.usage = item.widget.usage;
+        }
+
         if(def.hasOwnProperty('type')) {
             let type = def['type'];
             if(def.hasOwnProperty('result_type')) {
                 type = def['result_type'];
             }
-            if(def.hasOwnProperty('usage')) {
-                switch(def.usage) {
+            if(config.hasOwnProperty('usage')) {
+                switch(config.usage) {
                     // #todo - complete the list
+                    case 'date':
+                    case 'date/plain':
+                        type = 'date';
+                        break;
                     case 'string/text':
                     case 'text/plain':
                     case 'text/html':
                     case 'markup/html':
                         type = 'text';
                         break;
+                    case 'url':
                     case 'uri/url:http':
+                    case 'uri/url:https':
                     case 'uri/url':
                         type = 'link';
                         break;
@@ -165,12 +181,8 @@ class WidgetFactory {
         }
         else {
             // we shouldn't end up here : malformed schema
-            console.warn('ERROR - malformed schema for field '+field);
+            console.warn('ERROR - malformed schema for field ' + field);
             return config;
-        }
-
-        if(def.hasOwnProperty('usage')) {
-            config.usage = def.usage;
         }
 
         if(def.hasOwnProperty('foreign_object')) {
@@ -205,7 +217,7 @@ class WidgetFactory {
         config.readonly = (def.hasOwnProperty('readonly'))?def.readonly:(item.hasOwnProperty('readonly'))?item['readonly']:false;
         // default align is left, unless for integer fields (with an exception for 'id' field - which, by convention, should be first column)
         config.align = item.hasOwnProperty('align')? item.align : ((item.field != 'id' && (config.type == 'integer' || config.type == 'float'))?'right':'left');
-        if(config.usage && config.usage == 'icon') {
+        if(config.hasOwnProperty('usage') && config.usage == 'icon') {
             config.align = 'center';
         }
         config.sortable = (item.hasOwnProperty('sortable') && item.sortable);
@@ -215,6 +227,7 @@ class WidgetFactory {
         config.lang = view.getLang();
         config.locale = view.getLocale();
 
+        // #todo - this appears to be done too late and prevents forcing the usage in the views (see workaround above)
         if(item.hasOwnProperty('widget')) {
             // overload config with widget config, if any
             config = {...config, ...item.widget};

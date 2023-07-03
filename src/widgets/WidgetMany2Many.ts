@@ -15,7 +15,6 @@ export default class WidgetMany2Many extends Widget {
     }
 
     public render():JQuery {
-
         this.$elem = $('<div />');
 
         // make sure view is not instantiated during 'layout' phase (while config is still incomplete)
@@ -23,9 +22,13 @@ export default class WidgetMany2Many extends Widget {
             // assign config by copy
             let view_config = {...this.config};
 
-            console.log('### m2m', view_config);
+            // allow the widget to force edit capabilities even when parent context is set to 'view' mode
+            if(this.config.hasOwnProperty('mode') && ['view', 'edit'].indexOf(this.config.mode) >= 0) {
+                this.mode = this.config.mode;
+            }
+
             if(!this.config.hasOwnProperty('header') || !this.config.header.hasOwnProperty('selection') || !this.config.header.selection.hasOwnProperty('default') || this.config.header.selection.default) {
-                console.log('### adding remove');
+                // replace the default buttons
                 view_config = {
                     ...this.config,
                     ...{
@@ -55,14 +58,16 @@ export default class WidgetMany2Many extends Widget {
                 };
             }
             else {
-                console.log('### skipping remove');
-                view_config = {
-                    ...this.config,
-                    ...{
-                        show_actions: false,
-                        selection_actions: []
-                    }
-                };
+                if(!this.config.hasOwnProperty('header') || !this.config.header.hasOwnProperty('selection') || !this.config.header.selection.hasOwnProperty('actions')) {
+                    // disable actions
+                    view_config = {
+                        ...this.config,
+                        ...{
+                            show_actions: false,
+                            selection_actions: []
+                        }
+                    };
+                }
             }
 
             let domain: Domain = new Domain(this.config.domain);
@@ -91,24 +96,24 @@ export default class WidgetMany2Many extends Widget {
             view.isReady().then( () => {
                 let $container = view.getContainer();
 
-                if(this.mode == 'edit') {
+                // default values
+                let has_action_select = (this.rel_type == 'many2many');
+                let has_action_create = true;
 
-                    // default values
-                    let has_action_select = (this.rel_type == 'many2many');
-                    let has_action_create = true;
-
-                    // override with view schema
-                    if(this.config.hasOwnProperty('header') && this.config.header.hasOwnProperty('actions')) {
-                        if(this.config.header.actions.hasOwnProperty('ACTION.SELECT')) {
-                            has_action_select = (this.config.header.actions['ACTION.SELECT'])?true:false;
-                        }
-                        if(this.config.header.actions.hasOwnProperty('ACTION.CREATE')) {
-                            has_action_create = (this.config.header.actions['ACTION.CREATE'])?true:false;
-                        }
+                // override with view schema
+                if(this.config.hasOwnProperty('header') && this.config.header.hasOwnProperty('actions')) {
+                    if(this.config.header.actions.hasOwnProperty('ACTION.SELECT')) {
+                        has_action_select = (this.config.header.actions['ACTION.SELECT'])?true:false;
                     }
+                    if(this.config.header.actions.hasOwnProperty('ACTION.CREATE')) {
+                        has_action_create = (this.config.header.actions['ACTION.CREATE'])?true:false;
+                    }
+                }
 
-                    let $actions_set = $container.find('.sb-view-header-actions-std');
+                let $actions_set = $container.find('.sb-view-header-actions-std');
 
+                if(this.mode == 'edit') {
+                    // #todo - selection/update only available in edit mode ?
                     if(has_action_select) {
                         let domain: any[] = this.config.domain;
 
@@ -160,63 +165,64 @@ export default class WidgetMany2Many extends Widget {
                         );
                     }
 
-                    if(has_action_create) {
-                        // generate domain for object creation
+                }
 
-                        let domain: any[] = this.config.domain;
-                        let tmpDomain = new Domain(domain);
-                        tmpDomain.merge(new Domain([this.config.foreign_field, '=', this.config.object_id]));
-                        domain = tmpDomain.toArray();
+                // #memo - creation can be performed in view mode as well as in edit mode
+                if(has_action_create) {
+                    // generate domain for object creation
+                    let domain: any[] = this.config.domain;
+                    let tmpDomain = new Domain(domain);
+                    tmpDomain.merge(new Domain([this.config.foreign_field, '=', this.config.object_id]));
+                    domain = tmpDomain.toArray();
 
-                        $actions_set
-                        .append(
-                            UIHelper.createButton(this.getId()+'_action-create', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'raised')
-                            .on('click', async () => {
-                                let view_type = 'form';
-                                let view_name = view.getName();
-                                let custom_actions = view.getCustomActions();
-                                if(custom_actions.hasOwnProperty('ACTION.CREATE')) {
-                                    if(Array.isArray(custom_actions['ACTION.CREATE']) && custom_actions['ACTION.CREATE'].length) {
-                                        let custom_action_create = custom_actions['ACTION.CREATE'][0];
-                                        if(custom_action_create.hasOwnProperty('view')) {
-                                            let parts = custom_action_create.view.split('.');
-                                            if(parts.length) view_type = <string>parts.shift();
-                                            if(parts.length) view_name = <string>parts.shift();
-                                        }
-                                        if(custom_action_create.hasOwnProperty('domain')) {
-                                            let tmpDomain = new Domain(domain);
-                                            tmpDomain.merge(new Domain(custom_action_create['domain']));
-                                            domain = tmpDomain.toArray();
+                    $actions_set
+                    .append(
+                        UIHelper.createButton(this.getId()+'_action-create', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'raised')
+                        .on('click', async () => {
+                            let view_type = 'form';
+                            let view_name = view.getName();
+                            let custom_actions = view.getCustomActions();
+                            if(custom_actions.hasOwnProperty('ACTION.CREATE')) {
+                                if(Array.isArray(custom_actions['ACTION.CREATE']) && custom_actions['ACTION.CREATE'].length) {
+                                    let custom_action_create = custom_actions['ACTION.CREATE'][0];
+                                    if(custom_action_create.hasOwnProperty('view')) {
+                                        let parts = custom_action_create.view.split('.');
+                                        if(parts.length) view_type = <string>parts.shift();
+                                        if(parts.length) view_name = <string>parts.shift();
+                                    }
+                                    if(custom_action_create.hasOwnProperty('domain')) {
+                                        let tmpDomain = new Domain(domain);
+                                        tmpDomain.merge(new Domain(custom_action_create['domain']));
+                                        domain = tmpDomain.toArray();
+                                    }
+                                }
+                            }
+
+                            // request a new Context for selecting an existing object to add to current selection
+                            this.getLayout().openContext({
+                                entity: this.config.entity,
+                                type: view_type,
+                                name: view_name,
+                                domain: domain,
+                                mode: 'edit',
+                                purpose: 'create',
+                                callback: (data:any) => {
+                                    if(data && data.selection) {
+                                        if(data.selection.length) {
+                                            for(let id of data.selection) {
+                                                this.value.push(id);
+                                            }
+                                            this.$elem.trigger('_updatedWidget');
                                         }
                                     }
                                 }
-
-                                // request a new Context for selecting an existing object to add to current selection
-                                this.getLayout().openContext({
-                                    entity: this.config.entity,
-                                    type: view_type,
-                                    name: view_name,
-                                    domain: domain,
-                                    mode: 'edit',
-                                    purpose: 'create',
-                                    callback: (data:any) => {
-                                        if(data && data.selection) {
-                                            if(data.selection.length) {
-                                                for(let id of data.selection) {
-                                                    this.value.push(id);
-                                                }
-                                                this.$elem.trigger('_updatedWidget');
-                                            }
-                                        }
-                                    }
-                                });
-                            })
-                        );
-                    }
+                            });
+                        })
+                    );
                 }
 
                 // inject View in parent Context object
-                this.$elem.append($container);
+                this.$elem.empty().append($container);
             });
 
         }

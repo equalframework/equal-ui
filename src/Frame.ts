@@ -174,6 +174,34 @@ export class Frame {
         return result;
     }
 
+    private showLoader() {
+        let $domContainer = $(this.domContainerSelector);
+
+        if(!$domContainer) return;
+
+        // instantiate header upon first call
+        let $loader = $domContainer.find('.sb-container-loader-overlay');
+        if($loader.length == 0) {
+            $loader = $('<div/>').addClass('sb-container-loader-overlay').prependTo($domContainer);
+            $loader.append($('<div/>').addClass('loader-container').append($('<div/>').addClass('loader-spinner')));
+        }
+
+        $loader.show();
+    }
+
+    private hideLoader() {
+        let $domContainer = $(this.domContainerSelector);
+
+        if(!$domContainer) return;
+
+        // instantiate header upon first call
+        let $loader = $domContainer.find('.sb-container-loader-overlay');
+        if($loader.length) {
+            $loader.hide();
+        }
+
+    }
+
     /**
      * Refresh the header breadcrumb, according to available space.
      * .sb-container-header is managed automatically and shows the breadcrumb of the stack
@@ -416,6 +444,8 @@ export class Frame {
     public async _openContext(config: any) {
         console.debug('Frame::_openContext', config);
 
+        this.showLoader();
+
         const environment = await EnvService.getEnv();
         // extend default params with received config
         config = {...{
@@ -461,6 +491,9 @@ export class Frame {
         try {
             await this.context.isReady();
             console.debug('context ready');
+
+            this.hideLoader();
+
             for(let ctx of this.stack) {
                 if(ctx && typeof ctx.getContainer === 'function') {
                     // containers are hidden and not detached in order to maintain the listeners

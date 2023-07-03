@@ -272,6 +272,7 @@ class EventsListener {
                 EnvService.setEnv('lang', this.user.language);
                 TranslationService.init();
             }
+            // #todo - add support for user locale
             // attempt to retrieve app config
             const settings = await ApiService.getSettings();
 
@@ -285,8 +286,10 @@ class EventsListener {
 
         const environment = await EnvService.getEnv();
 
-        // init locale
+        // init locale (fallback to en)
         console.debug('Setting locale', environment.locale);
+        // #memo - this is necessary because by default moment switches to the latest imported locale file
+        moment.locale('en');
 
         if(environment.locale != 'en') {
             // #memo - this is the full list of locales for which a related moment locale `.js` file exists.
@@ -296,7 +299,7 @@ class EventsListener {
 
             if(accepted_locales.indexOf(environment.locale) > -1) {
                 if(moment.locale(environment.locale) == environment.locale) {
-                    console.debug('Locale set');
+                    console.debug('Locale set to '+environment.locale);
                 }
                 else {
                     console.warn('Unable to load requested locale');
