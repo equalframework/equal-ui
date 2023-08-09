@@ -344,8 +344,11 @@ export class LayoutList extends Layout {
                                 else if(usage.indexOf('amount/money') >= 0) {
                                     value = EnvService.formatCurrency(value);
                                 }
-                                else if(usage.indexOf('numeric/integer') >= 0 || usage.indexOf('number/integer') >= 0) {
+                                else if(usage.indexOf('number/integer') >= 0 || usage.indexOf('numeric/integer') >= 0) {
                                     value = value.toFixed(0);
+                                }
+                                else if(usage.indexOf('number/real') >= 0) {
+                                    value = EnvService.formatNumber(value);
                                 }
                             }
                             else {
