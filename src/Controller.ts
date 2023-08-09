@@ -29,14 +29,13 @@ export class Controller {
 
     /**
      *
-     * @param type      type of controller ('do', 'get', 'show')
-     * @param operation      path of the operation (e.g. 'core_model_collect')
+     * @param type          type of controller ('do', 'get', 'show')
+     * @param operation     path of the operation (e.g. 'core_model_collect')
      */
     constructor(type: string, operation: string, lang: string) {
         this.type = type;
         this.operation = operation;
         this.lang = lang;
-
 
         this.entity = operation.replace(/_/g, '\\');
         this.init();
