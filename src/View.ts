@@ -5,7 +5,7 @@ import { ApiService, TranslationService } from "./equal-services";
 import { Context, Layout, Model, Domain } from "./equal-lib";
 import { Widget, WidgetFactory } from "./equal-widgets";
 import { LayoutFactory } from "./equal-layouts";
-import { Clause } from "./Domain";
+import { Clause, Reference } from "./Domain";
 
 import { saveAs } from 'file-saver';
 export class View {
@@ -406,49 +406,146 @@ export class View {
                         action['handler'] = async (selection:any, item:any) => {
                             if(item.hasOwnProperty('controller')) {
                                 try {
-                                    let content_type: string = 'application/json';
-                                    // #todo - use Controller class
-                                    // new Controller('action', item.controller, this.lang);
-                                    const controller = await ApiService.fetch("/", {do: item.controller, announce: true});
-                                    if(controller.hasOwnProperty('announcement') && controller.announcement.hasOwnProperty('response') && controller.announcement.response.hasOwnProperty('content-type')) {
-                                        content_type = controller.announcement.response['content-type'];
+                                    let resulting_params:any = {
+                                        entity: this.getEntity(),
+                                        ids: selection,
+                                        lang: this.getLang()
+                                    };
+                                    // #todo - export to a dedicated class : from here code is very close to `decorateActionButton` in Layout class
+                                    let missing_params:any = {};
+                                    let user = this.getUser();
+
+                                    // 1) pre-feed with params from the action, if any
+
+                                    if(!action.hasOwnProperty('params')) {
+                                        action['params'] = {};
                                     }
-                                    const result = await ApiService.call("/?do="+item.controller, {
-                                            entity: this.getEntity(),
-                                            ids: selection,
-                                            lang: this.getLang()
-                                        },
-                                        content_type);
-                                    const status = ApiService.getLastStatus();
-                                    const headers = ApiService.getLastHeaders();
-                                    // handle binary data response
-                                    if(content_type != 'application/json') {
-                                        let blob = new Blob([result], {type: content_type});
-                                        let filename = "file.download";
-                                        if(headers.hasOwnProperty('content-disposition')) {
-                                            const parts = headers['content-disposition'].split('=');
-                                            if(parts.length > 1) {
-                                                filename = parts[1].slice(1, -1);
+
+                                    let object:any = {};
+                                    let parent:any = {};
+
+                                    // if view is a form, add object reference
+                                    if(this.getType() == 'form') {
+                                        let model = view.getModel();
+                                        let objects = await model.get();
+                                        object = objects[0];
+                                        // by convention, add current object id as reference
+                                        if(object.hasOwnProperty('id') && !action.params.hasOwnProperty('id')) {
+                                            action.params['id'] = 'object.id';
+                                        }
+
+                                    }
+                                    // if view is a widget, add parent object reference
+                                    if(this.getContext().getView() != this) {
+                                        let parentView:View = this.getContext().getView();
+                                        let parent_objects = await parentView.getModel().get();
+                                        parent = parent_objects[0];
+                                    }
+
+                                    // inject referenced values in the resulting params
+                                    for(let param of Object.keys(action.params)) {
+                                        let ref = new Reference(action.params[param]);
+                                        resulting_params[param] = ref.parse(object, user, parent);
+                                    }
+
+                                    // 2) retrieve announcement from the target action controller
+                                    const result = await ApiService.fetch("/", {do: action.controller, announce: true});
+                                    let params: any = {};
+                                    let response_descr:any = {};
+                                    let description:string = '';
+
+                                    if(result.hasOwnProperty('announcement')) {
+                                        if(result.announcement.hasOwnProperty('params')) {
+                                            params = result.announcement.params;
+                                        }
+                                        for(let param of Object.keys(params)) {
+                                            if(Object.keys(resulting_params).indexOf(param) < 0) {
+                                                missing_params[param] = params[param];
                                             }
                                         }
-                                        saveAs(blob, filename);
+                                        if(result.announcement.hasOwnProperty('response')) {
+                                            response_descr = result.announcement.response;
+                                        }
+                                        if(result.announcement.hasOwnProperty('description')) {
+                                            description = result.announcement.description;
+                                        }
                                     }
-                                    // handle HTTP 202 (accepted - no change)
-                                    if(status == 202) {
-                                        // nothing to do
-                                        let $snack = UIHelper.createSnackbar(TranslationService.instant('SB_ACTIONS_NOTIFY_ACTION_SENT', 'Action request sent.'), '', '', 4000);
-                                        this.$container.append($snack);
+
+                                    // retrieve translation related to action, if any
+                                    let translation = await ApiService.getTranslation(action.controller.replaceAll('_', '\\'), this.getLang());
+
+                                    // check presence of description and fallback to controller description
+                                    if(action.hasOwnProperty('description')) {
+                                        description = action.description;
                                     }
-                                    // handle HTTP 205 (reset content)
-                                    else if(status == 205) {
-                                        // context is no longer valid : close context
-                                        await this.closeContext();
+
+                                    let translated_description = TranslationService.resolve(translation, '', [], '', description, 'description');
+                                    // no translation was found for controller
+                                    if(translated_description == description) {
+                                        // fallback to current view translation
+                                        description = TranslationService.resolve(this.getTranslation(), 'view', [this.getId(), 'actions'], action.id, description, 'description');
                                     }
                                     else {
-                                        // refresh the view
-                                        // #memo - this will trigger updatedContext
-                                        await this.onchangeView();
+                                        description = translated_description;
                                     }
+
+                                    let defer = $.Deferred();
+                                    let $description = $('<p />').text(description);
+
+                                    if(action.hasOwnProperty('confirm') && action.confirm) {
+                                        // params dialog
+                                        if(Object.keys(missing_params).length) {
+                                            let $dialog = UIHelper.createDialog(this.getUUID()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
+                                            $dialog.find('.mdc-dialog__content').append($description);
+                                            await this.decorateActionDialog($dialog, action, missing_params);
+                                            $dialog.addClass('sb-view-dialog').appendTo(this.getContainer());
+                                            $dialog
+                                            .on('_accept', () => defer.resolve($dialog.data('result')))
+                                            .on('_reject', () => defer.reject() );
+                                            $dialog.trigger('_open');
+                                        }
+                                        // confirm dialog
+                                        else {
+                                            // display confirmation dialog with checkbox for archive
+                                            let $dialog = UIHelper.createDialog(this.getUUID()+'_'+action.id+'_confirm-action-dialog', TranslationService.instant('SB_ACTIONS_CONFIRM'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
+                                            $dialog.find('.mdc-dialog__content').append($description);
+                                            $dialog.appendTo(this.getContainer());
+                                            $dialog
+                                            .on('_accept', () => defer.resolve())
+                                            .on('_reject', () => defer.reject() );
+                                            $dialog.trigger('_open');
+                                        }
+                                    }
+                                    else {
+                                        // params dialog
+                                        if(Object.keys(missing_params).length) {
+                                            let $dialog = UIHelper.createDialog(this.getUUID()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
+                                            $dialog.find('.mdc-dialog__content').append($description);
+                                            await this.decorateActionDialog($dialog, action, missing_params);
+                                            $dialog.addClass('sb-view-dialog').appendTo(this.getContainer());
+                                            $dialog
+                                            .on('_accept', () => defer.resolve($dialog.data('result')))
+                                            .on('_reject', () => defer.reject() );
+                                            $dialog.trigger('_open');
+                                        }
+                                        // perform action
+                                        else {
+                                            defer.resolve();
+                                        }
+                                    }
+
+                                    defer.promise().then( async (result:any) => {
+                                        // mark action button as loading
+                                        try {
+                                            await this.performAction(action, {...resulting_params, ...result}, response_descr);
+                                        }
+                                        catch(response) {
+
+                                        }
+                                    })
+                                    .catch( () => {
+                                        // error running action
+                                    });
                                 }
                                 catch(response) {
                                     console.warn('unexpected error', response);
@@ -625,7 +722,7 @@ export class View {
         return this.context.getEnv();
     }
 
-    public getContext() {
+    public getContext() : Context {
         return this.context;
     }
 
@@ -1278,7 +1375,7 @@ export class View {
 
         // left side : standard actions for views
         let $std_actions = $('<div />').addClass('sb-view-header-actions-std').appendTo($actions_set);
-        // right side : the actions specific to the view, and depenging on object status
+        // right side : the actions specific to the view, and depending on object status
         let $view_actions = $('<div />').addClass('sb-view-header-actions-view').appendTo($actions_set);
 
         // append advanced layout if requested
@@ -2281,7 +2378,7 @@ export class View {
                                     const response = await ApiService.update(this.entity, [object_id], this.model.export(object), false, this.getLang());
                                     $tr.trigger('_toggle_mode', 'view');
                                     $tr.attr('data-edit', '0');
-                                    // update the modfied field otherwise a confirmation will be displayed at next update
+                                    // update the modified field otherwise a confirmation will be displayed at next update
                                     if(Array.isArray(response) && response.length) {
                                         this.model.reset(object_id, response[0]);
                                     }
@@ -2370,11 +2467,123 @@ export class View {
         }
     }
 
+    public async decorateActionDialog($dialog: JQuery, action: any, params: any) {
+        let $elem = $('<div />');
+
+        let widgets:any = {};
+
+        // load translation related to controller
+        let translation = await ApiService.getTranslation(action.controller.replaceAll('_', '\\'), this.getLang());
+
+        for(let field of Object.keys(params)) {
+
+            let def = params[field];
+
+            let model_fields:any = {};
+            model_fields[field] = def;
+
+            let view_fields:any = {};
+            view_fields[field] =  {
+                "type": "field",
+                "value": field
+            };
+
+            let config = WidgetFactory.getWidgetConfig(this, field, translation, model_fields, view_fields);
+
+            let widget:Widget = WidgetFactory.getWidget(this, config.type, config.title, '', config);
+            widget.setMode('edit');
+            widget.setReadonly(config.readonly);
+
+            if(def.hasOwnProperty('default')) {
+                widget.setValue(def.default);
+            }
+
+            let $node = widget.render();
+            $node.css({'margin-bottom': '24px'});
+            $elem.append($node);
+            widgets[field] = widget;
+        }
+
+        $dialog.find('.mdc-dialog__content').append($elem);
+
+        $dialog.on('_accept', () => {
+            let result:any = {};
+            // send payload to target controller
+
+            // read result :
+            // if no error refresh view
+            // otherwise display error
+            for(let field of Object.keys(widgets)) {
+                let widget = widgets[field];
+                result[field] = widget.getValue();
+            }
+            $dialog.data('result', result);
+        });
+
+    }
+
+    public async performAction(action:any, params:any, response_descr: any = {}) {
+        console.debug('View::performAction');
+        try {
+            let translation = await ApiService.getTranslation(action.controller.replaceAll('_', '\\'), this.getLang());
+            try {
+
+                let content_type:string = 'application/json';
+
+                if(response_descr.hasOwnProperty('content-type')) {
+                    content_type = response_descr['content-type'];
+                }
+
+                const result = await ApiService.fetch("/", {do: action.controller, ...params}, content_type);
+                const status = ApiService.getLastStatus();
+                const headers = ApiService.getLastHeaders();
+                // handle binary data response
+                if(content_type != 'application/json') {
+                    let blob = new Blob([result], {type: content_type});
+                    let filename = "file.download";
+                    if(headers.hasOwnProperty('content-disposition')) {
+                        const parts = headers['content-disposition'].split('=');
+                        if(parts.length > 1) {
+                            filename = parts[1].slice(1, -1);
+                        }
+                    }
+                    saveAs(blob, filename);
+                }
+
+                // handle HTTP 202 (accepted - no change)
+                if(status == 202) {
+                    // nothing to perform
+                    let $snack = UIHelper.createSnackbar(TranslationService.instant('SB_ACTIONS_NOTIFY_ACTION_SENT', 'Action request sent.'), '', '', 4000);
+                    this.$container.append($snack);
+                }
+                // handle HTTP 205 (reset content)
+                else if(status == 205) {
+                    // mark context as changed to refresh parent lists or views showing deleted object
+                    this.setChanged();
+                    // close context
+                    await this.closeContext();
+                }
+                else {
+                    // refresh current view
+                    // #memo - this will trigger updatedContext
+                    await this.onchangeView();
+                }
+            }
+            catch(response) {
+                await this.updatedContext();
+                await this.displayErrorFeedback(translation, response);
+            }
+        }
+        catch(response) {
+            console.warn('unexpected error : unable to request translation');
+        }
+    }
+
     /**
      *
      * This method can be invoked by methods from the Layout class.
      *
-     * @param translation   Associative array mapping transaltions sections with their values (@see http://doc.equal.run/usage/i18n/)
+     * @param translation   Associative array mapping translations sections with their values (@see http://doc.equal.run/usage/i18n/)
      * @param response      HttpResponse holding the error description.
      * @param object        Object involved in the HTTP request that returned with an error status.
      * @param snack         Flag to request a snack showing the error message. BY default, no snack is created.
@@ -2449,27 +2658,54 @@ export class View {
                     let i = 0;
                     // stack snackbars (LIFO: decreasing timeout)
                     for(let field in errors['NOT_ALLOWED']) {
-                        // for each field, we handle one error at a time (the first one)
-                        let error_id:string = <string> String((Object.keys(errors['NOT_ALLOWED'][field]))[0]);
-                        let msg:string = <string>(Object.values(errors['NOT_ALLOWED'][field]))[0];
-                        let translated_msg = TranslationService.resolve(translation, 'error', [], field, msg, error_id);
-                        if(translated_msg == msg.replace(/_/g, ' ')) {
-                            let translated_error = TranslationService.instant('SB_ERROR_'+error_id.toUpperCase());
-                            if(translated_error != 'SB_ERROR_'+error_id.toUpperCase()) {
-                                translated_msg = translated_error;
+                        // errors['NOT_ALLOWED'][field] is a descriptor
+                        if(typeof errors['NOT_ALLOWED'][field] == 'object') {
+                            // for each field, we handle one error at a time (the first one)
+                            let error_id:string = <string> String((Object.keys(errors['NOT_ALLOWED'][field]))[0]);
+                            let msg:string = <string>(Object.values(errors['NOT_ALLOWED'][field]))[0];
+                            let translated_msg = TranslationService.resolve(translation, 'error', [], field, msg, error_id);
+                            if(translated_msg == msg.replace(/_/g, ' ')) {
+                                let translated_error = TranslationService.instant('SB_ERROR_'+error_id.toUpperCase());
+                                if(translated_error != 'SB_ERROR_'+error_id.toUpperCase()) {
+                                    translated_msg = translated_error;
+                                }
+                            }
+                            // update widget to provide feedback (as error hint)
+                            if(object) {
+                                // #todo - check if field is a known field in the view
+                                this.layout.markFieldAsInvalid(object['id'], field, translated_msg);
+                            }
+                            // generate snack, if required
+                            if(snack) {
+                                setTimeout( () => {
+                                    let title = TranslationService.resolve(translation, 'model', [], field, field, 'label');
+                                    let $snack = UIHelper.createSnackbar(title+': '+translated_msg, TranslationService.instant('SB_ERROR_ERROR'), '', delay);
+                                    this.$container.append($snack);
+                                }, delay * i );
                             }
                         }
-                        // update widget to provide feedback (as error hint)
-                        if(object) {
-                            this.layout.markFieldAsInvalid(object['id'], field, translated_msg);
-                        }
-                        // generate snack, if required
-                        if(snack) {
-                            setTimeout( () => {
-                                let title = TranslationService.resolve(translation, 'model', [], field, field, 'label');
-                                let $snack = UIHelper.createSnackbar(title+': '+translated_msg, TranslationService.instant('SB_ERROR_ERROR'), '', delay);
-                                this.$container.append($snack);
-                            }, delay * i );
+                        // errors['NOT_ALLOWED'][field] is a string
+                        else {
+                            if(snack) {
+                                let error_id:string = <string> String(errors['NOT_ALLOWED'][field]);
+                                // try to resolve the error message
+                                let msg:string = TranslationService.instant('SB_ERROR_NOT_ALLOWED');
+                                let translated_msg = TranslationService.resolve(translation, 'error', [], 'errors', error_id, error_id);
+                                if(translated_msg == error_id.replace(/_/g, ' ')) {
+                                    let translated_error = TranslationService.instant('SB_ERROR_'+error_id.toUpperCase());
+                                    if(translated_error != 'SB_ERROR_'+error_id.toUpperCase()) {
+                                        msg = translated_error;
+                                    }
+                                }
+                                else {
+                                    msg = translated_msg;
+                                }
+                                setTimeout( () => {
+                                    let title = TranslationService.resolve(translation, 'model', [], field, field, 'label');
+                                    let $snack = UIHelper.createSnackbar(title+': '+translated_msg, TranslationService.instant('SB_ERROR_ERROR'), '', delay);
+                                    this.$container.append($snack);
+                                }, delay * i );
+                            }
                         }
                         ++i;
                     }

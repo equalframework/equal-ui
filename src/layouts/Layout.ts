@@ -90,7 +90,7 @@ export class Layout implements LayoutInterface{
     public markFieldAsInvalid(object_id: number, field: string, message: string) {
         console.debug('Layout::markFieldAsInvalid', object_id, field);
         if(this.view.getType() == 'form') {
-            // by convention, form widgets are strored in first index
+            // by convention, form widgets are stored in first index
             object_id = 0;
         }
         if( this.model_widgets.hasOwnProperty(object_id) && this.model_widgets[object_id].hasOwnProperty(field) ) {
@@ -280,7 +280,7 @@ export class Layout implements LayoutInterface{
                     if(Object.keys(missing_params).length) {
                         let $dialog = UIHelper.createDialog(this.view.getUUID()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
                         $dialog.find('.mdc-dialog__content').append($description);
-                        await this.decorateViewActionDialog($dialog, action, missing_params);
+                        await this.view.decorateActionDialog($dialog, action, missing_params);
                         $dialog.addClass('sb-view-dialog').appendTo(this.view.getContainer());
                         $dialog
                         .on('_accept', () => defer.resolve($dialog.data('result')))
@@ -304,7 +304,7 @@ export class Layout implements LayoutInterface{
                     if(Object.keys(missing_params).length) {
                         let $dialog = UIHelper.createDialog(this.view.getUUID()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
                         $dialog.find('.mdc-dialog__content').append($description);
-                        await this.decorateViewActionDialog($dialog, action, missing_params);
+                        await this.view.decorateActionDialog($dialog, action, missing_params);
                         $dialog.addClass('sb-view-dialog').appendTo(this.view.getContainer());
                         $dialog
                         .on('_accept', () => defer.resolve($dialog.data('result')))
@@ -322,7 +322,7 @@ export class Layout implements LayoutInterface{
                     let $action_button = $button.closest('button');
                     $action_button.addClass('mdc-button--spinner');
                     try {
-                        await this.performViewAction(action, {...resulting_params, ...result}, translation, response_descr);
+                        await this.view.performAction(action, {...resulting_params, ...result}, response_descr);
                     }
                     catch(response) {
 
@@ -344,6 +344,9 @@ export class Layout implements LayoutInterface{
 
     }
 
+    /**
+     * @deprecated
+     */
     protected async decorateViewActionDialog($dialog: JQuery, action: any, params: any) {
         let $elem = $('<div />');
 
@@ -399,8 +402,10 @@ export class Layout implements LayoutInterface{
 
     }
 
+    /**
+     * @deprecated
+     */
     protected async performViewAction(action:any, params:any, translation: any, response_descr: any = {}) {
-        console.debug('Layout::performViewAction');
         try {
             let content_type:string = 'application/json';
 
@@ -424,8 +429,15 @@ export class Layout implements LayoutInterface{
                 saveAs(blob, filename);
             }
 
+            // handle HTTP 202 (accepted - no change)
+            if(status == 202) {
+                // nothing to perform
+                // #todo - show snack
+                // let $snack = UIHelper.createSnackbar(TranslationService.instant('SB_ACTIONS_NOTIFY_ACTION_SENT', 'Action request sent.'), '', '', 4000);
+                // this.$container.append($snack);
+            }
             // handle HTTP 205 (reset content)
-            if(status == 205) {
+            else if(status == 205) {
                 // mark context as changed to refresh parent lists or views showing deleted object
                 this.view.setChanged();
                 // close context
