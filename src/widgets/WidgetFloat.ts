@@ -42,6 +42,9 @@ export default class WidgetFloat extends WidgetString {
                 else if(usage.indexOf('amount/money') >= 0) {
                     value = EnvService.formatCurrency(value);
                 }
+                else {
+                    value = EnvService.formatNumber(value);
+                }
             }
             else {
                 value = EnvService.formatNumber(value);
