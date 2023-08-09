@@ -57,8 +57,8 @@ export class _EnvService {
 
     public formatNumber(value:number, scale:number = 0, thousand_sep:string=',', decimal_sep:string='.') {
         if(this.environment) {
-            if(this.environment.hasOwnProperty('core.locale.currency.decimal_precision')) {
-                scale = this.environment['core.locale.currency.decimal_precision'];
+            if(this.environment.hasOwnProperty('core.locale.numbers.decimal_precision')) {
+                scale = this.environment['core.locale.numbers.decimal_precision'];
             }
             if(this.environment.hasOwnProperty('core.locale.numbers.decimal_separator')) {
                 decimal_sep = this.environment['core.locale.numbers.decimal_separator'];
@@ -68,12 +68,18 @@ export class _EnvService {
             }
             let parts:any = value.toFixed(scale).split(".");
             parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, thousand_sep);
+            if(scale > 0 && parts.length == 1) {
+                parts[1] = ''.padStart(scale, '0');
+            }
             return parts.join(decimal_sep);
         }
         return value.toLocaleString();
     }
 
     public formatCurrency(value:number, scale:number = 2, thousand_sep:string=',', decimal_sep:string='.') {
+        if(this.environment && this.environment.hasOwnProperty('core.locale.currency.decimal_precision')) {
+            scale = this.environment['core.locale.currency.decimal_precision'];
+        }
         let result = this.formatNumber(value, scale, thousand_sep, decimal_sep);
         if(this.environment.hasOwnProperty('core.units.currency')) {
             if(this.environment.hasOwnProperty('core.locale.currency.symbol_position') && this.environment['core.locale.currency.symbol_position'] == 'before') {
