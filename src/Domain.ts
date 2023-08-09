@@ -378,13 +378,14 @@ export class Reference {
     }
 
     /**
-     * Update value by replacing any occurence of `object.` and `user.` notations with related attributes of given objects.
+     * Update value by replacing any occurrence of `object.` and `user.` notations with related attributes of given objects.
      *
      * @param any   object  An entity object to serve as reference.
      * @param any   user    A user object to serve as reference.
+     * @param any   parent  An entity object given as the parent of the referenced object, if any.
      * @returns string      The result of the parsing.
      */
-    public parse(object: any, user: any = {}) {
+    public parse(object: any, user: any = {}, parent: any = {}) {
         let result = this.value;
         if(this.value.indexOf('object.') == 0 ) {
             let target = this.value.substring('object.'.length);
@@ -409,6 +410,24 @@ export class Reference {
             let target = this.value.substring('user.'.length);
             if(user && user.hasOwnProperty(target)) {
                 result = user[target];
+            }
+        }
+        if(this.value.indexOf('parent.') == 0 ) {
+            let target = this.value.substring('parent.'.length);
+            if(parent && parent.hasOwnProperty(target)) {
+                let tmp = parent[target];
+                // target points to an object with subfields
+                if(typeof tmp === 'object' && !Array.isArray(tmp)) {
+                    if(tmp.hasOwnProperty('id')) {
+                        result = tmp.id;
+                    }
+                    else if(tmp.hasOwnProperty('name')) {
+                        result = tmp.name;
+                    }
+                }
+                else {
+                    result  = parent[target];
+                }
             }
         }
         return result;
