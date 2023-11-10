@@ -18,7 +18,7 @@ export class WidgetDashboardItem extends Widget {
         let view = new View(this.getLayout().getView().getContext(), this.config.entity, this.config.view_type, this.config.view_name, this.config.domain, this.mode, 'widget', this.getLayout().getView().getLang(), this.config);
 
         view.isReady().then( () => {
-            let $container = view.getContainer();        
+            let $container = view.getContainer();
             // inject View in parent Context object
             this.$elem.append($container);
         });
