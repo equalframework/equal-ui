@@ -7,12 +7,20 @@ export class _EnvService {
     private promise:any = null;
 
     private default: any = {
-        production:     false,
-        parent_domain:  'equal.local',
-        backend_url:    'http://equal.local',
-        rest_api_url:   'http://equal.local/v1',
-        lang:           'en',
-        locale:         'en'
+        "production":                   true,
+        "parent_domain":                "equal.local",
+        "backend_url":                  "http://equal.local",
+        "rest_api_url":                 "http://equal.local",
+        "lang":                         "en",
+        "locale":                       "en",
+        "company_name":                 "eQual Framework",
+        "company_url":                  "https://equal.run",
+        "app_name":                     "eQual.run",
+        "app_logo_url":                 "/assets/img/logo.svg",
+        "app_settings_root_package":    "core",
+        "version":                      "1.0",
+        "license":                      "AGPL",
+        "license_url":                  "https://www.gnu.org/licenses/agpl-3.0.en.html"
     };
 
     constructor() {}
@@ -27,26 +35,29 @@ export class _EnvService {
                 try {
                     const response:Response = await fetch('/assets/env/config.json');
                     const env = await response.json();
-                    this.environment = {...this.default, ...env};
+                    this.assignEnv({...this.default, ...env});
                     resolve(this.environment);
                 }
                 catch(response) {
                     // config.json not found, fallback to default.json
-                    try {
-                        const response:Response = await fetch('/assets/env/default.json');
-                        const env = await response.json();
-                        this.environment = {...this.default, ...env};
-                        resolve(this.environment);
-                    }
-                    catch(response) {
-                        // default.json not found, fallback to default values
-                        this.environment = {...this.default};
-                        resolve(this.environment);
-                    }
+                    this.assignEnv({...this.default});
+                    resolve(this.environment);
                 }
             });
         }
         return this.promise;
+    }
+
+    /**
+     * Assign and adapter to support older version of the URL syntax
+     */
+    private assignEnv(environment: any) {
+        if(environment.hasOwnProperty('backend_url')) {
+            if(environment.backend_url.replace('://','').indexOf('/') == -1) {
+                environment.backend_url += '/';
+            }
+        }
+        this.environment = {...environment};
     }
 
     public setEnv(property: string, value: any) {
