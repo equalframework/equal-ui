@@ -483,8 +483,8 @@ class EventsListener {
     }
 
     /**
-     * Generates a menu to be displayed inside the #sb-emnu container.
-     * Items of the menu trigger _openContext calls, independantly from any existing listener
+     * Generates a menu to be displayed inside the #sb-menu container.
+     * Items of the menu trigger _openContext calls, independently from any existing listener
      *
      * @param menu Menu object (JSON structure) describing the entries of each section.
      */
