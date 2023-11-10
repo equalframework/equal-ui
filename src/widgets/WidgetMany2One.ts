@@ -13,7 +13,8 @@ export default class WidgetMany2One extends Widget {
     }
 
     public render():JQuery {
-        // in edit mode, we should have received an id, and in view mode, a name
+        console.debug('WidgetMany2One::render', this.config);
+        // in edit mode, we should have received an id, in view mode, a name
         let value:string = this.value?this.value:'';
         let domain:any = [];
         if(this.config.hasOwnProperty('domain')) {
@@ -144,6 +145,7 @@ export default class WidgetMany2One extends Widget {
                 let query = '';
 
                 let feedObjects = async () => {
+                    console.debug('WidgetMany2One::feedObjects (call)');
                     let $input = $select.find('input');
                     if(!$input.length) return;
                     let val = <string> $input.val();
@@ -203,6 +205,7 @@ export default class WidgetMany2One extends Widget {
                 };
 
                 if(this.config.layout == 'form' && !this.readonly) {
+                    console.debug('WidgetMany2One:: setting up listener on $select');
 
                     let $button_reset = UIHelper.createButton('m2o-actions-reset-'+this.id, '', 'icon', 'close').css({"position": "absolute", "right": "45px", "top": "5px", "z-index": "2"});
 
@@ -234,6 +237,7 @@ export default class WidgetMany2One extends Widget {
                     });
 
                     $select.find('input').on('blur', (event:any) => {
+                        console.debug('WidgetMany2One:: $select received blur');
                         event.stopPropagation();
                         if(dblclick_timeout) {
                             return;
@@ -244,16 +248,18 @@ export default class WidgetMany2One extends Widget {
                         // wait for the focus be given at next widget AND change to be relayed, if any
                         setTimeout( () => {
                             has_focus = false;
+                            console.debug('WidgetMany2One:: $select closing menu');
                             $menu.trigger('_close');
                         }, 150);
                     });
 
                     $select.on('click', (event:any) => {
+                        console.debug('WidgetMany2One:: $select received click');
                         event.stopPropagation();
                         if(dblclick_timeout) {
                             return;
                         }
-                        // click on a focused input blurs (workaround for disapearing menu)
+                        // click on a focused input blurs the input (workaround for disappearing menu)
                         if(has_focus) {
                             has_focus = false;
                             dblclick_timeout = true;
@@ -271,6 +277,7 @@ export default class WidgetMany2One extends Widget {
                     });
 
                     $select.find('input').on('focus', (event:any) => {
+                        console.debug('WidgetMany2One:: $select received focus');
                         event.stopPropagation();
 
                         if($select.attr('data-selected')) {
@@ -303,7 +310,7 @@ export default class WidgetMany2One extends Widget {
                             return;
                         }
                         else if(event.which == 27) {
-                            // esc - revert to inital value, if any
+                            // esc - revert to initial value, if any
                             $select.trigger('click');
                             let $input = $select.find('input');
                             $input.prop('readonly', true).css({'width': 'calc(100% - 50px)'});
@@ -354,6 +361,9 @@ export default class WidgetMany2One extends Widget {
                             $button_open.hide();
                         }
                     });
+                }
+                else {
+                    console.debug('WidgetMany2One:: ignored setting up listener on $select');
                 }
 
                 // #memo - we condition load on init to fields with empty values AND having a domain set
