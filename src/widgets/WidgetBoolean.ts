@@ -39,5 +39,4 @@ export default class WidgetBoolean extends Widget {
         }
         return this.$elem.addClass('sb-widget').addClass('sb-widget-type-boolean').addClass('sb-widget-mode-'+this.mode).attr('id', this.getId());
     }
-    
 }
