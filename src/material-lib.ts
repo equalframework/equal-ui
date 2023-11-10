@@ -173,12 +173,13 @@ class UIHelper {
                         <input type="checkbox" class="mdc-switch__native-control" role="switch" '+ ((value)?'checked':'') + ' ' + ((disabled)?'disabled':'') +'> \
                     </div> \
                 </div> \
-                <label for="basic-switch">'+label+'</label> \
+                <span>'+label+'</span> \
             </div> \
             <div class="mdc-text-field-helper-line"> \
                 <div class="mdc-text-field-helper-text" aria-hidden="true" title="'+helper+'">'+helper+'</div> \
             </div> \
         </div>');
+        // #memo - seems to update the parent id (removes 'bool_')
         new MDCSwitch($elem.find('.mdc-switch')[0]);
         return $elem;
     }
