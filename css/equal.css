@@ -572,6 +572,7 @@ body, html {
 
 .sb-widget.sb-ui-textarea .textarea-content::-webkit-scrollbar {
     width: 6px;
+    height: 6px;
     overflow-y: scroll;
     background: transparent;
 }
