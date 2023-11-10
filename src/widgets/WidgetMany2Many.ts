@@ -27,17 +27,37 @@ export default class WidgetMany2Many extends Widget {
                 this.mode = this.config.mode;
             }
 
-            if(!this.config.hasOwnProperty('header') || !this.config.header.hasOwnProperty('selection') || !this.config.header.selection.hasOwnProperty('default') || this.config.header.selection.default) {
-                // replace the default buttons
+            if (this.config.hasOwnProperty('header') && this.config.header.hasOwnProperty('selection') && this.config.header.selection.hasOwnProperty('default') && !this.config.header.selection.default) {
+                // do not show the remove button
+                view_config = {
+                    ...this.config,
+                    ...{
+                        show_actions: false,
+                        header: {
+                            selection: {
+                                default: false
+                            }
+                        },
+                        selection_actions: []
+                    }
+                };
+            }
+            else {
+                // merge config and set a single 'remove' selection action
                 view_config = {
                     ...this.config,
                     ...{
                         show_actions: true,
+                        header: {
+                            selection: {
+                                default: false
+                            }
+                        },
                         // update the actions of the "current selection" button
                         selection_actions: [
                             {
                                 label: 'SB_ACTIONS_BUTTON_REMOVE',
-                                icon:  'delete',
+                                icon: 'playlist_remove',
                                 handler: (selection:any) => {
                                     for(let id of selection) {
                                         let index = this.value.indexOf(id);
@@ -56,18 +76,6 @@ export default class WidgetMany2Many extends Widget {
                         ]
                     }
                 };
-            }
-            else {
-                if(!this.config.hasOwnProperty('header') || !this.config.header.hasOwnProperty('selection') || !this.config.header.selection.hasOwnProperty('actions')) {
-                    // disable actions
-                    view_config = {
-                        ...this.config,
-                        ...{
-                            show_actions: false,
-                            selection_actions: []
-                        }
-                    };
-                }
             }
 
             let domain: Domain = new Domain(this.config.domain);
