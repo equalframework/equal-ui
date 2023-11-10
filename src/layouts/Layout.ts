@@ -214,6 +214,7 @@ export class Layout implements LayoutInterface{
                 let resulting_params:any = {};
                 let missing_params:any = {};
                 let user = this.view.getUser();
+                let parent:any = {};
 
                 // 1) pre-feed with params from the action, if any
 
@@ -223,6 +224,13 @@ export class Layout implements LayoutInterface{
                 // by convention, add current object id as reference
                 if(object.hasOwnProperty('id') && !action.params.hasOwnProperty('id')) {
                     action.params['id'] = 'object.id';
+                }
+
+                // if view is a widget, add parent object reference
+                if(this.view.getContext().getView() != this.view) {
+                    let parentView:View = this.view.getContext().getView();
+                    let parent_objects = await parentView.getModel().get();
+                    parent = parent_objects[0];
                 }
 
                 for(let param of Object.keys(action.params)) {
@@ -254,7 +262,7 @@ export class Layout implements LayoutInterface{
                 }
 
                 // 3) retrieve translation related to action, if any
-                let translation = await ApiService.getTranslation(action.controller.replaceAll('_', '\\'), this.view.getLang());
+                let translation = await ApiService.getTranslation(action.controller.replaceAll('_', '\\'));
 
 
                 // check presence of description and fallback to controller description
@@ -280,7 +288,7 @@ export class Layout implements LayoutInterface{
                     if(Object.keys(missing_params).length) {
                         let $dialog = UIHelper.createDialog(this.view.getUUID()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
                         $dialog.find('.mdc-dialog__content').append($description);
-                        await this.view.decorateActionDialog($dialog, action, missing_params);
+                        await this.view.decorateActionDialog($dialog, action, missing_params, object, user, parent);
                         $dialog.addClass('sb-view-dialog').appendTo(this.view.getContainer());
                         $dialog
                         .on('_accept', () => defer.resolve($dialog.data('result')))
@@ -304,7 +312,7 @@ export class Layout implements LayoutInterface{
                     if(Object.keys(missing_params).length) {
                         let $dialog = UIHelper.createDialog(this.view.getUUID()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
                         $dialog.find('.mdc-dialog__content').append($description);
-                        await this.view.decorateActionDialog($dialog, action, missing_params);
+                        await this.view.decorateActionDialog($dialog, action, missing_params, object, user, parent);
                         $dialog.addClass('sb-view-dialog').appendTo(this.view.getContainer());
                         $dialog
                         .on('_accept', () => defer.resolve($dialog.data('result')))
@@ -353,7 +361,7 @@ export class Layout implements LayoutInterface{
         let widgets:any = {};
 
         // load translation related to controller
-        let translation = await ApiService.getTranslation(action.controller.replaceAll('_', '\\'), this.view.getLang());
+        let translation = await ApiService.getTranslation(action.controller.replaceAll('_', '\\'));
 
         for(let field of Object.keys(params)) {
 
