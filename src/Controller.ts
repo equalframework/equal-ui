@@ -72,7 +72,7 @@ export class Controller {
         }
 
         // 3) retrieve translation related to action, if any
-        this.translation = await ApiService.getTranslation(this.entity, this.lang);
+        this.translation = await ApiService.getTranslation(this.entity);
 
 
     }
