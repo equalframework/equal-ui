@@ -106,11 +106,9 @@ export class Frame {
         let name = context.getName();
         let purpose = context.getPurpose();
 
-        const environment = await EnvService.getEnv();
-
         let view_schema = await ApiService.getView(entity, type+'.'+name);
         // get translation from currently selected lang
-        let translation = await ApiService.getTranslation(entity, environment.lang);
+        let translation = await ApiService.getTranslation(entity);
 
         if(translation.hasOwnProperty('name')) {
             entity = translation['name'];
@@ -208,7 +206,7 @@ export class Frame {
      *
      * @returns
      */
-    private async updateHeader() {
+    private async updateHeader(config:any={}) {
         console.debug('Frame::update header');
 
         let $domContainer = $(this.domContainerSelector);
@@ -269,23 +267,27 @@ export class Frame {
                     total_text_width += text_width;
                     prepend_contexts_count++;
 
-
-                    $('<a>'+context_purpose_string+'</a>').prependTo($elem)
-                    .on('click', async () => {
-                        // close all contexts after the one clicked
-                        for(let j = this.stack.length-1; j > i; --j) {
-                            // unstack contexts silently (except for the targeted one), and ask for validation at each step
-                            if(this.context.getView().hasChanged()) {
-                                let validation = confirm(TranslationService.instant('SB_ACTIONS_MESSAGE_ABANDON_CHANGE'));
-                                if(!validation) return;
-                                this.closeContext(null, true);
+                    if(!config.hasOwnProperty('header_links') || config.header_links == true) {
+                        $('<a>'+context_purpose_string+'</a>').prependTo($elem)
+                        .on('click', async () => {
+                            // close all contexts after the one clicked
+                            for(let j = this.stack.length-1; j > i; --j) {
+                                // unstack contexts silently (except for the targeted one), and ask for validation at each step
+                                if(this.context.getView().hasChanged()) {
+                                    let validation = confirm(TranslationService.instant('SB_ACTIONS_MESSAGE_ABANDON_CHANGE'));
+                                    if(!validation) return;
+                                    this.closeContext(null, true);
+                                }
+                                else {
+                                    this.closeContext(null, true);
+                                }
                             }
-                            else {
-                                this.closeContext(null, true);
-                            }
-                        }
-                        this.closeContext();
-                    });
+                            this.closeContext();
+                        });
+                    }
+                    else {
+                        $('<span>'+context_purpose_string+'</span>').prependTo($elem);
+                    }
 
                     if(overflow) {
                         break;
@@ -305,8 +307,7 @@ export class Frame {
             $('<span> › </span>').css({'margin': '0 10px'}).appendTo($elem);
         }
 
-
-        if(this.display_mode == 'popup') {
+        if(this.display_mode == 'popup' && (!config.hasOwnProperty('header_links') || config.header_links == true)) {
             let model_schema = await ApiService.getSchema(this.context.getEntity());
             let objects:any = await this.context.getView().getModel().get();
             if(objects.length && objects[0].hasOwnProperty('id')) {
@@ -358,6 +359,7 @@ export class Frame {
             this.context.isReady().then( () => {
                 $(this.domContainerSelector).append(this.context.getContainer());
             });
+            console.debug('Switched ORM requests to "'+lang+'"');
         });
 
         this.$headerContainer.show().empty().append($elem).append($lang_selector);
@@ -503,7 +505,7 @@ export class Frame {
             $(this.domContainerSelector).append(this.context.getContainer());
             // relay event to the outside
             $(this.domContainerSelector).show().trigger('_open', [{context: config}]);
-            this.updateHeader();
+            this.updateHeader(config);
         }
         catch(error) {
             console.warn('unexpected error', error);
