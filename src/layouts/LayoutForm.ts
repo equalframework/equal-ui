@@ -181,6 +181,7 @@ export class LayoutForm extends Layout {
         let fields = Object.keys(this.view.getViewFields());
         let model_fields = this.view.getModelFields();
         let translation = this.view.getTranslation();
+        const user = this.view.getUser();
 
         // remember which element has focus (DOM is going to be modified)
         let focused_widget_id = $("input:focus").closest('.sb-widget').attr('id');
@@ -224,7 +225,7 @@ export class LayoutForm extends Layout {
                         // visible attribute is a Domain
                         if(Array.isArray(action.visible)) {
                             let domain = new Domain(action.visible);
-                            visible = domain.evaluate(object);
+                            visible = domain.evaluate(object, user);
                         }
                         else {
                             visible = <boolean>action.visible;
@@ -232,7 +233,6 @@ export class LayoutForm extends Layout {
                     }
                     if(visible && action.hasOwnProperty('access') && action.access.hasOwnProperty('groups') && Array.isArray(action.access.groups)) {
                         visible = false;
-                        const user = this.view.getUser();
                         if(user.hasOwnProperty('groups') && Array.isArray(user.groups)) {
                             for(let group of user.groups) {
                                 if(action.access.groups.indexOf(group) >= 0) {
@@ -296,7 +296,7 @@ export class LayoutForm extends Layout {
                     }
                     else {
                         let domain = new Domain(JSON.parse(visible));
-                        if(domain.evaluate(object)) {
+                        if(domain.evaluate(object, user)) {
                             $group.show();
                         }
                         else {
@@ -318,7 +318,7 @@ export class LayoutForm extends Layout {
                     }
                     else {
                         let domain = new Domain(JSON.parse(visible));
-                        if(domain.evaluate(object)) {
+                        if(domain.evaluate(object, user)) {
                             $tab.show();
                         }
                         else {
@@ -345,7 +345,7 @@ export class LayoutForm extends Layout {
                         // visible attribute is a Domain
                         if(Array.isArray(config.visible)) {
                             let domain = new Domain(config.visible);
-                            visible = domain.evaluate(object);
+                            visible = domain.evaluate(object, user);
                         }
                         else {
                             visible = <boolean>config.visible;
@@ -373,8 +373,6 @@ export class LayoutForm extends Layout {
 
                     // for relational fields, we need to check if the Model has been fetched
                     if(['one2many', 'many2one', 'many2many'].indexOf(type) > -1) {
-                        let user = this.view.getUser();
-
                         // if widget has a domain, parse it using current object and user
                         if(config.hasOwnProperty('original_domain')) {
                             let tmpDomain = new Domain(config.original_domain);
@@ -445,7 +443,7 @@ export class LayoutForm extends Layout {
                         // visible attribute is a Domain
                         if(Array.isArray(config.visible)) {
                             let domain = new Domain(config.visible);
-                            visible = domain.evaluate(object);
+                            visible = domain.evaluate(object, user);
                         }
                         else {
                             visible = <boolean>config.visible;
@@ -472,10 +470,14 @@ export class LayoutForm extends Layout {
                                 // relay the change to back-end through onupdate
                                 try {
                                     // #todo - add support for dynamic schema (ex. filter or update selection of selectable fields, based on value from other fields)
-                                    const result = await ApiService.call("/?do=model_onchange", {entity: this.view.getEntity(), changes: this.view.getModel().export(values), values: this.view.getModel().export(object), lang: this.view.getLang()} );
+                                    const result = await ApiService.call("?do=model_onchange", {entity: this.view.getEntity(), changes: this.view.getModel().export(values), values: this.view.getModel().export(object), lang: this.view.getLang()} );
+                                    if (typeof result !== 'object' || Array.isArray(result) || result === null) {
+                                        // invalid response
+                                        throw new Error(result);
+                                    }
                                     for(let field of Object.keys(result)) {
                                         // there are changes to apply on the schema: we must force a re-feed on the Form
-                                        refresh= true;
+                                        refresh = true;
                                         // if some changes are returned from the back-end, append them to the view model update
                                         if(typeof result[field] === 'object' && result[field] !== null) {
                                             if(result[field].hasOwnProperty('value')) {
