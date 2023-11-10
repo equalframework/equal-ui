@@ -177,6 +177,7 @@ export class LayoutSearch extends Layout {
 
         let fields = Object.keys(this.view.getViewFields());
         let model_fields = this.view.getModelFields();
+        const user = this.view.getUser();
 
         // remember which element has focus (DOM is going to be modified)
         let focused_widget_id = $("input:focus").closest('.sb-widget').attr('id');
@@ -216,7 +217,7 @@ export class LayoutSearch extends Layout {
                         // visible attribute is a Domain
                         if(Array.isArray(config.visible)) {
                             let domain = new Domain(config.visible);
-                            visible = domain.evaluate(object);
+                            visible = domain.evaluate(object, user);
                         }
                         else {
                             visible = <boolean>config.visible;
@@ -234,7 +235,9 @@ export class LayoutSearch extends Layout {
 
                     let field = config.field;
                     // widget might be missing (if not visible)
-                    if(!widget) continue;
+                    if(!widget) {
+                        continue;
+                    }
 
                     let $parent = this.$layout.find('#'+widget.getId()).parent();
 
@@ -246,8 +249,6 @@ export class LayoutSearch extends Layout {
 
                     // for relational fields, we need to check if the Model has been fetched
                     if(['one2many', 'many2one', 'many2many'].indexOf(type) > -1) {
-                        let user = this.view.getUser();
-
                         // if widget has a domain, parse it using current object and user
                         if(config.hasOwnProperty('original_domain')) {
                             let tmpDomain = new Domain(config.original_domain);
@@ -257,7 +258,7 @@ export class LayoutSearch extends Layout {
                             config.domain = [];
                         }
 
-                        // if widget has a custom header defintion, parse subsequent domains, if any
+                        // if widget has a custom header definition, parse subsequent domains, if any
                         if(config.hasOwnProperty('header') && config.header.hasOwnProperty('actions') ) {
                             for (const [id, items] of Object.entries(config.header.actions)) {
                                 for(let index in (<Array<any>>items)) {
@@ -313,7 +314,7 @@ export class LayoutSearch extends Layout {
                         // visible attribute is a Domain
                         if(Array.isArray(config.visible)) {
                             let domain = new Domain(config.visible);
-                            visible = domain.evaluate(object);
+                            visible = domain.evaluate(object, user);
                         }
                         else {
                             visible = <boolean>config.visible;
