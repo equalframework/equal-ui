@@ -106,13 +106,14 @@ export class Domain {
     }
 
     /**
-     * Update domain by parsing conditions and replace any occurence of `object.` and `user.` notations with related attributes of given objects.
+     * Update domain by parsing conditions and replace any occurrence of `object.` and `user.` notations with related attributes of given objects.
      *
      * @param object    Object to parse the conditions with.
      * @param user      Current User instance.
+     * @param parent    An entity object given as the parent of the referenced object, if any.
      * @returns Domain  Returns current instance with updated values.
      */
-    public parse(object: any = {}, user: any = {}) {
+    public parse(object: any = {}, user: any = {}, parent: any = {}) {
         for(let clause of this.clauses) {
             for(let condition of clause.conditions) {
                 // adapt value according to its syntax ('user.' or 'object.')
@@ -152,6 +153,25 @@ export class Domain {
                     }
                     value = user[target];
                 }
+                else if(typeof value === 'string' && value.indexOf('parent.') == 0 ) {
+                    let target = value.substring('parent.'.length);
+                    if(!parent || !parent.hasOwnProperty(target)) {
+                        continue;
+                    }
+                    let tmp = parent[target];
+                    // target points to an object with subfields
+                    if(typeof tmp === 'object' && !Array.isArray(tmp)) {
+                        if(tmp.hasOwnProperty('id')) {
+                            value = tmp.id;
+                        }
+                        else if(tmp.hasOwnProperty('name')) {
+                            value = tmp.name;
+                        }
+                    }
+                    else {
+                        value = parent[target];
+                    }
+                }
                 else if(typeof value === 'string' && value.indexOf('date.') == 0) {
                     value = (new DateReference(value)).getDate().toISOString();
                 }
@@ -164,30 +184,31 @@ export class Domain {
 
     /**
      * Evaluate domain for a given object.
-     * Object structure has to comply with the operands mentionned in the conditions of the domain. If no, related conditions are ignored (skipped).
+     * Object structure has to comply with the operands mentioned in the conditions of the domain. If no, related conditions are ignored (skipped).
      *
      * @param object
      * @returns boolean Return true if the object matches the domain, false otherwise.
      */
-    public evaluate(object: any) : boolean {
+    public evaluate(object: any, user: any = {}) : boolean {
+        console.log('Domain::evaluate() - evaluating object', object, this);
         let res = false;
         if(this.clauses.length == 0) {
             return true;
         }
         // parse any reference to object in conditions
-        this.parse(object);
+        this.parse(object, user);
         // evaluate clauses (OR) and conditions (AND)
         for(let clause of this.clauses) {
             let c_res = true;
             for(let condition of clause.getConditions()) {
 
-                if(!object.hasOwnProperty(condition.operand)) {
-                    continue;
-                }
-
-                let operand = object[condition.operand];
+                let operand = condition.operand;
                 let operator = condition.operator;
                 let value = condition.value;
+
+                if(object.hasOwnProperty(condition.operand)) {
+                   operand = object[condition.operand];
+                }
 
                 let cc_res: boolean;
 
@@ -216,13 +237,13 @@ export class Domain {
                 }
                 else if(operator == 'in') {
                     if(!Array.isArray(value)) {
-                        continue;
+                        value = [value];
                     }
                     cc_res = (value.indexOf(operand) > -1);
                 }
                 else if(operator == 'not in') {
                     if(!Array.isArray(value)) {
-                        continue;
+                        value = [value];
                     }
                     cc_res = (value.indexOf(operand) == -1);
                 }
@@ -235,6 +256,7 @@ export class Domain {
             }
             res = res || c_res;
         }
+        console.log('Domain::evaluate() - result', res);
         return res;
     }
 
@@ -412,7 +434,7 @@ export class Reference {
                 result = user[target];
             }
         }
-        if(this.value.indexOf('parent.') == 0 ) {
+        else if(this.value.indexOf('parent.') == 0 ) {
             let target = this.value.substring('parent.'.length);
             if(parent && parent.hasOwnProperty(target)) {
                 let tmp = parent[target];
