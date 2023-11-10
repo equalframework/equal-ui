@@ -27,7 +27,7 @@ export class _TranslationService {
         const environment:any = await EnvService.getEnv();
 
         // load i18n file from server
-        fetch('/assets/i18n/'+environment.lang+'.json')
+        fetch('/assets/i18n/'+environment.locale+'.json')
         .then( (response) => {
             if(response.ok) {
                 response.json().then( (data) => {
