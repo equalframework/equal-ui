@@ -20,7 +20,7 @@ export default class WidgetDate extends Widget {
     public render(): JQuery {
         let date = new Date(this.value);
         let value:any;
-         // moment 'll': Jun 8, 2023
+         // moment 'll': en = Jul 8, 2023; fr = 8 juil. 2023
         let format = 'll';
         switch(this.mode) {
             case 'edit':
@@ -60,13 +60,16 @@ export default class WidgetDate extends Widget {
             default:
                 // #todo - adapt and complete based on retrieved locale from equal (@see packages/core/i18n/fr/locale.json)
                 if(this.config.hasOwnProperty('usage')) {
-                    if(this.config.usage == 'date' || this.config.usage == 'date/medium') {
+                    if(this.config.usage == 'date' || this.config.usage == 'date/medium' || this.config.usage == 'date/plain.medium') {
                         // 06/08/2023
                         format = 'L';
                     }
-                    else if(this.config.usage == 'date/short') {
+                    else if(this.config.usage == 'date/short' || this.config.usage == 'date/plain.short') {
                         // 06/08/23
                         format = (moment.localeData().longDateFormat('L')).replace(/YYYY/g,'YY');
+                    }
+                    else if(this.config.usage == 'date/plain.short.day') {
+                        format = 'dd ' + (moment.localeData().longDateFormat('L')).replace(/YYYY/g,'YY');
                     }
                 }
 

@@ -314,25 +314,34 @@ export class LayoutList extends Layout {
                     if(!item.hasOwnProperty('visible') || item.visible == true) {
 
                         if(descriptor.hasOwnProperty(item.value)) {
-                            let type = descriptor[item.value]['operation'];
-                            let result:number = 0.0;
+                            let op_type = descriptor[item.value]['operation'];
+                            let op_result:number = 0.0;
+                            let i:number = 0;
                             for (let object of objects) {
-                                switch(type) {
+                                switch(op_type) {
                                     case 'SUM':
-                                        result += object[item.value];
+                                        op_result += object[item.value];
                                         break;
                                     case 'COUNT':
-                                        result += 1;
+                                        op_result += 1;
                                         break;
                                     case 'MIN':
+                                        if(i == 0 || op_result > object[item.value]) {
+                                            op_result = object[item.value];
+                                        }
                                         break;
                                     case 'MAX':
+                                        if(i == 0 || op_result < object[item.value]) {
+                                            op_result = object[item.value];
+                                        }
                                         break;
                                     case 'AVG':
+                                        op_result += (object[item.value] - op_result) / (i+1);
                                         break;
                                 }
+                                ++i;
                             }
-                            let value:any = result;
+                            let value:any = op_result;
                             let prefix = '';
                             let suffix = '';
                             if(descriptor[item.value].hasOwnProperty('usage')) {
@@ -615,33 +624,34 @@ export class LayoutList extends Layout {
         }
 
         if(group.hasOwnProperty('_operation')) {
-            let op_operator = group._operation[0];
+            let op_type = group._operation[0];
             let op_field = (group._operation[1].split('.'))[1];
             let data: any[] = this.getGroupData(group, op_field);
-            let op_result = 0;
+            let op_result:number = 0;
+            let i:number = 0;
             for(let val of data) {
-                switch(op_operator) {
+                switch(op_type) {
+                    case 'SUM':
+                        op_result += val;
+                        break;
                     case 'COUNT':
                         ++op_result;
                         break;
                     case 'MIN':
-                        if(val < op_result) {
+                        if(i == 0 || val < op_result) {
                             op_result = val;
                         }
                         break;
                     case 'MAX':
-                        if(val > op_result) {
+                        if(i == 0 || val > op_result) {
                             op_result = val;
                         }
                         break;
                     case 'AVG':
-                    case 'SUM':
-                        op_result += val;
+                        op_result += (val - op_result) / (i+1);
                         break;
                 }
-            }
-            if(op_operator == 'AVG') {
-                op_result /= data.length;
+                ++i;
             }
             suffix = '['+op_result+']';
         }

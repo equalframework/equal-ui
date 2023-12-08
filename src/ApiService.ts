@@ -27,7 +27,7 @@ export class _ApiService {
 
     constructor() {
         $.ajaxSetup({
-            cache: true,            // allow brower to cache the responses
+            cache: true,            // allow browser to cache the responses
             beforeSend: (xhr) => {
                 /*
                 // #removed for XSS protection (we use httpOnly cookie instead)
@@ -207,7 +207,7 @@ export class _ApiService {
         try {
             const environment = await EnvService.getEnv();
             const response = await $.get({
-                url: environment.backend_url+'userinfo'
+                url: environment.rest_api_url+'userinfo'
             });
             result = response;
         }
@@ -223,7 +223,7 @@ export class _ApiService {
             // #todo - replace with envinfo
             const environment = await EnvService.getEnv();
             const response = await $.get({
-                url: environment.backend_url+'appinfo'
+                url: environment.rest_api_url+'appinfo'
             });
             result = response;
         }

@@ -495,7 +495,7 @@ export class LayoutForm extends Layout {
                                 }
                                 catch(response) {
                                     // ignore faulty responses
-                                    console.warn('unable to send onupdate request', response);
+                                    console.warn('unable to send onchange request', response);
                                 }
                             }
                             // update model schema of the view if necessary

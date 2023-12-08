@@ -63,11 +63,13 @@ export class Context {
 
     /**
      * Close current context.
-     * Should be called only by parent Frame.
+     * Should be called only by parent Frame (after it has checked that the context has been modified or not).
      *
      */
     public close(data:any) {
         console.debug('Context::close', data);
+        // remove any beforeunload callback that might have been installed
+        window.removeEventListener('beforeunload', window.beforeUnloadListener);
         // remove Context container
         this.$container.remove();
         // invoke callback to relay events across contexts (select, add, ...)

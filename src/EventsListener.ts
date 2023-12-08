@@ -19,7 +19,11 @@ import "../node_modules/quill/dist/quill.snow.css";
 // @see https://github.com/material-components/material-components-web/blob/master/docs/getting-started.md
 
 declare global {
-    interface Window { context: any; }
+    interface Window {
+        context: any;
+        beforeUnloadListener: (e:any) => {};
+    }
+
 }
 
 /**
@@ -52,7 +56,7 @@ class EventsListener {
     constructor(domListenerId: string = '') {
         this.frames = {};
 
-        // $sbEvents is a jQuery object used to communicate: it allows an both internal services and external lib to connect with eQ-UI
+        // $sbEvents is a jQuery object used to communicate: it allows both internal services and external lib to connect with eQ-UI
 
         // if no name was given, use the default one
         if(domListenerId.length == 0) {
@@ -65,7 +69,7 @@ class EventsListener {
         }
 
         // setup event handlers
-        this.init();
+        this.init(domListenerId);
     }
 
     public addSubscriber(events: [], callback: (context:any) => void) {
@@ -261,7 +265,8 @@ class EventsListener {
      * Asynchronous initialization of the eQ instance.
      *
      */
-    private async init() {
+    private async init(domListenerId: string) {
+        console.debug('Initializing EventsListener on ' + domListenerId);
         try {
             // get default (static) config
             this.env = await EnvService.getEnv();
@@ -343,6 +348,11 @@ class EventsListener {
             this._closeAll(params);
         });
 
+        // create a static callback to make it available to any class, by using `window.addEventListener('beforeunload', window.beforeUnloadListener);` or  `window.removeEventListener('beforeunload', window.beforeUnloadListener);`
+        window.beforeUnloadListener = (e:any) => {
+            e.preventDefault();
+            return (e.returnValue = 'There are unsaved changes pending.');
+        };
     }
 
     /**
@@ -353,10 +363,26 @@ class EventsListener {
         await this._updatedContext();
     }
 
-    public async closeAll(params:any={}) {
-        console.debug('eQ:received closeAll');
+    public async closeAll(external:boolean=false) {
+        console.debug('eQ:received closeAll', external);
+        // for requests from the outside, check for current changes before closing all context
+        if(external) {
+            for(let index in this.frames) {
+                let frame = this.frames[index];
+                if(frame && typeof frame.getContext().getView === 'function' && frame.getContext().getView().hasChanged()) {
+                    let validation = confirm(TranslationService.instant('SB_ACTIONS_MESSAGE_ABANDON_CHANGE'));
+                    if(!validation) {
+                        return false;
+                    }
+                    else {
+                        break;
+                    }
+                }
+            }
+        }
         this.$sbEvents.trigger('_closeAll');
-        await this._closeAll(params);
+        await this._closeAll({});
+        return true;
     }
 
     /**
@@ -370,8 +396,24 @@ class EventsListener {
      * Interface method for integration with external tools.
      * @param context
      */
-    public async open(context: any) {
-        console.debug("eQ::open", context);
+    public async open(context: any, external: boolean = false) {
+        console.debug("eQ::open", context, external);
+
+        // opening a context from the outside implies closing some contexts: check for current changes before doing so
+        if(external) {
+            for(let index in this.frames) {
+                let frame = this.frames[index];
+                if(frame && typeof frame.getContext().getView === 'function' && frame.getContext().getView().hasChanged()) {
+                    let validation = confirm(TranslationService.instant('SB_ACTIONS_MESSAGE_ABANDON_CHANGE'));
+                    if(!validation) {
+                        return false;
+                    }
+                    else {
+                        break;
+                    }
+                }
+            }
+        }
 
         EnvService.getEnv().then( (environment:any) => {
             // extend default params with received config
@@ -410,6 +452,8 @@ class EventsListener {
             // this.$sbEvents.trigger('_openContext', [target_context, target_context.reset]);
             this._openContext(target_context, target_context.reset);
         });
+
+        return true;
     }
 
     /**

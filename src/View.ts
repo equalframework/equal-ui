@@ -1902,7 +1902,7 @@ export class View {
                 $cancel_button.on('click', async () => {
                     let validation = true;
                     if(this.hasChanged()) {
-                        validation = await confirm(TranslationService.instant('SB_ACTIONS_MESSAGE_ABANDON_CHANGE'));
+                        validation = confirm(TranslationService.instant('SB_ACTIONS_MESSAGE_ABANDON_CHANGE'));
                     }
                     if(validation) {
                         await this.closeContext();
@@ -2243,6 +2243,7 @@ export class View {
      */
     public async onchangeViewModel(ids: Array<any>, values: object, refresh: boolean = true) {
         console.debug('View::onchangeViewModel', ids, values, refresh);
+        window.addEventListener('beforeunload', window.beforeUnloadListener);
         this.model.change(ids, values);
         // model has changed : forms need to re-check the visibility attributes
         if(refresh) {

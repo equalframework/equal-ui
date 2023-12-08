@@ -1,7 +1,7 @@
 /** From MDL */
-declare var componentHandler: any; 
+declare var componentHandler: any;
 
-// declare function moment(date: any): any; 
+// declare function moment(date: any): any;
 
 
 

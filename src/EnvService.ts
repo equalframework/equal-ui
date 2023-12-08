@@ -10,7 +10,7 @@ export class _EnvService {
         "production":                   true,
         "parent_domain":                "equal.local",
         "backend_url":                  "http://equal.local",
-        "rest_api_url":                 "http://equal.local",
+        "rest_api_url":                 "http://equal.local/",
         "lang":                         "en",
         "locale":                       "en",
         "company_name":                 "eQual Framework",

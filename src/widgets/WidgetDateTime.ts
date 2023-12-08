@@ -86,14 +86,14 @@ export default class WidgetDateTime extends Widget {
             case 'view':
             default:
                 if(this.config.hasOwnProperty('usage')) {
-                    if(this.config.usage == 'datetime/short') {
+                    if(this.config.usage == 'datetime/short' || this.config.usage == 'date/time.short') {
                         // 06/08/23
                         format = (moment.localeData().longDateFormat('L') + ' ' + moment.localeData().longDateFormat('LT')).replace(/YYYY/g,'YY');
                     }
-                    else if(this.config.usage == 'datetime/full') {
+                    else if(this.config.usage == 'datetime/full' || this.config.usage == 'date/time.full') {
                         format = 'LLLL';
                     }
-                    else if(this.config.usage == 'date' || this.config.usage == 'date/medium') {
+                    else if(this.config.usage == 'date' || this.config.usage == 'date/medium' || this.config.usage == 'date/plain.medium' || this.config.usage == 'date/time.medium') {
                         // 06/08/2023
                         format = 'L';
                     }

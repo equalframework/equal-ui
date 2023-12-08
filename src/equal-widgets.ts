@@ -157,6 +157,9 @@ class WidgetFactory {
                     case 'date/plain':
                         type = 'date';
                         break;
+                    case 'text/plain.short':
+                        type = 'string';
+                        break;
                     case 'string/text':
                     case 'text/plain':
                     case 'text/html':
