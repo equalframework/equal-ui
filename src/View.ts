@@ -289,7 +289,7 @@ export class View {
 
         }
 
-        this.$container = $('<div />').addClass('sb-view').hide();
+        this.$container = $('<div />').addClass('sb-view').attr('data-view_id', this.getId()).attr('data-entity', this.entity).hide();
 
         this.$headerContainer = $('<div />').addClass('sb-view-header').appendTo(this.$container);
         this.$layoutContainer = $('<div />').addClass('sb-view-layout').appendTo(this.$container);
@@ -1782,6 +1782,9 @@ export class View {
                 // define the save method (used for all action implying saving the object)
                 const save_method = async (action:any) => {
                     let objects;
+                    if(!this.layout.checkRequiredFields()) {
+                        return null;
+                    }
                     if(this.purpose == 'create') {
                         // get the full collection, whatever the changes made by user
                         objects = await this.model.get();

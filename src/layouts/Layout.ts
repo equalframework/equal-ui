@@ -77,9 +77,36 @@ export class Layout implements LayoutInterface{
      *
      * @param config
      */
-    public openContext(config: any) {
+    public async openContext(config: any) {
         console.debug("Layout::openContext", config);
-        this.view.openContext(config);
+        await this.view.openContext(config);
+    }
+
+    /**
+     * Browse Layout for checking if required fields have a value set.
+     * This method applies only to edit mode and stops after the first found missing value.
+     *
+     * @returns boolean
+     */
+    public checkRequiredFields() : boolean {
+        if(this.view.getMode() == 'edit') {
+            let msg = TranslationService.instant('SB_ERROR_MISSING_MANDATORY');
+            for(let object_id in this.model_widgets) {
+                let widgets = this.model_widgets[object_id];
+                for(let field in widgets) {
+                    let widget = widgets[field];
+                    let config = widget.getConfig();
+                    if(config.hasOwnProperty('required') && config.required) {
+                        let value = widget.getValue();
+                        if(value === null || value.length == 0) {
+                            this.markFieldAsInvalid(parseInt(object_id), field, msg);
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     /**

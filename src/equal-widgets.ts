@@ -218,6 +218,7 @@ class WidgetFactory {
         config.title = TranslationService.resolve(translation, 'model', [], field, label, 'label');
         config.description = TranslationService.resolve(translation, 'model', [], field, description, 'description');
         config.readonly = (def.hasOwnProperty('readonly'))?def.readonly:(item.hasOwnProperty('readonly'))?item['readonly']:false;
+        config.required = (def.hasOwnProperty('required'))?def.readonly:(item.hasOwnProperty('required'))?item['required']:false;
         // default align is left, unless for integer fields (with an exception for 'id' field - which, by convention, should be first column)
         config.align = item.hasOwnProperty('align')? item.align : ((item.field != 'id' && (config.type == 'integer' || config.type == 'float'))?'right':'left');
         if(config.hasOwnProperty('usage') && config.usage == 'icon') {
