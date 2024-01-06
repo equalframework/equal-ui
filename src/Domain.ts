@@ -393,9 +393,9 @@ export class Condition {
 
 export class Reference {
 
-    private value: string;
+    private value: any;
 
-    constructor(value:string) {
+    constructor(value:any) {
         this.value = value;
     }
 
@@ -409,6 +409,10 @@ export class Reference {
      */
     public parse(object: any, user: any = {}, parent: any = {}) {
         let result = this.value;
+        // avoid parsing non-string values
+        if(typeof this.value !== 'string' && !(this.value instanceof String)) {
+            return result;
+        }
         if(this.value.indexOf('object.') == 0 ) {
             let target = this.value.substring('object.'.length);
             if(object && object.hasOwnProperty(target)) {
