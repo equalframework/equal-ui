@@ -471,25 +471,23 @@ export class LayoutForm extends Layout {
                                 try {
                                     // #todo - add support for dynamic schema (ex. filter or update selection of selectable fields, based on value from other fields)
                                     const result = await ApiService.call("?do=model_onchange", {entity: this.view.getEntity(), changes: this.view.getModel().export(values), values: this.view.getModel().export(object), lang: this.view.getLang()} );
-                                    if (typeof result !== 'object' || Array.isArray(result) || result === null) {
-                                        // invalid response
-                                        throw new Error(result);
-                                    }
-                                    for(let field of Object.keys(result)) {
-                                        // there are changes to apply on the schema: we must force a re-feed on the Form
-                                        refresh = true;
-                                        // if some changes are returned from the back-end, append them to the view model update
-                                        if(typeof result[field] === 'object' && result[field] !== null) {
-                                            if(result[field].hasOwnProperty('value')) {
-                                                values[field] = result[field].value;
+                                    if (typeof result === 'object' && result != null) {
+                                        for(let field of Object.keys(result)) {
+                                            // there are changes to apply on the schema: we must force a re-feed on the Form
+                                            refresh = true;
+                                            // if some changes are returned from the back-end, append them to the view model update
+                                            if(typeof result[field] === 'object' && result[field] !== null) {
+                                                if(result[field].hasOwnProperty('value')) {
+                                                    values[field] = result[field].value;
+                                                }
+                                                else {
+                                                    values[field] = result[field];
+                                                }
+                                                model_fields[field] = result[field];
                                             }
                                             else {
                                                 values[field] = result[field];
                                             }
-                                            model_fields[field] = result[field];
-                                        }
-                                        else {
-                                            values[field] = result[field];
                                         }
                                     }
                                 }
