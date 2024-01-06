@@ -410,10 +410,10 @@ export class Frame {
         // we use eventlistener :: open() method in order to relay the context change to the outside
 
         if(this.display_mode == 'stacked') {
-            this.eq.open(config);
+            await this.eq.open(config);
         }
         else if(this.display_mode == 'popup') {
-            this.eq.popup(config);
+            await this.eq.popup(config);
         }
     }
 
@@ -477,10 +477,17 @@ export class Frame {
 
         // create a draft object if required: Edition is based on asynchronous creation: a draft is created (or recycled) and is turned into an instance if 'update' action is triggered.
         if(config.purpose == 'create') {
-            console.debug('requesting draft object');
-            let defaults    = await this.getNewObjectDefaults(config.entity, config.domain);
-            let object      = await ApiService.create(config.entity, defaults);
-            config.domain   = [['id', '=', object.id], ['state', '=', 'draft']];
+            try {
+                console.debug('requesting draft object');
+                let defaults    = await this.getNewObjectDefaults(config.entity, config.domain);
+                let object      = await ApiService.create(config.entity, defaults);
+                config.domain   = [['id', '=', object.id], ['state', '=', 'draft']];
+            }
+            catch(response) {
+                console.warn('unable to create object', response);
+                this.hideLoader();
+                throw response;
+            }
         }
 
         let context: Context = new Context(this, config.entity, config.type, config.name, config.domain, config.mode, config.purpose, config.lang, config.callback, config);

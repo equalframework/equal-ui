@@ -395,6 +395,7 @@ class EventsListener {
     /**
      * Interface method for integration with external tools.
      * @param context
+     * @param external      Indicates if the request comes from the outside (not from the current Frame context stack).
      */
     public async open(context: any, external: boolean = false) {
         console.debug("eQ::open", context, external);
@@ -415,43 +416,46 @@ class EventsListener {
             }
         }
 
-        EnvService.getEnv().then( (environment:any) => {
-            // extend default params with received config
-            let target_context = {...{
-                entity:     '',
-                type:       'list',
-                name:       'default',
-                domain:     [],
-                mode:       'view',             // view, edit
-                purpose:    'view',             // view, select, add
-                lang:       environment.lang,
-                callback:   null,
-                target:     '#sb-container',
-                reset:      false
-            }, ...context};
+        const environment = await EnvService.getEnv();
 
-            // this.$sbEvents.trigger('click', [context, context.hasOwnProperty('reset') && context.reset]);
+        // extend default params with received config
+        let target_context = {...{
+            entity:     '',
+            type:       'list',
+            name:       'default',
+            domain:     [],
+            mode:       'view',             // view, edit
+            purpose:    'view',             // view, select, add
+            lang:       environment.lang,
+            callback:   null,
+            target:     '#sb-container',
+            reset:      false
+        }, ...context};
 
-            if( context.hasOwnProperty('view') ) {
-                let parts = context.view.split('.');
-                let view_type = 'list', view_name = 'default';
-                if(parts.length) view_type = <string>parts.shift();
-                if(parts.length) view_name = <string>parts.shift();
-                if(!context.hasOwnProperty('type')) {
-                    target_context.type = view_type;
-                }
-                if(!context.hasOwnProperty('name')) {
-                    target_context.name = view_name;
-                }
+        // this.$sbEvents.trigger('click', [context, context.hasOwnProperty('reset') && context.reset]);
+
+        if( context.hasOwnProperty('view') ) {
+            let parts = context.view.split('.');
+            let view_type = 'list', view_name = 'default';
+            if(parts.length) {
+                view_type = <string>parts.shift();
             }
+            if(parts.length) {
+                view_name = <string>parts.shift();
+            }
+            if(!context.hasOwnProperty('type')) {
+                target_context.type = view_type;
+            }
+            if(!context.hasOwnProperty('name')) {
+                target_context.name = view_name;
+            }
+        }
 
-
-            // make context available to the outside
-            window.context = target_context;
-            // ContextService uses 'window' global object to store the arguments (context parameters)
-            // this.$sbEvents.trigger('_openContext', [target_context, target_context.reset]);
-            this._openContext(target_context, target_context.reset);
-        });
+        // make context available to the outside
+        window.context = target_context;
+        // ContextService uses 'window' global object to store the arguments (context parameters)
+        // this.$sbEvents.trigger('_openContext', [target_context, target_context.reset]);
+        await this._openContext(target_context, target_context.reset);
 
         return true;
     }
