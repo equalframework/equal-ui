@@ -235,9 +235,7 @@ export default class WidgetMany2Many extends Widget {
 
         }
 
-        this.$elem.addClass('sb-widget').attr('id', this.getId());
-
-        return this.$elem;
+        return this.$elem.addClass('sb-widget').attr('id', this.getId()).attr('data-type', this.config.type).attr('data-usage', this.config.usage||'');
     }
 
 }

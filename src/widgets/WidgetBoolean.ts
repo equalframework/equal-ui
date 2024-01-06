@@ -37,6 +37,6 @@ export default class WidgetBoolean extends Widget {
                 this.$elem = UIHelper.createSwitch('', this.label, this.value, this.config.description, '', true);
                 break;
         }
-        return this.$elem.addClass('sb-widget').addClass('sb-widget-type-boolean').addClass('sb-widget-mode-'+this.mode).attr('id', this.getId());
+        return this.$elem.addClass('sb-widget').addClass('sb-widget-type-boolean').addClass('sb-widget-mode-'+this.mode).attr('id', this.getId()).attr('data-type', this.config.type).attr('data-usage', this.config.usage||'');
     }
 }
