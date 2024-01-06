@@ -2,6 +2,41 @@ import { View, Layout } from "../equal-lib";
 import { EnvService } from "../equal-services";
 import _EnvService from "../EnvService";
 
+/**
+ * This singleton is used to increase speed of UUID generation by using pseudo random values,
+ * plus a manual increment the last 8 hexadecimal digits.
+ *
+ * Notes:
+ * - This implies a capacity of 4G distinct UUID in a same App.
+ * - Each time the app is reloaded, all UUID are re-generated.
+ */
+class UuidProvider {
+    private static instance: UuidProvider;
+    private index: number;
+    private base: string;
+
+    private constructor() {
+        this.index = 1;
+        // generates a random 4 hexadecimal digits string
+        let S4 = () => (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+        // generate a random uuid with 26 hexadecimal digits (last 8 digits are omitted)
+        // 92867eb7-604f-5764-41d6-d0bd
+        this.base = (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4());
+    }
+
+    public static getInstance(): UuidProvider {
+        if(!UuidProvider.instance) {
+            UuidProvider.instance = new UuidProvider();
+        }
+        return UuidProvider.instance;
+    }
+
+    public getUuid() {
+        let S4 = () => (this.index++).toString(16).padStart(8, '0');
+        return this.base+S4();
+    }
+}
+
 export default class Widget {
 
     private layout: Layout;
@@ -32,10 +67,8 @@ export default class Widget {
         this.mode = 'view';
 
         this.$elem = $();
-
-        var S4 = () => (((1+Math.random())*0x10000)|0).toString(16).substring(1);
-        // generate a random guid
-        this.id = (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
+        // generate a pseudo-random guid
+        this.id = UuidProvider.getInstance().getUuid();
     }
 
     protected getLayout() {
@@ -114,14 +147,15 @@ export default class Widget {
     }
 
     /**
+     * This method is meant to be overloaded by children classes (which might optionally call this parent method).
      * @return always returns a JQuery object
      */
     public render(): JQuery {
-        return this.$elem;
+        return this.$elem.addClass('sb-widget').attr('data-type', this.config.type).attr('data-usage', this.config.usage||'');
     }
 
     public attach(): JQuery {
-        this.$elem = $('<div/>').addClass('sb-widget').addClass('sb-widget-mode-'+this.mode).attr('id', this.getId());
+        this.$elem = $('<div/>').addClass('sb-widget').attr('data-type', this.config.type).attr('data-usage', this.config.usage||'').addClass('sb-widget-mode-'+this.mode).attr('id', this.getId());
         return this.$elem;
     }
 
