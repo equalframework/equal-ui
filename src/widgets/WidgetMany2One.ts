@@ -38,7 +38,8 @@ export default class WidgetMany2One extends Widget {
                                       .css({"width": "100%", "display": "inline-block"});
                 let $menu = UIHelper.createMenu('m2o-menu-'+this.id).appendTo($select);
                 let $menu_list = UIHelper.createList('m2o-menu-list-'+this.id).appendTo($menu);
-                let $link = UIHelper.createListItem('m2o-actions-create-'+this.id, '<a style="text-decoration: underline;">'+TranslationService.instant('SB_WIDGETS_MANY2ONE_ADVANCED_SEARCH')+'</a>');
+                let $link_search = UIHelper.createListItem('m2o-actions-search-'+this.id, '<a style="text-decoration: underline;">'+TranslationService.instant('SB_WIDGETS_MANY2ONE_ADVANCED_SEARCH')+'</a>');
+                let $link_instant = UIHelper.createListItem('m2o-actions-instant-'+this.id, '<a style="text-decoration: underline;">'+TranslationService.instant('SB_ACTIONS_BUTTON_CREATE')+' "{value}"'+'</a>');
 
                 if(this.config.has_action_open || this.config.has_action_create) {
                     $select.css({"width": "calc(100% - 48px)"});
@@ -67,7 +68,7 @@ export default class WidgetMany2One extends Widget {
                     // open targeted object in new context
                     $button_open.on('click', async () => {
                         if(this.config.hasOwnProperty('object_id')) {
-                            this.getLayout().openContext({
+                            await this.getLayout().openContext({
                                 entity: this.config.foreign_object,
                                 type: 'form',
                                 mode: 'edit',
@@ -78,6 +79,8 @@ export default class WidgetMany2One extends Widget {
                                         // we should have received a single (partial) object with up-to-date name and id
                                         let object = data.objects.find( (o:any) => o.id == data.selection[0] );
                                         this.value = {id: object.id, name: object.name};
+                                        // update widget displayed value in case it is not part of a view (e.g. filters)
+                                        $select.find('input').val(object.name).trigger('change');
                                         this.$elem.trigger('_updatedWidget');
                                     }
                                 }
@@ -93,27 +96,59 @@ export default class WidgetMany2One extends Widget {
                     this.$elem.append($button_create);
                     // open creation form in new context
                     $button_create.on('click', async () => {
-                        this.getLayout().openContext({
-                            entity: this.config.foreign_object,
-                            type: 'form',
-                            mode: 'edit',
-                            purpose: 'create',
-                            domain: domain,
-                            name: (this.config.hasOwnProperty('view_name'))?this.config.view_name:'default',
-                            callback: (data:any) => {
-                                if(data && data.selection && data.objects && data.selection.length) {
-                                    $button_create.hide();
-                                    $button_open.show();
-                                    // m2o relations are always loaded as an object with {id:, name:}
-                                    let object = data.objects.find( (o:any) => o.id == data.selection[0] );
-                                    this.value = {id: object.id, name: object.name};
-                                    this.$elem.trigger('_updatedWidget');
+                        let contextDomain = new Domain(domain);
+                        let value:string = <string> $select.find('input').val();
+                        if(value.length > 0) {
+                            contextDomain.merge(new Domain(['name', '=', value]));
+                        }
+                        try {
+                            await this.getLayout().openContext({
+                                entity: this.config.foreign_object,
+                                type: 'form',
+                                mode: 'edit',
+                                purpose: 'create',
+                                domain: contextDomain.toArray(),
+                                name: (this.config.hasOwnProperty('view_name'))?this.config.view_name:'default',
+                                callback: (data:any) => {
+                                    if(data && data.selection && data.objects && data.selection.length) {
+                                        $button_create.hide();
+                                        $button_open.show();
+                                        // m2o relations are always loaded as an object with {id:, name:}
+                                        let object = data.objects.find( (o:any) => o.id == data.selection[0] );
+                                        this.value = {id: object.id, name: object.name};
+                                        // update widget displayed value in case it is not part of a view (e.g. filters)
+                                        $select.find('input').val(object.name).trigger('change');
+                                        this.$elem.trigger('_updatedWidget');
+                                    }
                                 }
-                            }
-                        });
+                            });
+                        }
+                        catch(response) {
+                            console.warn('request failed', response);
+                            this.getLayout().getView().displayErrorFeedback(this.getLayout().getView().getTranslation(), response);
+                        }
                     });
                 }
 
+                let createInstant = async () => {
+                    let value:string = <string> $select.find('input').val();
+                    if(value.length <= 0) {
+                        return;
+                    }
+                    // attempt create a new item based with value as name
+                    try {
+                        let object = await ApiService.create(this.config.foreign_object, {name: value});
+                        // if successful, select the newly created item
+                        this.value = {id: object.id, name: value};
+                        // update widget displayed value in case it is not part of a view (e.g. filters)
+                        $select.find('input').val(value).trigger('change');
+                        this.$elem.trigger('_updatedWidget');
+                    }
+                    catch(response) {
+                        console.warn('request failed', response);
+                        this.getLayout().getView().displayErrorFeedback(this.getLayout().getView().getTranslation(), response);
+                    }
+                };
 
                 let openSelectContext = () => {
                     this.getLayout().openContext({...this.config,
@@ -191,9 +226,15 @@ export default class WidgetMany2One extends Widget {
                                 }
                             }
                             // advanced search button
-                            $link.on('click', openSelectContext);
-                            $menu_list.append($link);
-
+                            $link_search.on('click', openSelectContext);
+                            $menu_list.append($link_search);
+                            // instant creation link
+                            if(val.length > 0 && this.config.has_action_create) {
+                                let $label = $link_instant.find('a');
+                                $label.text($label.text().replace('{value}', val));
+                                $link_instant.on('click', () => createInstant());
+                                $menu_list.append($link_instant);
+                            }
                         }
                         catch(response) {
                             console.warn('request failed', response);
@@ -331,6 +372,8 @@ export default class WidgetMany2One extends Widget {
                         }
                         else {
                             // new char : update results
+                            let original_instant_label:string = TranslationService.instant('SB_ACTIONS_BUTTON_CREATE')+' "{value}"';
+                            $link_instant.find('a').text(original_instant_label.replace('{value}', <string> $select.find('input').val()));
                             if(timeout) {
                                 clearTimeout(timeout);
                             }
@@ -426,8 +469,6 @@ export default class WidgetMany2One extends Widget {
         }
 
 
-        this.$elem.addClass('sb-widget').addClass('sb-widget-type-many2one').addClass('sb-widget-mode-'+this.mode).attr('id', this.getId());
-
-        return this.$elem;
+        return this.$elem.addClass('sb-widget').addClass('sb-widget-type-many2one').addClass('sb-widget-mode-'+this.mode).attr('id', this.getId()).attr('data-type', this.config.type).attr('data-usage', this.config.usage||'');
     }
 }

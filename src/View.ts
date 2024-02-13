@@ -2458,8 +2458,10 @@ export class View {
                 $action_set_selected_edit_actions.remove();
                 this.$headerContainer.find('#'+'SB_ACTION_ITEM-'+'SB_ACTIONS_BUTTON_INLINE_UPDATE').show();
                 this.$headerContainer.find('#'+'SB_ACTION_ITEM-'+'SB_ACTIONS_BUTTON_BULK_ASSIGN').hide();
+                /*
                 this.selected_ids = [];
                 this.layout.setSelection(this.selected_ids);
+                */
                 return false;
             });
         }
@@ -2506,7 +2508,10 @@ export class View {
             let view_fields:any = {};
             view_fields[field] =  {
                 "type": "field",
-                "value": field
+                "value": field,
+                "widget": {
+                    "header": false
+                }
             };
 
             let config = WidgetFactory.getWidgetConfig(this, field, translation, model_fields, view_fields);

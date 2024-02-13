@@ -32,8 +32,8 @@ class UuidProvider {
     }
 
     public getUuid() {
-        let S4 = () => (this.index++).toString(16).padStart(8, '0');
-        return this.base+S4();
+        let S8 = () => (this.index++).toString(16).padStart(8, '0');
+        return this.base + S8();
     }
 }
 
@@ -138,7 +138,7 @@ export default class Widget {
     }
 
     /**
-     *
+     * Method meant to be overridden by widgets, for updating the displayed value.
      * This method is called by LayoutList for setting a widget with bulk assign.
      * @param value
      */

@@ -118,7 +118,9 @@ export class LayoutList extends Layout {
                 let width = 10;
                 if(item.hasOwnProperty('width')) {
                     width = Math.round(parseInt(item.width, 10) * 100) / 100.0;
-                    if(width < 10) width = 10;
+                    if(width < 10) {
+                        width = 10;
+                    }
                 }
                 item.width = width;
                 item_width_total += width;
@@ -157,8 +159,8 @@ export class LayoutList extends Layout {
                             // wait for handling of sort toggle (table decorator)
                             setTimeout( () => {
                                 // change sortname and/or sortorder
-                                this.view.setOrder(<string>$this.attr('name'));
-                                this.view.setSort(<string>$this.attr('data-sort'));
+                                this.view.setOrder(<string> $this.attr('name'));
+                                this.view.setSort(<string> $this.attr('data-sort'));
                                 this.view.onchangeView();
                             });
                         }
@@ -186,20 +188,31 @@ export class LayoutList extends Layout {
 
                 let $op_div = $('<div>').addClass('operation');
                 let $title = $('<div>').addClass('operation-title').text(operation);
-
                 // $op_div.append($title);
                 let $op_row = $('<div>').addClass('operation-row').appendTo($op_div);
                 let pos = 0;
                 for(let item of view_schema.layout.items) {
                     if(!item.hasOwnProperty('visible') || item.visible == true) {
-                        let width = Math.ceil(10 * item.width) / 10;
+                        let width = Math.floor(10 * item.width) / 10;
                         let $cell = $('<div>').addClass('operation-cell').css({width: width+'%'});
+                        if(pos == 0) {
+                            let offset = 0;
+                            if(this.view.getPurpose() != 'widget' || this.view.getMode() == 'edit') {
+                                offset += 44;
+                            }
+                            if(group_by.length > 0) {
+                                offset += 44;
+                            }
+                            if(offset > 0) {
+                                $cell.css({width: 'calc('+width+'% + '+offset+'px)' });
+                            }
+                        }
                         let field = item.value;
                         if(op_descriptor.hasOwnProperty(field)) {
                             let $input = $('<input>').attr('data-id', 'operation-'+operation+'-'+field);
                             let type = this.view.getModel().getFinalType(field);
                             if(['float', 'integer'].indexOf(type) >= 0 && field != 'id') {
-                                $input.css({'text-align': 'right', 'padding-right': '16px'});
+                                $input.css({'text-align': 'right', 'padding-right': '17px'});
                             }
                             $cell.append( $input );
                         }
@@ -406,6 +419,12 @@ export class LayoutList extends Layout {
 
                 let model_def = model_fields[field];
                 let key = object[field];
+
+                if(!key) {
+                    console.warn('invalid value while grouping object on field '+field, group, object);
+                    key = '(null)';
+                }
+
                 let label = key;
 
                 if(key.hasOwnProperty('name')) {
@@ -503,12 +522,68 @@ export class LayoutList extends Layout {
                 $cell.empty().append($widget);
 
                 if(mode == 'edit') {
-                    $widget.on('_updatedWidget', (event:any) => {
+                    $widget.on('_updatedWidget', async (event:any, refresh: boolean = true) => {
                         console.debug('Layout - received _updatedWidget event', widget.getValue());
-                        let value:any = {};
-                        value[field] = widget.getValue();
-                        // propagate model change, without requesting a layout refresh
-                        this.view.onchangeViewModel([object.id], value, false);
+                        let values:any = {};
+                        values[field] = widget.getValue();
+                        let model_fields:any = {};
+                        // if value is less than 1k, relay onchange to server
+                        // #todo - choose an objectivable limit
+                        if(String(widget.getValue()).length < 1000) {
+                            // relay the change to back-end through onupdate
+                            try {
+                                // #todo - add support for dynamic schema (ex. filter or update selection of selectable fields, based on value from other fields)
+                                const result = await ApiService.call("?do=model_onchange", {entity: this.view.getEntity(), changes: this.view.getModel().export(values), values: this.view.getModel().export(object), lang: this.view.getLang()} );
+                                if (typeof result === 'object' && result != null) {
+                                    for(let field of Object.keys(result)) {
+                                        // if some changes are returned from the back-end, append them to the view model update
+                                        if(typeof result[field] === 'object' && result[field] !== null) {
+                                            if(result[field].hasOwnProperty('value')) {
+                                                values[field] = result[field].value;
+                                            }
+                                            else {
+                                                values[field] = result[field];
+                                            }
+                                            model_fields[field] = result[field];
+                                        }
+                                        else {
+                                            values[field] = result[field];
+                                        }
+                                    }
+                                }
+                            }
+                            catch(response) {
+                                // ignore faulty responses
+                                console.warn('unable to send onchange request', response);
+                            }
+                        }
+                        // update values of widgets impacted by onchange
+                        if(Object.keys(values).length > 0) {
+                            for(let widget_index of Object.keys(this.model_widgets[object.id])) {
+                                let widget = this.model_widgets[object.id][widget_index];
+                                let field = widget.config.field;
+                                if(values.hasOwnProperty(field)) {
+                                    widget.change(values[field]);
+                                }
+                            }
+                        }
+                        // update model schema of the view if necessary
+                        if(Object.keys(model_fields).length > 0) {
+                            // we need to retrieve the widget based on the field name
+                            for(let widget_index of Object.keys(this.model_widgets[object.id])) {
+                                let widget = this.model_widgets[object.id][widget_index];
+                                let field = widget.config.field;
+                                if(model_fields.hasOwnProperty(field)) {
+                                    for(let property of Object.keys(model_fields[field])) {
+                                        widget.config[property] = model_fields[field][property];
+                                        widget.config.changed = true;
+                                    }
+                                }
+                            }
+                        }
+
+                        // propagate model change, without requesting a layout refresh (we're in inline edit and we d'ont want to refresh the whole view)
+                        this.view.onchangeViewModel([object.id], values, false);
                     });
                 }
             });

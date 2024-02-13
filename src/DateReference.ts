@@ -44,8 +44,9 @@ export class DateReference {
             this.date = date;
         }
         else {
-            // init at today
+            // init date at today at midnight UTC
             date = new Date();
+            date.setUTCHours(0, 0, 0, 0);
             descriptor = descriptor.toLowerCase();
             if(descriptor.indexOf('date.') == 0) {
                 let parts = descriptor.split('.');

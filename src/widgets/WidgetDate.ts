@@ -46,12 +46,10 @@ export default class WidgetDate extends Widget {
                     // update widget value using jQuery `getDate`
                     let $this = $(event.currentTarget);
                     let date = $this.datepicker('getDate');
-                    console.debug('widget selected date', date);
                     // make the date UTC @ 00:00:00
                     let timestamp = date.getTime();
                     let offset_tz = date.getTimezoneOffset()*60*1000;
                     this.value = (new Date(timestamp-offset_tz)).toISOString().substring(0, 10)+'T00:00:00Z';
-                    console.debug('widget assigned date', this.value);
                     this.$elem.trigger('_updatedWidget');
                 });
                 this.$elem.find('button').attr('tabindex', -1);

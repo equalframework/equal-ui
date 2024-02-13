@@ -419,8 +419,8 @@ export class _ApiService {
     }
 
     /**
-     *
-     * In practice, only one object is updated at a time (through form or list inline editing)
+     * Update a collection of objects.
+     * In practice, eqUI always updates one object at a time (through form or list inline editing)
      *
      * @param entity
      * @param ids

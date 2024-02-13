@@ -291,7 +291,6 @@ export class Layout implements LayoutInterface{
                 // 3) retrieve translation related to action, if any
                 let translation = await ApiService.getTranslation(action.controller.replaceAll('_', '\\'));
 
-
                 // check presence of description and fallback to controller description
                 if(action.hasOwnProperty('description')) {
                     description = action.description;
@@ -308,7 +307,7 @@ export class Layout implements LayoutInterface{
                 }
 
                 let defer = $.Deferred();
-                let $description = $('<p />').text(description);
+                let $description = $('<p />').html(description.replace(/\n/g, "<br />"));
 
                 if(action.hasOwnProperty('confirm') && action.confirm) {
                     // params dialog
