@@ -37,7 +37,9 @@ export class _ApiService {
                 }
                 */
             },
-            xhrFields: { withCredentials: true }
+            xhrFields: { withCredentials: true },
+            // #memo - this might be necessary when using cross-domain or distinct ports on same domain (TEST only)
+            // crossDomain: true
         });
 
         this.views = {};
