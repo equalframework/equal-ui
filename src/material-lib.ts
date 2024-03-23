@@ -16,7 +16,7 @@ import { $ } from "./jquery-lib";
 
 class UIHelper {
 
-    public static getUUID() {
+    public static getUuid() {
         var S4 = () => (((1+Math.random())*0x10000)|0).toString(16).substring(1);
         // generate a random guid
         return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
