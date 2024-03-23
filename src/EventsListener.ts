@@ -70,6 +70,46 @@ class EventsListener {
 
         // setup event handlers
         this.init(domListenerId);
+
+        /*
+        // auto dark mode attempt
+        $(document).ready(function(){
+            console.log('ready');
+            $(".test_button").on('click', function () {
+                console.log('click on button')
+                $("html").find('*').each(function(){
+
+                    // extract R G and B from element background color
+                    let style = window.getComputedStyle(this);
+                    let backgroundColor = (style.backgroundColor).split(',');
+
+                    // R,G,B values are divided by 255 to change the range from 0..255 to 0..1
+                    let bg_alpha = (backgroundColor.length < 4)?1.0:parseFloat(backgroundColor[3].split(')')[0]);
+                    let bg_red   = bg_alpha * parseFloat(backgroundColor[0].split('(')[1]) / 255;
+                    let bg_green = bg_alpha * parseFloat(backgroundColor[1]) / 255;
+                    let bg_blue  = bg_alpha * parseFloat(backgroundColor[2].split(')')[0]) / 255;
+
+                    let bg_lightness = (bg_red + bg_green + bg_blue) / 3;
+
+                    let color = (style.color).split(',');
+                    let c_alpha = (color.length < 4)?1.0:parseFloat(color[3].split(')')[0]);
+                    let c_red   = c_alpha * parseFloat(color[0].split('(')[1]) / 255;
+                    let c_green = c_alpha * parseFloat(color[1]) / 255;
+                    let c_blue  = c_alpha * parseFloat(color[2].split(')')[0]) / 255;
+                    let c_lightness = (c_red + c_green + c_blue) / 3;
+
+                    if(bg_lightness >= 0.6) {
+                        $(this).css("background-color", "rgb(30,30,30)");
+                    }
+                    if(c_lightness <= 0.4) {
+                        $(this).css("color", "rgb(250,250,250)");
+                    }
+
+                });
+            });
+        });
+        */
+
     }
 
     public addSubscriber(events: [], callback: (context:any) => void) {
@@ -112,7 +152,7 @@ class EventsListener {
         };
 
         // get a unique DOM id
-        let id:string = UIHelper.getUUID();
+        let id:string = UIHelper.getUuid();
         let target = '#'+id;
         let $container = $('<div></div>').attr('id', id);
         $container.appendTo('body');
