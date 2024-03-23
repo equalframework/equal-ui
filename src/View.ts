@@ -92,7 +92,7 @@ export class View {
      */
     constructor(context: Context, entity: string, type: string, name: string, domain: any[], mode: string, purpose: string, lang: string, config: any = null) {
         // generate a random UUID
-        this.uuid = UIHelper.getUUID();
+        this.uuid = UIHelper.getUuid();
         this.params = {};
         this.context = context;
         this.entity = entity;
@@ -289,12 +289,11 @@ export class View {
 
         }
 
-        this.$container = $('<div />').addClass('sb-view').attr('data-view_id', this.getId()).attr('data-entity', this.entity).hide();
+        this.$container = $('<div />').attr('id', this.getUuid()).addClass('sb-view').attr('data-view_id', this.getId()).attr('data-entity', this.entity).hide();
 
         this.$headerContainer = $('<div />').addClass('sb-view-header').appendTo(this.$container);
         this.$layoutContainer = $('<div />').addClass('sb-view-layout').appendTo(this.$container);
         this.$footerContainer = $('<div />').addClass('sb-view-footer').appendTo(this.$container);
-
 
         this.layout = LayoutFactory.getLayout(this);
         this.model = new Model(this);
@@ -503,7 +502,7 @@ export class View {
                                         if(action.hasOwnProperty('confirm') && action.confirm) {
                                             // params dialog
                                             if(Object.keys(missing_params).length) {
-                                                let $dialog = UIHelper.createDialog(this.getUUID()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
+                                                let $dialog = UIHelper.createDialog(this.getUuid()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
                                                 $dialog.find('.mdc-dialog__content').append($description);
                                                 await this.decorateActionDialog($dialog, action, missing_params, object, user, parent);
                                                 $dialog.addClass('sb-view-dialog').appendTo(this.getContainer());
@@ -515,7 +514,7 @@ export class View {
                                             // confirm dialog
                                             else {
                                                 // display confirmation dialog with checkbox for archive
-                                                let $dialog = UIHelper.createDialog(this.getUUID()+'_'+action.id+'_confirm-action-dialog', TranslationService.instant('SB_ACTIONS_CONFIRM'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
+                                                let $dialog = UIHelper.createDialog(this.getUuid()+'_'+action.id+'_confirm-action-dialog', TranslationService.instant('SB_ACTIONS_CONFIRM'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
                                                 $dialog.find('.mdc-dialog__content').append($description);
                                                 $dialog.appendTo(this.getContainer());
                                                 $dialog
@@ -527,7 +526,7 @@ export class View {
                                         else {
                                             // params dialog
                                             if(Object.keys(missing_params).length) {
-                                                let $dialog = UIHelper.createDialog(this.getUUID()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
+                                                let $dialog = UIHelper.createDialog(this.getUuid()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
                                                 $dialog.find('.mdc-dialog__content').append($description);
                                                 await this.decorateActionDialog($dialog, action, missing_params, object, user, parent);
                                                 $dialog.addClass('sb-view-dialog').appendTo(this.getContainer());
@@ -754,7 +753,7 @@ export class View {
         return this.type + '.' + this.name;
     }
 
-    public getUUID() {
+    public getUuid() {
         return this.uuid;
     }
 
@@ -878,21 +877,27 @@ export class View {
             ...this.params
         };
     }
+
     public getController() {
         return this.controller;
     }
+
     public getSort() {
         return this.sort;
     }
+
     public getOrder() {
         return this.order;
     }
+
     public getStart() {
         return +this.start;
     }
+
     public getLimit() {
         return +this.limit;
     }
+
     public getGroupBy() {
         return this.group_by;
     }
@@ -900,9 +905,11 @@ export class View {
     public getLang() {
         return this.lang;
     }
+
     public getLocale() {
         return this.config.locale;
     }
+
     public getTotal() {
         return this.getModel().getTotal();
     }
@@ -936,7 +943,6 @@ export class View {
     public getModelFields() {
         return this.model_fields;
     }
-
 
     /**
      * Generates a map holding all fields (as items objects) that are present in a given view
@@ -1145,10 +1151,7 @@ export class View {
 
             let view = new View(this.getContext(), this.controller.replace(/_/g, '\\'), 'search', 'default', [], 'edit', 'widget', this.lang, {});
             view.isReady().then( () => {
-                let $container = view.getContainer();
-                $layout.append($container);
-                // detect view submission / change
-                view.addSubscriber(['change'], async () => {
+                let updateParams = async () => {
                     // retrieve model of the view
                     let model = view.getModel();
                     let objects = await model.get();
@@ -1161,10 +1164,17 @@ export class View {
                         }
                         this.params[field] = value;
                     }
+                };
+                let $container = view.getContainer();
+                $layout.append($container);
+                // detect view submission / change
+                view.addSubscriber(['change'], async () => {
+                    await updateParams();
                     // trigger a refresh of the current view
                     this.onchangeView();
                 });
-
+                // initial assignment of params from advanced search view
+                updateParams();
             });
 
         }
@@ -1216,20 +1226,28 @@ export class View {
             }, 100);
         });
 
-        let $advanced_filters_button =
-        $('<div/>').addClass('sb-view-header-list-advanced-filters-button')
-        .append( UIHelper.createButton(this.getUUID()+'-advanced-filters', 'filters', 'icon', 'chevron_right') ).prependTo($level1);
+        if(this.hasAdvancedFilters()) {
+            let $advanced_filters_button = $('<div/>').addClass('sb-view-header-list-advanced-filters-button')
+                .append( UIHelper.createButton(this.getUuid()+'-advanced-filters', 'filters', 'icon', 'chevron_right') ).prependTo($level1);
 
-        $advanced_filters_button.on('click', () => {
-            $elem.toggleClass('is-advanced-open');
-            let head_height = this.$headerContainer.height();
-            this.$layoutContainer.css({height: 'calc(100% - '+head_height+'px)'});
-        });
+            $advanced_filters_button.on('click', () => {
+                $elem.toggleClass('is-advanced-open');
+                let head_height = this.$headerContainer.height();
+                this.$layoutContainer.css({height: 'calc(100% - '+head_height+'px)'});
+            });
+
+            this.is_ready_promise.then( () => {
+                if(this.config.hasOwnProperty('header') && this.config.header.hasOwnProperty('advanced_search') && this.config.header.advanced_search) {
+                    if(this.config.header.advanced_search.hasOwnProperty('open') && this.config.header.advanced_search.open) {
+                        $advanced_filters_button.trigger('click');
+                    }
+                }
+            });
+        }
 
         // fields toggle menu : button for displaying the filters menu
-        let $filters_button =
-        $('<div/>').addClass('sb-view-header-list-filters mdc-menu-surface--anchor')
-        .append( UIHelper.createButton('view-filters', 'filters', 'icon', 'filter_list') );
+        let $filters_button = $('<div/>').addClass('sb-view-header-list-filters mdc-menu-surface--anchor')
+            .append( UIHelper.createButton('view-filters', 'filters', 'icon', 'filter_list') );
 
         // create floating menu for filters selection
         let $filters_menu = UIHelper.createMenu('filters-menu').addClass('sb-view-header-list-filters-menu').appendTo($filters_button);
@@ -1240,10 +1258,10 @@ export class View {
             let filter = this.filters[filter_id];
 
             UIHelper.createListItem(filter_id, filter.description)
-            .appendTo($filters_list)
-            .on('click', (event) => {
-                this.applyFilter(filter_id);
-            });
+                .appendTo($filters_list)
+                .on('click', (event) => {
+                    this.applyFilter(filter_id);
+                });
         }
 
         // append additional option for custom filter
@@ -1257,8 +1275,8 @@ export class View {
         this.decorateCustomFilterDialog($custom_filter_dialog);
 
         UIHelper.createListItem('SB_FILTERS_ADD_CUSTOM_FILTER', TranslationService.instant('SB_FILTERS_ADD_CUSTOM_FILTER'))
-        .appendTo($filters_list)
-        .on('click', (event) => $custom_filter_dialog.trigger('_open') );
+            .appendTo($filters_list)
+            .on('click', (event) => $custom_filter_dialog.trigger('_open') );
 
 
         UIHelper.decorateMenu($filters_menu);
@@ -1266,9 +1284,8 @@ export class View {
 
 
         // fields toggle menu : button for displaying the fields menu
-        let $fields_toggle_button =
-        $('<div/>').addClass('sb-view-header-list-fields_toggle mdc-menu-surface--anchor')
-        .append( UIHelper.createButton('view-filters', 'fields', 'icon', 'more_vert') );
+        let $fields_toggle_button = $('<div/>').addClass('sb-view-header-list-fields_toggle mdc-menu-surface--anchor')
+            .append( UIHelper.createButton('view-filters', 'fields', 'icon', 'more_vert') );
 
         // create floating menu for fields selection
         let $fields_toggle_menu = UIHelper.createMenu('fields-menu').addClass('sb-view-header-list-fields_toggle-menu').appendTo($fields_toggle_button);
@@ -1302,49 +1319,49 @@ export class View {
         let $refresh_list_button = UIHelper.createButton('refresh-view', 'refresh', 'icon', 'refresh').on('click', () => this.onchangeView());
 
         $pagination.find('.pagination-container')
-        .prepend( $refresh_list_button );
+            .prepend( $refresh_list_button );
 
         $pagination.find('.pagination-total')
-        .append( $('<span class="sb-view-header-list-pagination-start"></span>') ).append( $('<span />').text('-') )
-        .append( $('<span class="sb-view-header-list-pagination-end"></span>') ).append( $('<span />').text(' / ') )
-        .append( $('<span class="sb-view-header-list-pagination-total"></span>') );
+            .append( $('<span class="sb-view-header-list-pagination-start"></span>') ).append( $('<span />').text('-') )
+            .append( $('<span class="sb-view-header-list-pagination-end"></span>') ).append( $('<span />').text(' / ') )
+            .append( $('<span class="sb-view-header-list-pagination-total"></span>') );
 
         $pagination.find('.pagination-navigation')
-        .append(
-            UIHelper.createButton('', '', 'icon', 'first_page').addClass('sb-view-header-list-pagination-first_page')
-            .on('click', (event: any) => {
-                this.setStart(0);
-                this.onchangeView();
-            })
-        )
-        .append(
-            UIHelper.createButton('', '', 'icon', 'chevron_left').addClass('sb-view-header-list-pagination-prev_page')
-            .on('click', (event: any) => {
-                this.setStart( Math.max(0, this.getStart() - this.getLimit()) );
-                this.onchangeView();
-            })
-        )
-        .append(
-            UIHelper.createButton('', '', 'icon', 'chevron_right').addClass('sb-view-header-list-pagination-next_page')
-            .on('click', (event: any) => {
-                let new_start:number = Math.min( this.getTotal()-1, this.getStart() + this.getLimit() );
-                this.setStart(new_start);
-                this.onchangeView();
-            })
-        )
-        .append(
-            UIHelper.createButton('', '', 'icon', 'last_page').addClass('sb-view-header-list-pagination-last_page')
-            .on('click', (event: any) => {
-                let new_start:number = this.getTotal()-1;
-                this.setStart(new_start);
-                this.onchangeView();
-            })
-        );
+            .append(
+                UIHelper.createButton('', '', 'icon', 'first_page').addClass('sb-view-header-list-pagination-first_page')
+                .on('click', (event: any) => {
+                    this.setStart(0);
+                    this.onchangeView();
+                })
+            )
+            .append(
+                UIHelper.createButton('', '', 'icon', 'chevron_left').addClass('sb-view-header-list-pagination-prev_page')
+                .on('click', (event: any) => {
+                    this.setStart( Math.max(0, this.getStart() - this.getLimit()) );
+                    this.onchangeView();
+                })
+            )
+            .append(
+                UIHelper.createButton('', '', 'icon', 'chevron_right').addClass('sb-view-header-list-pagination-next_page')
+                .on('click', (event: any) => {
+                    let new_start:number = Math.min( this.getTotal()-1, this.getStart() + this.getLimit() );
+                    this.setStart(new_start);
+                    this.onchangeView();
+                })
+            )
+            .append(
+                UIHelper.createButton('', '', 'icon', 'last_page').addClass('sb-view-header-list-pagination-last_page')
+                .on('click', (event: any) => {
+                    let new_start:number = this.getTotal()-1;
+                    this.setStart(new_start);
+                    this.onchangeView();
+                })
+            );
 
         let $select = UIHelper.createPaginationSelect('', '', [5, 10, 25, 50, 100, 500], this.limit).addClass('sb-view-header-list-pagination-limit_select');
 
         $pagination.find('.pagination-rows-per-page')
-        .append($select);
+            .append($select);
 
         $select.find('input').on('change', (event: any) => {
             let $this = $(event.currentTarget);
@@ -1427,7 +1444,7 @@ export class View {
 
         let $advanced_filters_button =
         $('<div/>').addClass('sb-view-header-list-advanced-filters-button')
-        .append( UIHelper.createButton(this.getUUID()+'-advanced-filters', 'filters', 'icon', 'chevron_right') ).prependTo($level1);
+        .append( UIHelper.createButton(this.getUuid()+'-advanced-filters', 'filters', 'icon', 'chevron_right') ).prependTo($level1);
 
         $advanced_filters_button.on('click', () => {
             $elem.toggleClass('is-advanced-open');
@@ -1477,9 +1494,9 @@ export class View {
         // pagination controls
         let $pagination = UIHelper.createPagination().addClass('sb-view-header-list-pagination');
 
-        let $refresh_list_button = UIHelper.createButton(this.getUUID()+'-refresh-view', 'refresh', 'icon', 'refresh').on('click', () => this.onchangeView());
+        let $refresh_list_button = UIHelper.createButton(this.getUuid()+'-refresh-view', 'refresh', 'icon', 'refresh').on('click', () => this.onchangeView());
 
-        let $switch_grid_button = UIHelper.createButton(this.getUUID()+'switch-view', 'refresh', 'icon', 'list').on('click', () => {
+        let $switch_grid_button = UIHelper.createButton(this.getUuid()+'switch-view', 'refresh', 'icon', 'list').on('click', () => {
             this.setMode('grid');
             this.$layoutContainer.removeClass('sb-view-layout-chart');
             this.$layoutContainer.addClass('sb-view-layout-list');
@@ -1488,7 +1505,7 @@ export class View {
             $switch_chart_button.show();
         }).hide();
 
-        let $switch_chart_button = UIHelper.createButton(this.getUUID()+'switch-view', 'refresh', 'icon', 'bar_chart').on('click', () => {
+        let $switch_chart_button = UIHelper.createButton(this.getUuid()+'switch-view', 'refresh', 'icon', 'bar_chart').on('click', () => {
             this.setMode('chart');
             this.$layoutContainer.removeClass('sb-view-layout-list');
             this.$layoutContainer.addClass('sb-view-layout-chart');
@@ -1979,9 +1996,9 @@ export class View {
 
 
                 $std_actions
-                .append($disable_overlay)
-                .append($save_button)
-                .append($cancel_button);
+                    .append($disable_overlay)
+                    .append($save_button)
+                    .append($cancel_button);
                 break;
         }
 
@@ -2600,6 +2617,7 @@ export class View {
                     // close context
                     await this.closeContext();
                 }
+                // handle other HTTP 2xx codes (200 and 204)
                 else {
                     // refresh current view
                     // #memo - this will trigger updatedContext
