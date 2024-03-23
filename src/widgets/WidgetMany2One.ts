@@ -12,6 +12,36 @@ export default class WidgetMany2One extends Widget {
         super(layout, 'many2one', label, value, config);
     }
 
+    /**
+     * Resizes the height of the menu according to the available vertical space
+     * in the viewport (with 20px of margin at the top and the bottom).
+     *
+     */
+    private resizeMenu($menu: any) {
+        // force setting height according to inner content
+        $menu.css({height: 'auto'});
+        let rect = $menu[0].getBoundingClientRect();
+        if(rect.height == 0) {
+            return;
+        }
+        let min_top : number = 20;
+        let max_bottom : number = <number> $(window).height() - 20;
+        console.log(rect, max_bottom);
+        if(rect.top < min_top) {
+            // move top to 0 and add diff to height
+            let diff = Math.abs(min_top - rect.top);
+            let height = Math.floor(rect.height - diff);
+            $menu.css({ top: min_top + 'px', height: height + 'px' });
+        }
+        rect = $menu[0].getBoundingClientRect();
+        if(rect.bottom > max_bottom) {
+            // subtract diff from height
+            let diff = Math.abs(rect.bottom - max_bottom);
+            let height = Math.floor(rect.height - diff);
+            $menu.css({height: height + 'px' });
+        }
+    }
+
     public render():JQuery {
         console.debug('WidgetMany2One::render', this.config);
         // in edit mode, we should have received an id, in view mode, a name
@@ -197,10 +227,12 @@ export default class WidgetMany2One extends Widget {
                         let tmpDomain = new Domain(domainArray);
                         tmpDomain.merge(new Domain(domain));
                         // fetch first objects from config.foreign_object (use config.domain) + add an extra line ("advanced search...")
-                        let limit = (this.config.limit)?this.config.limit:5;
+                        let limit = (this.config.hasOwnProperty('limit') && this.config.limit)?this.config.limit:5;
+                        let order = (this.config.hasOwnProperty('order') && this.config.order)?this.config.order:'id';
+                        let sort  = (this.config.hasOwnProperty('sort') && this.config.sort)?this.config.sort:'asc';
 
                         try {
-                            let response = await ApiService.collect(this.config.foreign_object, tmpDomain.toArray(), ['id', 'name'], 'id', 'asc', 0, limit, this.config.lang);
+                            let response = await ApiService.collect(this.config.foreign_object, tmpDomain.toArray(), ['id', 'name'], order, sort, 0, limit, this.config.lang);
                             objects = response;
                             $menu_list.empty();
                             for(let object of objects) {
@@ -214,8 +246,8 @@ export default class WidgetMany2One extends Widget {
                                 })
                             }
                             if(objects.length) {
-                                if(objects.length == 1) {
-                                    // if list is exactly 1 object long : auto-select
+                                if(objects.length == 1 && (!this.config.hasOwnProperty('autoselect') || this.config.autoselect == true)) {
+                                    // if list is exactly 1 object long : auto select
                                     let object = objects[0];
                                     $input.val(object.name).trigger('change');
                                     $select.attr('data-selected', object.id);
@@ -248,7 +280,7 @@ export default class WidgetMany2One extends Widget {
                 if(this.config.layout == 'form' && !this.readonly) {
                     console.debug('WidgetMany2One:: setting up listener on $select');
 
-                    let $button_reset = UIHelper.createButton('m2o-actions-reset-'+this.id, '', 'icon', 'close').css({"position": "absolute", "right": "45px", "top": "5px", "z-index": "2"});
+                    let $button_reset = UIHelper.createButton('m2o-actions-reset-'+this.id, '', 'icon', 'close').css({"position": "absolute", "right": "45px", "top": "5px", "z-index": "1"});
 
                     if(!this.config.has_action_open && !this.config.has_action_create) {
                         $button_reset.css({"right": "5px"});
@@ -317,7 +349,7 @@ export default class WidgetMany2One extends Widget {
                         }
                     });
 
-                    $select.find('input').on('focus', (event:any) => {
+                    $select.find('input').on('focus', async (event:any) => {
                         console.debug('WidgetMany2One:: $select received focus');
                         event.stopPropagation();
 
@@ -332,10 +364,11 @@ export default class WidgetMany2One extends Widget {
                             return;
                         }
                         has_focus = false;
-                        feedObjects();
+                        await feedObjects();
                         // delay has_focus to distinguish first focus and later
                         setTimeout( () => {
                             has_focus = true;
+                            this.resizeMenu($select.find('.mdc-menu-surface'));
                         }, 250);
 
                     });
@@ -377,10 +410,11 @@ export default class WidgetMany2One extends Widget {
                             if(timeout) {
                                 clearTimeout(timeout);
                             }
-                            timeout = setTimeout(() => {
+                            timeout = setTimeout( async () => {
                                 timeout = null;
-                                feedObjects();
-                            }, 300);
+                                await feedObjects();
+                                this.resizeMenu($select.find('.mdc-menu-surface'));
+                            }, 250);
                         }
                     });
 
