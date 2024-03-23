@@ -41,7 +41,7 @@ export class Layout implements LayoutInterface{
      * @param view  View    Parent View object
      */
     constructor(view:View) {
-        this.uuid = UIHelper.getUUID();
+        this.uuid = UIHelper.getUuid();
         this.view = view;
         this.$layout = $('<div />').addClass('sb-layout');
         this.model_widgets = {};
@@ -52,17 +52,21 @@ export class Layout implements LayoutInterface{
         Methods from interface, meant to be overloaded in inherited classes
     */
     public init() {}
+
     public async refresh(full: boolean = false) {}
+
     public loading(loading:boolean) {}
 
     /*
         Common methods meant to be overloaded in inherited classes
     */
     protected layout() {}
+
     protected async feed(objects: any) {}
 
-
-
+    public getUuid() {
+        return this.uuid;
+    }
 
     public getView() {
         return this.view;
@@ -248,9 +252,17 @@ export class Layout implements LayoutInterface{
                 if(!action.hasOwnProperty('params')) {
                     action['params'] = {};
                 }
+
+                // inject params of current view as (sub) params
+                action.params['params'] = this.getView().getParams();
+
                 // by convention, add current object id as reference
                 if(object.hasOwnProperty('id') && !action.params.hasOwnProperty('id')) {
                     action.params['id'] = 'object.id';
+                }
+                // if there is no `id`, add the domain of the current view, if any
+                else {
+                    action.params['domain'] = JSON.stringify(this.view.getDomain());
                 }
 
                 // if view is a widget, add parent object reference
@@ -312,7 +324,7 @@ export class Layout implements LayoutInterface{
                 if(action.hasOwnProperty('confirm') && action.confirm) {
                     // params dialog
                     if(Object.keys(missing_params).length) {
-                        let $dialog = UIHelper.createDialog(this.view.getUUID()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
+                        let $dialog = UIHelper.createDialog(this.view.getUuid()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
                         $dialog.find('.mdc-dialog__content').append($description);
                         await this.view.decorateActionDialog($dialog, action, missing_params, object, user, parent);
                         $dialog.addClass('sb-view-dialog').appendTo(this.view.getContainer());
@@ -324,7 +336,7 @@ export class Layout implements LayoutInterface{
                     // confirm dialog
                     else {
                         // display confirmation dialog with checkbox for archive
-                        let $dialog = UIHelper.createDialog(this.view.getUUID()+'_'+action.id+'_confirm-action-dialog', TranslationService.instant('SB_ACTIONS_CONFIRM'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
+                        let $dialog = UIHelper.createDialog(this.view.getUuid()+'_'+action.id+'_confirm-action-dialog', TranslationService.instant('SB_ACTIONS_CONFIRM'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
                         $dialog.find('.mdc-dialog__content').append($description);
                         $dialog.appendTo(this.view.getContainer());
                         $dialog
@@ -336,7 +348,7 @@ export class Layout implements LayoutInterface{
                 else {
                     // params dialog
                     if(Object.keys(missing_params).length) {
-                        let $dialog = UIHelper.createDialog(this.view.getUUID()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
+                        let $dialog = UIHelper.createDialog(this.view.getUuid()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
                         $dialog.find('.mdc-dialog__content').append($description);
                         await this.view.decorateActionDialog($dialog, action, missing_params, object, user, parent);
                         $dialog.addClass('sb-view-dialog').appendTo(this.view.getContainer());
