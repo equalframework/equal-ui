@@ -232,16 +232,13 @@ export class LayoutList extends Layout {
         UIHelper.decorateTable($elem);
 
         if(view_schema.hasOwnProperty('actions') && this.view.getPurpose() != 'widget') {
-            let $view_actions = this.view.getContainer().find('.sb-view-header-actions-view');
+            let $view_actions = this.view.getContainer().find('.sb-view-header-actions-view').first();
 
             for(let action of view_schema.actions) {
-
                 let action_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, action.label);
-                let $button = UIHelper.createButton('action-view-'+action.id, action_title, 'outlined')
-
-                this.decorateActionButton($button, action);
-
-                $view_actions.append($button);
+                let $action_button = UIHelper.createButton(this.uuid+'_action-view-'+action.id, action_title, 'outlined')
+                $view_actions.append($action_button);
+                this.decorateActionButton($action_button, action);
             }
         }
     }
@@ -427,9 +424,14 @@ export class LayoutList extends Layout {
 
                 let label = key;
 
-                if(key.hasOwnProperty('name')) {
+                if(typeof key == 'object' && key.hasOwnProperty('name')) {
                     label = key.name;
-                    key = key.name;
+                    if(group.hasOwnProperty('order') && key.hasOwnProperty(group.order)) {
+                        key = String(key[group.order]).padStart(11, '0');
+                    }
+                    else {
+                        key = key.name;
+                    }
                 }
 
                 if(['date', 'datetime'].indexOf(model_def['type']) >= 0) {
@@ -739,7 +741,7 @@ export class LayoutList extends Layout {
             .attr('data-label', group['_label'])
            .attr('data-level', group['_level'])
             .attr('data-children-count', children_count)
-            .attr('id', UIHelper.getUUID());
+            .attr('id', UIHelper.getUuid());
 
         if(this.view.getPurpose() != 'widget' || this.view.getMode() == 'edit') {
             let $checkbox = UIHelper.createTableCellCheckbox().addClass('sb-view-layout-list-row-checkbox');
