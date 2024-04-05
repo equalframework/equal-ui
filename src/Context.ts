@@ -170,7 +170,10 @@ export class Context {
         return this.view;
     }
 
-    public getConfig() {
+    public getConfig(drop_callback=false) {
+        if(drop_callback) {
+            return {...this.config, ...{callback: null}};
+        }
         return this.config;
     }
 
