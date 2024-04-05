@@ -60,6 +60,17 @@ body, html {
     display: none;
 }
 
+.sb-view-loader-overlay {
+    position: relative;
+}
+
+.sb-view-loader-overlay .loader-container {
+    position: absolute;
+    top: 50px;
+    left: calc(50% - 50px);
+    z-index: 1;
+}
+
 .sb-container-loader-overlay .loader-container {
     position: fixed;
     display: flex;
@@ -71,7 +82,7 @@ body, html {
     bottom: 0;
 }
 
-.sb-container-loader-overlay .loader-spinner {
+.sb-container-loader-overlay .loader-spinner, .sb-view-loader-overlay .loader-spinner {
     display: inline-block;
     width: 56px;
     height: 56px;
@@ -160,17 +171,57 @@ body, html {
     height: 48px;
     line-height: 48px;
     white-space: nowrap;
-    overflow: hidden !important;
     text-overflow: ellipsis;
 }
 
+.sb-container-header span {
+    position: relative;
+}
+
 .sb-container-header a {
+    position: relative;
     cursor: pointer;
     text-decoration: none;
     color: var(--mdc-theme-primary);
     white-space: nowrap;
-    overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.sb-container-header a:hover {
+    opacity: 1;
+}
+
+.sb-container-header .header-view-details-popup {
+    position: absolute;
+    left: 0;
+    top: 40px;
+    min-width: 250px;
+    height:  150px;
+    border:  solid 1px lightgrey;
+    z-index: 4;
+    background: white;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+    color: #3e3e3e;
+}
+
+.sb-container-header .header-view-details-popup .header-view-details-title {
+    height: 34px;
+    background: #f5f5f5;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 34px;
+    padding: 0 12px;
+}
+
+.sb-container-header .header-view-details-popup .header-view-details-body {
+    font-size: 14px;
+    line-height: 24px;
+    padding: 12px;
 }
 
 .sb-container-header .lang-selector {
@@ -329,30 +380,22 @@ body, html {
 
 .sb-view-layout-list .table-operations .operation .operation-row {
     display: flex;
+    justify-content: space-between;
     width: 100%;
     min-height: 44px;
 }
 
 .sb-view-layout-list .table-operations .operation .operation-row .operation-cell {
-    display: flex;
-    align-items: center;
-    padding: 0 2px;
+    padding: 12px 2px;
     overflow: hidden;
+    white-space: nowrap;
     text-overflow: ellipsis;
-}
-
-.sb-view-layout-list .table-operations .operation .operation-row .operation-cell input {
-    font-family: roboto;
-    font-size: 15px;
     font-weight: 500;
-    border: 0;
-    width: 100%;
 }
 
 .sb-view-layout-list .table-operations .operation .operation-row .operation-cell:first-child {
     padding-left: 12px;
 }
-
 
 .sb-view-header-list {
     position: relative;
