@@ -76,6 +76,8 @@ export class LayoutForm extends Layout {
                     selected_section = view_config.selected_sections[i];
                 }
 
+                $group.attr('data-sections_count', group.sections.length);
+
                 let $tabs = UIHelper.createTabBar('sections-'+group_id, '', '').addClass('sb-view-form-sections-tabbar');
 
                 if(group.sections.length > 1 ||  group.sections[0].hasOwnProperty('label')){
@@ -92,7 +94,12 @@ export class LayoutForm extends Layout {
                     let $section = $('<div />').attr('id', section_id).addClass('sb-view-form-section mdc-layout-grid').appendTo($group);
 
                     if(j != selected_section) {
+                        // #memo - being the first section is not enough : a visible attribute evaluated to false might still be present
                         $section.hide();
+                    }
+
+                    if(section.hasOwnProperty('visible')) {
+                        $section.attr('data-visible', JSON.stringify(section.visible));
                     }
 
                     if(group.sections.length > 1 || section.hasOwnProperty('label')) {
@@ -102,10 +109,15 @@ export class LayoutForm extends Layout {
                             section_title = TranslationService.resolve(translation, 'view', [this.view.getId(), 'layout'], section.id, section_title);
                         }
 
-                        let $tab = UIHelper.createTabButton(section_id+'-tab', section_title, (j == selected_section)).addClass('sb-view-form-section-tab')
+                        let $tab = UIHelper.createTabButton(section_id+'-tab', section_title, (j == selected_section))
+                            .addClass((j == selected_section)?'is-active':'')
+                            .addClass('sb-view-form-section-tab')
+                            .attr('data-section_id', section_id)
                             .on('click', () => {
                                 $group.find('.sb-view-form-section').hide();
+                                $group.find('.sb-view-form-section-tab').removeClass('is-active');
                                 $group.find('#'+section_id).show();
+                                $tab.addClass('is-active');
                             });
 
                         if(section.hasOwnProperty('visible')) {
@@ -284,47 +296,52 @@ export class LayoutForm extends Layout {
             let $groups = this.$layout.find('.sb-view-form-group');
             $groups.each( (i:number, elem:any) => {
                 let $group = $(elem);
-                let visible = $group.attr('data-visible');
-                if(visible != undefined) {
-                    if(visible == 'false') {
-                        $group.hide();
+                let visible = this.isVisible(<string> $group.attr('data-visible'), object, user);
+                if(visible) {
+                    $group.show();
+                }
+                else {
+                    $group.hide();
+                }
+                // handle group with a single section
+                if(parseInt(<string> $group.attr('data-sections_count')) <= 1) {
+                    // update section visibility
+                    let $section = $group.find('.sb-view-form-section').first();
+                    let visible = this.isVisible(<string> $section.attr('data-visible'), object, user);
+                    if(visible) {
+                        $section.show();
                     }
                     else {
-                        let domain = new Domain(JSON.parse(visible));
-                        if(domain.evaluate(object, user)) {
-                            $group.show();
-                        }
-                        else {
-                            $group.hide();
-                        }
+                        $section.hide();
                     }
                 }
             });
 
+
             // update tabs visibility, if any
-            // #todo - handle standalone sections
             let $tabs = this.$layout.find('.mdc-tab.sb-view-form-section-tab');
+            // when active tab is hidden, the next visible one must be auto selected
+            let auto_select:boolean = false;
             $tabs.each( (i:number, elem:any) => {
                 let $tab = $(elem);
-                let visible = $tab.attr('data-visible');
-                if(visible != undefined) {
-                    if(visible == 'false') {
-                        $tab.hide();
+                let visible = this.isVisible(<string> $tab.attr('data-visible'), object, user);
+                if(visible) {
+                    $tab.show();
+                    if(auto_select) {
+                        $tab.trigger('click');
+                        auto_select = false;
                     }
-                    else {
-                        let domain = new Domain(JSON.parse(visible));
-                        if(domain.evaluate(object, user)) {
-                            $tab.show();
-                        }
-                        else {
-                            $tab.hide();
-                        }
+                }
+                else {
+                    $tab.hide();
+                    this.$layout.find('#'+ $tab.attr('data-section_id')).hide();
+                    if($tab.hasClass('is-active')) {
+                        auto_select = true;
                     }
                 }
             });
 
             for(let widget_index of Object.keys(this.model_widgets[0])) {
-
                 let widget = this.model_widgets[0][widget_index];
                 // widget might be missing (if not visible)
                 if(!widget) {
@@ -520,5 +537,25 @@ export class LayoutForm extends Layout {
         }
 
     }
+
+    private isVisible(visible: string, object: any, user: any) {
+        let result = true;
+        if(visible != undefined) {
+            if(visible == 'false') {
+                result = false;
+            }
+            else {
+                let domain = new Domain(JSON.parse(visible));
+                if(domain.evaluate(object, user)) {
+                    result = true;
+                }
+                else {
+                    result = false;
+                }
+            }
+        }
+        return result;
+    }
+
 
 }
