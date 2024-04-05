@@ -289,7 +289,12 @@ export class View {
 
         }
 
-        this.$container = $('<div />').attr('id', this.getUuid()).addClass('sb-view').attr('data-view_id', this.getId()).attr('data-entity', this.entity).hide();
+        this.$container = $('<div />').attr('id', this.getUuid()).addClass('sb-view')
+            .attr('data-view_id', this.getId())
+            .attr('data-entity', this.entity)
+            .attr('data-mode', this.mode)
+            .attr('data-purpose', this.purpose)
+            .hide();
 
         this.$headerContainer = $('<div />').addClass('sb-view-header').appendTo(this.$container);
         this.$layoutContainer = $('<div />').addClass('sb-view-layout').appendTo(this.$container);
@@ -313,19 +318,13 @@ export class View {
             const model = await ApiService.getSchema(this.entity);
             this.model_schema = this.deepCopy(model);
 
-
             let view = await ApiService.getView(this.entity, this.type + '.' + this.name);
             if(!Object.keys(view).length) {
-                // fallback to default view
-                view = await ApiService.getView(this.entity, this.type + '.default');
-                if(!Object.keys(view).length) {
-                    console.warn("empty view for "+this.entity+"."+this.type+".default, stop processing");
-                    return;
-                }
-                this.name = 'default';
+                // #memo - fallback to default view is performed in the back-end
+                console.warn("no result for "+this.entity+"."+this.type+"."+this.name+", stop processing");
+                return;
             }
             this.view_schema = this.deepCopy(view);
-
 
             this.loadViewFields(this.view_schema);
             this.loadModelFields(this.model_schema);
@@ -394,220 +393,224 @@ export class View {
 
             // support for custom selection_actions
             // expects a controller to which the selected_ids will be relayed, upon response the list is refreshed
-            if(this.view_schema.hasOwnProperty('header') && this.view_schema.header.hasOwnProperty('selection')) {
-                if(!this.view_schema.header.selection) {
-                    // if selection is disabled, force mode to view
-                    // #memo - for child views, mode can be switched through parent view
-                    this.mode = 'view';
-                }
-                else {
-                    if(!this.view_schema.header.selection.hasOwnProperty('default') || this.view_schema.header.selection.default == true) {
-                        // use default actions unless default explicitly set to false
-                        this.config.selection_actions = this.config.selection_actions_default;
+
+            // #memo - selection action cannot be changed for widget view
+            if(this.purpose == 'view') {
+                if(this.view_schema.hasOwnProperty('header') && this.view_schema.header.hasOwnProperty('selection')) {
+                    if(!this.view_schema.header.selection) {
+                        // if selection is disabled, force mode to view (to prevent displaying checkboxes)
+                        // #memo - for child views, mode can be switched through parent view
+                        this.mode = 'view';
                     }
-                    if(this.view_schema.header.selection.hasOwnProperty('actions') && Array.isArray(this.view_schema.header.selection.actions)) {
-                        for(let action of this.view_schema.header.selection.actions) {
-                            // enrich the item with an action handler based on given controller, if any
-                            action['handler'] = async (selection:any, item:any) => {
-                                if(item.hasOwnProperty('controller')) {
-                                    try {
-                                        let resulting_params:any = {
-                                            entity: this.getEntity(),
-                                            ids: selection,
-                                            // make sure the targeted controller is not meant for single object (expecting an `id` param)
-                                            id: 0,
-                                            lang: this.getLang()
-                                        };
-                                        // #todo - export to a dedicated class : from here code is very close to `decorateActionButton` in Layout class
-                                        let missing_params:any = {};
-                                        let user = this.getUser();
+                    else {
+                        if(!this.view_schema.header.selection.hasOwnProperty('default') || this.view_schema.header.selection.default == true) {
+                            // use default actions unless default explicitly set to false
+                            this.config.selection_actions = this.config.selection_actions_default;
+                        }
+                        if(this.view_schema.header.selection.hasOwnProperty('actions') && Array.isArray(this.view_schema.header.selection.actions)) {
+                            for(let action of this.view_schema.header.selection.actions) {
+                                // enrich the item with an action handler based on given controller, if any
+                                action['handler'] = async (selection:any, item:any) => {
+                                    if(item.hasOwnProperty('controller')) {
+                                        try {
+                                            let resulting_params:any = {
+                                                entity: this.getEntity(),
+                                                ids: selection,
+                                                // make sure the targeted controller is not meant for single object (expecting an `id` param)
+                                                id: 0,
+                                                lang: this.getLang()
+                                            };
+                                            // #todo - export to a dedicated class : from here code is very close to `decorateActionButton` in Layout class
+                                            let missing_params:any = {};
+                                            let user = this.getUser();
 
-                                        // 1) pre-feed with params from the action, if any
+                                            // 1) pre-feed with params from the action, if any
 
-                                        if(!action.hasOwnProperty('params')) {
-                                            action['params'] = {};
-                                        }
-
-                                        let object:any = {};
-                                        let parent:any = {};
-
-                                        // if view is a form, add object reference
-                                        if(this.getType() == 'form') {
-                                            let model = view.getModel();
-                                            let objects = await model.get();
-                                            object = objects[0];
-                                            // by convention, add current object id as reference
-                                            if(object.hasOwnProperty('id') && !action.params.hasOwnProperty('id')) {
-                                                action.params['id'] = 'object.id';
+                                            if(!action.hasOwnProperty('params')) {
+                                                action['params'] = {};
                                             }
-                                        }
 
-                                        // if view is a widget, add parent object reference
-                                        if(this.getContext().getView() != this) {
-                                            let parentView:View = this.getContext().getView();
-                                            let parent_objects = await parentView.getModel().get();
-                                            parent = parent_objects[0];
-                                        }
+                                            let object:any = {};
+                                            let parent:any = {};
 
-                                        // inject referenced values in the resulting params
-                                        for(let param of Object.keys(action.params)) {
-                                            let ref = new Reference(action.params[param]);
-                                            resulting_params[param] = ref.parse(object, user, parent);
-                                        }
-
-                                        // 2) retrieve announcement from the target action controller
-                                        const result = await ApiService.fetch("/", {do: action.controller, announce: true});
-                                        let params: any = {};
-                                        let response_descr:any = {};
-                                        let description:string = '';
-
-                                        if(result.hasOwnProperty('announcement')) {
-                                            if(result.announcement.hasOwnProperty('params')) {
-                                                params = result.announcement.params;
-                                            }
-                                            for(let param of Object.keys(params)) {
-                                                if(Object.keys(resulting_params).indexOf(param) < 0) {
-                                                    missing_params[param] = params[param];
+                                            // if view is a form, add object reference
+                                            if(this.getType() == 'form') {
+                                                let model = view.getModel();
+                                                let objects = await model.get();
+                                                object = objects[0];
+                                                // by convention, add current object id as reference
+                                                if(object.hasOwnProperty('id') && !action.params.hasOwnProperty('id')) {
+                                                    action.params['id'] = 'object.id';
                                                 }
                                             }
-                                            if(result.announcement.hasOwnProperty('response')) {
-                                                response_descr = result.announcement.response;
+
+                                            // if view is a widget, add parent object reference
+                                            if(this.getContext().getView() != this) {
+                                                let parentView:View = this.getContext().getView();
+                                                let parent_objects = await parentView.getModel().get();
+                                                parent = parent_objects[0];
                                             }
-                                            if(result.announcement.hasOwnProperty('description')) {
-                                                description = result.announcement.description;
+
+                                            // inject referenced values in the resulting params
+                                            for(let param of Object.keys(action.params)) {
+                                                let ref = new Reference(action.params[param]);
+                                                resulting_params[param] = ref.parse(object, user, parent);
                                             }
-                                        }
 
-                                        // retrieve translation related to action, if any
-                                        let translation = await ApiService.getTranslation(action.controller.replaceAll('_', '\\'));
+                                            // 2) retrieve announcement from the target action controller
+                                            const result = await ApiService.fetch("/", {do: action.controller, announce: true});
+                                            let params: any = {};
+                                            let response_descr:any = {};
+                                            let description:string = '';
 
-                                        // check presence of description and fallback to controller description
-                                        if(action.hasOwnProperty('description')) {
-                                            description = action.description;
-                                        }
-
-                                        let translated_description = TranslationService.resolve(translation, '', [], '', description, 'description');
-                                        // no translation was found for controller
-                                        if(translated_description == description) {
-                                            // fallback to current view translation
-                                            description = TranslationService.resolve(this.getTranslation(), 'view', [this.getId(), 'actions'], action.id, description, 'description');
-                                        }
-                                        else {
-                                            description = translated_description;
-                                        }
-
-                                        let defer = $.Deferred();
-                                        let $description = $('<p />').text(description);
-
-                                        if(action.hasOwnProperty('confirm') && action.confirm) {
-                                            // params dialog
-                                            if(Object.keys(missing_params).length) {
-                                                let $dialog = UIHelper.createDialog(this.getUuid()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
-                                                $dialog.find('.mdc-dialog__content').append($description);
-                                                await this.decorateActionDialog($dialog, action, missing_params, object, user, parent);
-                                                $dialog.addClass('sb-view-dialog').appendTo(this.getContainer());
-                                                $dialog
-                                                    .on('_accept', () => defer.resolve($dialog.data('result')))
-                                                    .on('_reject', () => defer.reject() );
-                                                $dialog.trigger('_open');
+                                            if(result.hasOwnProperty('announcement')) {
+                                                if(result.announcement.hasOwnProperty('params')) {
+                                                    params = result.announcement.params;
+                                                }
+                                                for(let param of Object.keys(params)) {
+                                                    if(Object.keys(resulting_params).indexOf(param) < 0) {
+                                                        missing_params[param] = params[param];
+                                                    }
+                                                }
+                                                if(result.announcement.hasOwnProperty('response')) {
+                                                    response_descr = result.announcement.response;
+                                                }
+                                                if(result.announcement.hasOwnProperty('description')) {
+                                                    description = result.announcement.description;
+                                                }
                                             }
-                                            // confirm dialog
+
+                                            // retrieve translation related to action, if any
+                                            let translation = await ApiService.getTranslation(action.controller.replaceAll('_', '\\'));
+
+                                            // check presence of description and fallback to controller description
+                                            if(action.hasOwnProperty('description')) {
+                                                description = action.description;
+                                            }
+
+                                            let translated_description = TranslationService.resolve(translation, '', [], '', description, 'description');
+                                            // no translation was found for controller
+                                            if(translated_description == description) {
+                                                // fallback to current view translation
+                                                description = TranslationService.resolve(this.getTranslation(), 'view', [this.getId(), 'actions'], action.id, description, 'description');
+                                            }
                                             else {
-                                                // display confirmation dialog with checkbox for archive
-                                                let $dialog = UIHelper.createDialog(this.getUuid()+'_'+action.id+'_confirm-action-dialog', TranslationService.instant('SB_ACTIONS_CONFIRM'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
-                                                $dialog.find('.mdc-dialog__content').append($description);
-                                                $dialog.appendTo(this.getContainer());
-                                                $dialog
-                                                .on('_accept', () => defer.resolve())
-                                                .on('_reject', () => defer.reject() );
-                                                $dialog.trigger('_open');
+                                                description = translated_description;
                                             }
-                                        }
-                                        else {
-                                            // params dialog
-                                            if(Object.keys(missing_params).length) {
-                                                let $dialog = UIHelper.createDialog(this.getUuid()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
-                                                $dialog.find('.mdc-dialog__content').append($description);
-                                                await this.decorateActionDialog($dialog, action, missing_params, object, user, parent);
-                                                $dialog.addClass('sb-view-dialog').appendTo(this.getContainer());
-                                                $dialog
-                                                    .on('_accept', () => defer.resolve($dialog.data('result')))
-                                                    .on('_reject', () => defer.reject() );
-                                                $dialog.trigger('_open');
-                                            }
-                                            // perform action without dialog
-                                            else {
-                                                defer.resolve();
-                                            }
-                                        }
 
-                                        defer.promise().then( async (result:any) => {
-                                            // mark action button as loading
+                                            let defer = $.Deferred();
+                                            let $description = $('<p />').text(description);
+
+                                            if(action.hasOwnProperty('confirm') && action.confirm) {
+                                                // params dialog
+                                                if(Object.keys(missing_params).length) {
+                                                    let $dialog = UIHelper.createDialog(this.getUuid()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
+                                                    $dialog.find('.mdc-dialog__content').append($description);
+                                                    await this.decorateActionDialog($dialog, action, missing_params, object, user, parent);
+                                                    $dialog.addClass('sb-view-dialog').appendTo(this.getContainer());
+                                                    $dialog
+                                                        .on('_accept', () => defer.resolve($dialog.data('result')))
+                                                        .on('_reject', () => defer.reject() );
+                                                    $dialog.trigger('_open');
+                                                }
+                                                // confirm dialog
+                                                else {
+                                                    // display confirmation dialog with checkbox for archive
+                                                    let $dialog = UIHelper.createDialog(this.getUuid()+'_'+action.id+'_confirm-action-dialog', TranslationService.instant('SB_ACTIONS_CONFIRM'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
+                                                    $dialog.find('.mdc-dialog__content').append($description);
+                                                    $dialog.appendTo(this.getContainer());
+                                                    $dialog
+                                                    .on('_accept', () => defer.resolve())
+                                                    .on('_reject', () => defer.reject() );
+                                                    $dialog.trigger('_open');
+                                                }
+                                            }
+                                            else {
+                                                // params dialog
+                                                if(Object.keys(missing_params).length) {
+                                                    let $dialog = UIHelper.createDialog(this.getUuid()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
+                                                    $dialog.find('.mdc-dialog__content').append($description);
+                                                    await this.decorateActionDialog($dialog, action, missing_params, object, user, parent);
+                                                    $dialog.addClass('sb-view-dialog').appendTo(this.getContainer());
+                                                    $dialog
+                                                        .on('_accept', () => defer.resolve($dialog.data('result')))
+                                                        .on('_reject', () => defer.reject() );
+                                                    $dialog.trigger('_open');
+                                                }
+                                                // perform action without dialog
+                                                else {
+                                                    defer.resolve();
+                                                }
+                                            }
+
+                                            defer.promise().then( async (result:any) => {
+                                                // mark action button as loading
+                                                try {
+                                                    await this.performAction(action, {...resulting_params, ...result}, response_descr);
+                                                }
+                                                catch(response) {
+
+                                                }
+                                            })
+                                            .catch( () => {
+                                                // error running action
+                                            });
+                                        }
+                                        catch(response) {
+                                            console.warn('unexpected error', response);
                                             try {
-                                                await this.performAction(action, {...resulting_params, ...result}, response_descr);
+                                                await this.displayErrorFeedback(this.translation, response);
                                             }
-                                            catch(response) {
-
+                                            catch(error) {
+                                                console.warn(error);
                                             }
-                                        })
-                                        .catch( () => {
-                                            // error running action
-                                        });
-                                    }
-                                    catch(response) {
-                                        console.warn('unexpected error', response);
-                                        try {
-                                            await this.displayErrorFeedback(this.translation, response);
-                                        }
-                                        catch(error) {
-                                            console.warn(error);
                                         }
                                     }
-                                }
-                            };
-                            if(action.hasOwnProperty('id')) {
-                                // check amongst actions already added (defaults ?)
-                                let index = this.config.selection_actions.findIndex( (item:any) => (item && item.hasOwnProperty('id') && item.id == action.id) );
-                                if(index >= 0) {
-                                    if(action.hasOwnProperty('visible') && action.visible === false) {
-                                        this.config.selection_actions.splice(index, 1);
+                                };
+                                if(action.hasOwnProperty('id')) {
+                                    // check amongst actions already added (defaults ?)
+                                    let index = this.config.selection_actions.findIndex( (item:any) => (item && item.hasOwnProperty('id') && item.id == action.id) );
+                                    if(index >= 0) {
+                                        if(action.hasOwnProperty('visible') && action.visible === false) {
+                                            this.config.selection_actions.splice(index, 1);
+                                        }
+                                        else if(action.hasOwnProperty('controller')) {
+                                            // overload a default action
+                                            this.config.selection_actions[index] = action;
+                                        }
                                     }
-                                    else if(action.hasOwnProperty('controller')) {
-                                        // overload a default action
-                                        this.config.selection_actions[index] = action;
+                                    else {
+                                        let index = this.config.selection_actions_default.findIndex( (item:any) => item.id == action.id );
+                                        if(index >= 0) {
+                                            // id matches a default action: use action from defaults
+                                            this.config.selection_actions.push(this.config.selection_actions_default[index]);
+                                        }
+                                        else {
+                                            // unknown id: add action as-is
+                                            this.config.selection_actions.push(action);
+                                        }
                                     }
                                 }
                                 else {
-                                    let index = this.config.selection_actions_default.findIndex( (item:any) => item.id == action.id );
-                                    if(index >= 0) {
-                                        // id matches a default action: use action from defaults
-                                        this.config.selection_actions.push(this.config.selection_actions_default[index]);
-                                    }
-                                    else {
-                                        // unknown id: add action as-is
-                                        this.config.selection_actions.push(action);
-                                    }
+                                    // no id: add action as-is
+                                    this.config.selection_actions.push(action);
                                 }
                             }
-                            else {
-                                // no id: add action as-is
-                                this.config.selection_actions.push(action);
-                            }
                         }
-                    }
 
+                    }
                 }
-            }
-            // no header.selection property: assign default actions
-            else {
-                // #todo - selection_actions might have been set in the config (it is the case for many2many widget) - this is legacy code and should be removed
-                if(!Array.isArray(this.config.selection_actions) || this.config.selection_actions.length == 0) {
-                    this.config.selection_actions = this.config.selection_actions_default;
+                // no header.selection property: assign default actions
+                else {
+                    // #todo - selection_actions might have been set in the config (it is the case for many2many widget - this should be replaced by the use of header.selection)
+                    if(!Array.isArray(this.config.selection_actions) || this.config.selection_actions.length == 0) {
+                        this.config.selection_actions = this.config.selection_actions_default;
+                    }
                 }
             }
 
             // domain member is given by the context
-            // if purpose is a non-widget list view then context domain is visible and can be changed by user
+            // if view is a non-widget list then context domain is visible and can be changed by user
             // (otherwise, context domain is merged to view domain and cannot be changed by user)
             if(this.type == 'list' && this.purpose == 'view' && this.domain && Array.isArray(this.domain)) {
                 let i = 0;
@@ -1136,8 +1139,13 @@ export class View {
                         );
                     }
                     break;
+                case 'create':
+                    break;
+                case 'update':
+                    break;
                 case 'widget':
                     // no buttons are displayed for widgets : these are handled at the widget level, since a callback must be set to fetch the resulting value
+                    break;
                 default:
                     break;
             }
@@ -1490,7 +1498,6 @@ export class View {
             }
         }
 
-
         // pagination controls
         let $pagination = UIHelper.createPagination().addClass('sb-view-header-list-pagination');
 
@@ -1513,8 +1520,6 @@ export class View {
             $switch_chart_button.hide();
             $switch_grid_button.show();
         });
-
-
 
         $pagination.find('.pagination-container')
         .prepend( $switch_chart_button )
@@ -1653,7 +1658,6 @@ export class View {
 
         this.layout.loading(false);
     }
-
 
     private layoutChartRefresh(full: boolean = false) {
         console.debug('View::layoutChartRefresh', full);
@@ -1858,16 +1862,23 @@ export class View {
                             // reset domain (drop state=draft condition)
                             let tmpDomain = new Domain(["id", "=", object_id]);
                             this.domain = tmpDomain.toArray();
-                            // #memo - we don't want to refresh the view (would lose the current tab)
-                            // this.onchangeView(true);
                             // feedback the user (since we're not closing the context)
                             let $snack = UIHelper.createSnackbar(TranslationService.instant('SB_ACTIONS_NOTIFY_CHANGES_SAVED', 'Changes saved.'), '', '', 4000);
                             this.$container.append($snack);
+                            // refresh the layout since the content might have been changed server side
+                            // #memo - only changed fields are sent, so we must reinject current content
+                            // let objects = await this.model.get();
+                            // this.onchangeViewModel([object_id], {...res.objects[0], ... objects[0]}, true);
+                            // #todo - we need to reload all subfields (trigger onchangeView on sub-views)
+                            // #memo - for now, we use this, but it resets the whole view and loses the current tab
+                            this.onchangeView(true);
                         }
                     },
                     "SAVE_AND_VIEW": async (action:any) => {
                         let res:any = await save_method(action);
                         if(res) {
+                            // mark context as changed to refresh parent lists or views showing deleted object
+                            this.setChanged();
                             let parent = this.context.getParent();
                             // if context has a parent, close and relay new object_id to parent view
                             if(Object.keys(parent).length && this.purpose != 'create') {
@@ -1891,6 +1902,8 @@ export class View {
                     "SAVE_AND_EDIT": async (action:any) => {
                         let res:any = await save_method(action);
                         if(res) {
+                            // mark context as changed to refresh parent lists or views showing deleted object
+                            this.setChanged();
                             await this.closeContext(null, true);
                             let object_id = res.selection[0];
                             let view_name = this.name;
@@ -1900,17 +1913,19 @@ export class View {
                                 if(parts.length) view_type = <string>parts.shift();
                                 if(parts.length) view_name = <string>parts.shift();
                             }
-                            await this.openContext({entity: this.entity, type: view_type, name: view_name, domain: ['id', '=', object_id], mode: 'edit', purpose: 'edit'});
+                            await this.openContext({entity: this.entity, type: view_type, name: view_name, domain: ['id', '=', object_id], mode: 'edit', purpose: 'update'});
                         }
                     },
                     "SAVE_AND_CLOSE": async (action:any) => {
                         let res:any = await save_method(action);
                         if(res) {
+                            // mark context as changed to refresh parent lists or views showing deleted object
+                            this.setChanged();
                             // relay new object_id to parent view
                             await this.closeContext(res);
-                            // close parent as well if current view was the edit mode of parent view
+                            // close parent as well if current view was the edit mode of parent view (same entity)
                             let parent = this.context.getParent();
-                            if(typeof parent.getView === 'function' && parent.getView().getMode() == "view" && this.purpose == 'update') {
+                            if(typeof parent.getView === 'function' && parent.getView().getMode() == "view" && this.purpose == 'update' && this.getEntity() == parent.getView().getEntity()) {
                                 await this.closeContext();
                             }
                         }
@@ -2263,6 +2278,7 @@ export class View {
      */
     public async onchangeViewModel(ids: Array<any>, values: object, refresh: boolean = true) {
         console.debug('View::onchangeViewModel', ids, values, refresh);
+        // force beforeunload callback, in order to block action if there is unsaved change
         window.addEventListener('beforeunload', window.beforeUnloadListener);
         this.model.change(ids, values);
         // model has changed : forms need to re-check the visibility attributes
@@ -2617,7 +2633,7 @@ export class View {
                     // close context
                     await this.closeContext();
                 }
-                // handle other HTTP 2xx codes (200 and 204)
+                // handle other HTTP status (200 - success, 201 - created, 204 - no content)
                 else {
                     // refresh current view
                     // #memo - this will trigger updatedContext
