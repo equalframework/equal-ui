@@ -194,7 +194,7 @@ export class LayoutList extends Layout {
                 for(let item of view_schema.layout.items) {
                     if(!item.hasOwnProperty('visible') || item.visible == true) {
                         let width = Math.floor(10 * item.width) / 10;
-                        let $cell = $('<div>').addClass('operation-cell').css({width: width+'%'});
+                        let $cell = $('<div>').addClass('operation-cell mdc-data-table__cell').css({width: width+'%'});
                         if(pos == 0) {
                             let offset = 0;
                             if(this.view.getPurpose() != 'widget' || this.view.getMode() == 'edit') {
@@ -209,12 +209,11 @@ export class LayoutList extends Layout {
                         }
                         let field = item.value;
                         if(op_descriptor.hasOwnProperty(field)) {
-                            let $input = $('<input>').attr('data-id', 'operation-'+operation+'-'+field);
+                            $cell.attr('data-id', 'operation-'+operation+'-'+field);
                             let type = this.view.getModel().getFinalType(field);
                             if(['float', 'integer'].indexOf(type) >= 0 && field != 'id') {
-                                $input.css({'text-align': 'right', 'padding-right': '17px'});
+                                $cell.css({'text-align': 'right', 'padding-right': '17px'});
                             }
-                            $cell.append( $input );
                         }
                         else if(pos == 0) {
                             $cell.append($title);
@@ -379,7 +378,7 @@ export class LayoutList extends Layout {
                             if(descriptor[item.value].hasOwnProperty('suffix')) {
                                 suffix = descriptor[item.value]['suffix'];
                             }
-                            this.$layout.find('[data-id="'+'operation-'+operation+'-'+item.value+'"]').val(prefix+value+suffix);
+                            this.$layout.find('[data-id="'+'operation-'+operation+'-'+item.value+'"]').text(prefix+value+suffix);
                         }
                     }
                 }
@@ -499,7 +498,7 @@ export class LayoutList extends Layout {
             // discard click when row is being edited
             if($this.attr('data-edit') == '0') {
                 // #todo - allow overloading default action ('ACTIONS.UPDATE')
-                this.openContext({entity: this.view.getEntity(), type: 'form', name: this.view.getName(), domain: ['id', '=', object.id]});
+                this.openContext({entity: this.view.getEntity(), type: 'form', name: this.view.getName(), mode: this.view.getMode(), domain: ['id', '=', object.id]});
             }
         })
         // toggle mode for all cells in row
