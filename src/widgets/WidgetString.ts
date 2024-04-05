@@ -83,8 +83,8 @@ export default class WidgetString extends Widget {
                                     warn:     {icon: "warning", color: "orange"},
                                     major:    {icon: "error", color: "orangered"},
                                     error:    {icon: "report", color: "red"},
-                                    paid:  {icon: "paid", color: "green"},
-                                    due:  {icon: "money_off", color: "red"},
+                                    paid:     {icon: "paid", color: "green"},
+                                    due:      {icon: "money_off", color: "red"},
                             };
 
                             this.$elem = $('<div />');
