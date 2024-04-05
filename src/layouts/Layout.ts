@@ -489,6 +489,7 @@ export class Layout implements LayoutInterface{
                 // close context
                 await this.view.closeContext();
             }
+            // handle other HTTP status (200 - success, 201 - created, 204 - no content)
             else {
                 // refresh current view
                 // #memo - this will trigger updatedContext
@@ -496,6 +497,11 @@ export class Layout implements LayoutInterface{
             }
         }
         catch(response) {
+            // #todo : upon 403, redirect to /auth
+            // if a 403 response is received, we assume that the user is not identified: redirect to /auth
+            // if(response.status == 403) {
+            //     window.location.href = '/auth';
+            // }
             await this.view.updatedContext();
             await this.view.displayErrorFeedback(translation, response);
         }

@@ -118,6 +118,11 @@ export class _ApiService {
                     this.views[package_name][class_name][view_id].resolve(json_data);
                 })
                 .catch( (response:any) => {
+                    // #todo : upon 403, redirect to /auth
+                    // if a 403 response is received, we assume that the user is not identified: redirect to /auth
+                    // if(response.status == 403) {
+                    //     window.location.href = '/auth';
+                    // }
                     console.debug('ApiService::loadView error', response.responseJSON);
                     this.views[package_name][class_name][view_id].resolve({});
                 });
