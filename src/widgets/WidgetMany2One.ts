@@ -54,8 +54,8 @@ export default class WidgetMany2One extends Widget {
         // #todo : display many2one as sub-forms
 
         // on right side of widget, add an icon to open the target object (current selection) into a new context
-        let $button_open = UIHelper.createButton('m2o-actions-open-'+this.id, '', 'icon', 'open_in_new').attr('tabindex', -1);
-        let $button_create = UIHelper.createButton('m2o-actions-create-'+this.id, '', 'icon', 'add').attr('tabindex', -1);
+        let $button_open = UIHelper.createButton('m2o-actions-open-'+this.id, '', 'icon', 'open_in_new');
+        let $button_create = UIHelper.createButton('m2o-actions-create-'+this.id, '', 'icon', 'add');
 
         switch(this.mode) {
 
@@ -288,9 +288,9 @@ export default class WidgetMany2One extends Widget {
 
                     if(value.length) {
                         this.config.original_value = value;
-                        this.$elem.append($button_reset);
                         // make room for reset button
                         $select.find('input').prop('readonly', true).css({'width': 'calc(100% - 50px)'});
+                        $button_reset.insertAfter($select);
                     }
 
                     let has_focus:boolean = false;
