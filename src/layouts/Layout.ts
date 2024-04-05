@@ -13,7 +13,7 @@ import { saveAs } from 'file-saver';
 /*
     There are two main branches of Layouts depending on what is to be displayed:
         - 1 single object : Form
-        - several objects : List (grid, kanban, graph)
+        - several objects : List (grid, cards, graph)
 
     Forms can be displayed in two modes : 'view' or 'edit'
     Lists can be editable on a Cell basis (using Widgets)
