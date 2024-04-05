@@ -4,7 +4,6 @@ import { Context, Domain } from "./equal-lib";
 import { ApiService, EnvService, TranslationService } from "./equal-services";
 import { UIHelper } from './material-lib';
 
-
 /**
  * Frames handle a stack of contexts
  * and are in charge of their header and lang switcher.
@@ -37,6 +36,11 @@ export class Frame {
     // allow to force showing close button in any context
     private close_button: boolean;
 
+    // full URL of the page the frame is displayed on
+    private url: string;
+
+    private allow_history_change: boolean = true;
+
     constructor(eq:any, domContainerSelector:string='#sb-container') {
         this.eq = eq;
         this.context = <Context>{};
@@ -47,6 +51,7 @@ export class Frame {
         this.close_button = false;
         // As a convention, DOM element referenced by given selector must be present in the document.
         this.domContainerSelector = domContainerSelector;
+        this.url = window.location.href;
         this.init();
     }
 
@@ -69,7 +74,6 @@ export class Frame {
     }
 
     private async init() {
-
         this.environment = await EnvService.getEnv();
 
         // get list of available languages for Models
@@ -85,6 +89,73 @@ export class Frame {
             clearTimeout(resize_debounce);
             resize_debounce = setTimeout( async () => this.updateHeader(), 100);
         });
+
+        // #memo - there is no way to prevent popstate if there is non-saved content (since it doesn't trigger `beforeunload`event)
+        window.addEventListener('popstate', async (event:any) => {
+            if(this.display_mode != 'stacked') {
+                return;
+            }
+            console.log('Frame::popstate', event, event?.state, this.stack);
+            if (this.stack.length > 0 && event.state && event.state.hasOwnProperty ('is_eq')) {
+                // consider only history from this frame
+                if(event.state.url != this.url) {
+                    return;
+                }
+                // #todo - pass a flag as param instead of this workaround (we need that info to prevent re-pushing contexts to history #memo - we cannot pass it through config)
+                this.allow_history_change = false;
+
+                // build old (current) contexts stack
+                let current_stack = [];
+                for(let j = 1; j < this.stack.length; ++j) {
+                    current_stack.push(this.stack[j]);
+                }
+                current_stack.push(this.context);
+                // retrieved popped stack
+                let new_stack = event.state.stack;
+                // pass-1 ignore identical contexts
+                let min = Math.min(new_stack.length, current_stack.length);
+                let start = 0;
+                for(; start < min; ++start) {
+                    if(JSON.stringify(new_stack[start]) != JSON.stringify(current_stack[start].getConfig(true))) {
+                        break;
+                    }
+                }
+                // pass-2 close contexts in old stack
+                for(let i = current_stack.length; i > start; --i) {
+                    await this.closeContext();
+                }
+                // pass-3 open new contexts
+                for(let i = start, n = new_stack.length; i < n; ++i) {
+                    await this.openContext(new_stack[i]);
+                }
+                this.allow_history_change = true;
+            }
+        });
+    }
+
+    /**
+     * Push the current stack of contexts to the browser history.
+     * `allow_history_change` is used to prevent pushing contexts to history when handling popstate event.
+     *
+     * #memo - when a callback is present, the context config cannot be cloned, so we void callback when present
+     */
+    private pushState() {
+        if(this.allow_history_change && this.display_mode == 'stacked') {
+            let state = {
+                    is_eq: true,
+                    url: this.url,
+                    stack: <any>[]
+                };
+            // push list of config for context currently in the local stack
+            for(let i = 1, n = this.stack.length; i < n; ++i) {
+                let ctx = <Context> this.stack[i];
+                state.stack.push(ctx.getConfig(true));
+            }
+            // push current context
+            state.stack.push(this.context.getConfig(true));
+            window.history.pushState(state, '');
+            console.log('Frame::pushing state', state);
+        }
     }
 
     private getTextWidth(text:string, font:string) {
@@ -211,7 +282,9 @@ export class Frame {
 
         let $domContainer = $(this.domContainerSelector);
 
-        if(!$domContainer) return;
+        if(!$domContainer) {
+            return;
+        }
 
         // instantiate header upon first call
         this.$headerContainer = $domContainer.find('.sb-container-header');
@@ -245,7 +318,7 @@ export class Frame {
         if(total_text_width > available_width) {
             let char_width = total_text_width / current_purpose_string.length;
             let max_chars = available_width / char_width;
-            current_purpose_string = current_purpose_string.substring(0, max_chars-1)+'...';
+            current_purpose_string = current_purpose_string.substring(0, max_chars-1) + '...';
         }
         else {
             // use all contexts in stack (loop in reverse order)
@@ -268,14 +341,16 @@ export class Frame {
                     prepend_contexts_count++;
 
                     if(!config.hasOwnProperty('header_links') || config.header_links == true) {
-                        $('<a>'+context_purpose_string+'</a>').prependTo($elem)
+                        let $crumb = $('<a>'+context_purpose_string+'</a>').prependTo($elem)
                         .on('click', async () => {
                             // close all contexts after the one clicked
                             for(let j = this.stack.length-1; j > i; --j) {
                                 // unstack contexts silently (except for the targeted one), and ask for validation at each step
                                 if(this.context.getView().hasChanged()) {
                                     let validation = confirm(TranslationService.instant('SB_ACTIONS_MESSAGE_ABANDON_CHANGE'));
-                                    if(!validation) return;
+                                    if(!validation) {
+                                        return;
+                                    }
                                     this.closeContext(null, true);
                                 }
                                 else {
@@ -284,9 +359,11 @@ export class Frame {
                             }
                             this.closeContext();
                         });
+                        this.decorateCrumb($crumb, context);
                     }
                     else {
-                        $('<span>'+context_purpose_string+'</span>').prependTo($elem);
+                        let $crumb = $('<span>'+context_purpose_string+'</span>').prependTo($elem);
+                        this.decorateCrumb($crumb, context);
                     }
 
                     if(overflow) {
@@ -302,7 +379,8 @@ export class Frame {
 
         }
 
-        // ... plus the active context
+        // ... and add the active context
+
         if(prepend_contexts_count > 0) {
             $('<span> › </span>').css({'margin': '0 10px'}).appendTo($elem);
         }
@@ -311,12 +389,14 @@ export class Frame {
             let model_schema = await ApiService.getSchema(this.context.getEntity());
             let objects:any = await this.context.getView().getModel().get();
             if(objects.length && objects[0].hasOwnProperty('id')) {
-                let link = model_schema.link.replace(/object\.id/, objects[0].id);
-                $('<a>'+current_purpose_string+'</a>').attr('href', link).attr('target', '_blank').prependTo($elem);
+                let url = model_schema.link.replace(/object\.id/, objects[0].id);
+                let $crumb = $('<a>'+current_purpose_string+'</a>').attr('href', url).attr('target', '_blank').prependTo($elem);
+                this.decorateCrumb($crumb, this.context);
             }
         }
         else {
-            $('<span>'+current_purpose_string+'</span>').appendTo($elem);
+            let $crumb = $('<span>'+current_purpose_string+'</span>').appendTo($elem);
+            this.decorateCrumb($crumb, this.context);
         }
 
         if(this.stack.length > 1 || this.display_mode == 'popup' || this.close_button) {
@@ -330,7 +410,9 @@ export class Frame {
                 if(Object.keys(this.context).length && this.context.getView().hasChanged()) {
                     validation = confirm(TranslationService.instant('SB_ACTIONS_MESSAGE_ABANDON_CHANGE'));
                 }
-                if(!validation) return;
+                if(!validation) {
+                    return;
+                }
                 this.closeContext();
             });
         }
@@ -365,6 +447,36 @@ export class Frame {
         this.$headerContainer.show().empty().append($elem).append($lang_selector);
     }
 
+    /**
+     * Adds hover listener on a part of the header breadcrumb, in order to display a popup showing the details about the view of a given context.
+     *
+     * @param $crumb
+     * @param context
+     */
+    private decorateCrumb($crumb: JQuery, context: Context) {
+        $crumb.on('mouseover', function() {
+            $crumb.addClass('has-mouseover');
+            setTimeout(function() {
+                if($crumb.hasClass('has-mouseover')) {
+                    $crumb.find('.header-view-details-popup').show();
+                }
+            }, 1200);
+        })
+        .on('mouseout', function() {
+            $crumb.removeClass('has-mouseover');
+            $crumb.find('.header-view-details-popup').hide();
+        });
+
+        $('<div />').addClass('header-view-details-popup').hide()
+            .append( $('<div />').addClass('header-view-details-title').text('View details') )
+            .append( $('<div />').addClass('header-view-details-body')
+                .append( $('<div />').html('Entity: <b>'+context.getEntity()+'</b>') )
+                .append( $('<div />').html('View: <b>'+context.getType()+'.'+context.getName()+'</b>') )
+                .append( $('<div />').html('Purpose: <b>'+context.getPurpose()+'</b>') )
+                .append( $('<div />').html('Mode: <b>'+context.getMode()+'</b>') )
+            )
+            .appendTo($crumb);
+    }
 
     /**
      * Generate an object mapping fields of current entity with default values, based on current domain.
@@ -497,6 +609,10 @@ export class Frame {
 
         this.context = context;
 
+        // push new state to local history
+        // #memo - 'allow_history_change' is used to ignore calls resulting from popstate handler
+        this.pushState();
+
         try {
             await this.context.isReady();
             console.debug('context ready');
@@ -556,12 +672,17 @@ export class Frame {
 
             if(!silent) {
                 if( this.context && this.context.hasOwnProperty('$container') ) {
+                    // #memo - if we refresh in edit mode, we risk losing data (fields previously set and not saved + `data` arg)
                     if(this.context.hasChanged() && this.context.getMode() == 'view') {
                         await this.context.refresh();
                     }
+
                     this.context.$container.show();
                 }
                 this.updateHeader();
+
+                // push new state to local history
+                this.pushState();
             }
 
             // if we closed the latest Context from the stack, relay data to the outside
