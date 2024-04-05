@@ -72,7 +72,7 @@ class EventsListener {
         this.init(domListenerId);
 
         /*
-        // auto dark mode attempt
+        // auto dark mode attempt (doesn't work for dynamic content loaded afterward)
         $(document).ready(function(){
             console.log('ready');
             $(".test_button").on('click', function () {
@@ -388,7 +388,8 @@ class EventsListener {
             this._closeAll(params);
         });
 
-        // create a static callback to make it available to any class, by using `window.addEventListener('beforeunload', window.beforeUnloadListener);` or  `window.removeEventListener('beforeunload', window.beforeUnloadListener);`
+        // create a static callback to make it available to any class through global window object
+        // callback can be registered (`window.addEventListener('beforeunload', window.beforeUnloadListener);`) or unregistered (`window.removeEventListener('beforeunload', window.beforeUnloadListener);`)
         window.beforeUnloadListener = (e:any) => {
             e.preventDefault();
             return (e.returnValue = 'There are unsaved changes pending.');
