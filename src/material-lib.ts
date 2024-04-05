@@ -401,7 +401,7 @@ class UIHelper {
         </div>');
 
         let $list = $elem.find('ul.mdc-list');
-        // we recevied an object as param (map)
+        // received param is an object (map)
         if( !Array.isArray(values) ) {
             for(let key in values) {
                 let $line = $(' \
@@ -589,7 +589,7 @@ class UIHelper {
         $elem.on('_close', (event: any) => {
             console.debug('MDCMenu _close');
             // event.stopPropagation();
-            // fields_toggle_menu.open = false;
+            fields_toggle_menu.open = false;
         });
 
         $elem.on('_moveup', (event:any) => {
