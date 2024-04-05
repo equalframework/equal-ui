@@ -29,6 +29,12 @@ export default class WidgetFloat extends WidgetString {
 
         if(this.mode == 'edit') {
             $input.attr( "type", "number" );
+
+            // #todo - handle config.onfocus : 'none', 'select', 'reset'
+            $input.on('focus', function() {
+                $input.trigger('select');
+            });
+
         }
         else if(this.mode == 'view') {
             // in view mode, display 2 decimal digits
