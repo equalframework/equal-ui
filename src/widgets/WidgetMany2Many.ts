@@ -101,6 +101,8 @@ export default class WidgetMany2Many extends Widget {
 
             let view = new View(this.getLayout().getView().getContext(), this.config.entity, this.config.view_type, this.config.view_name, domain.toArray(), this.mode, 'widget', this.config.lang, view_config);
 
+            this.$elem.append($('<div/>').addClass('sb-view-loader-overlay').append($('<div/>').addClass('loader-container').append($('<div/>').addClass('loader-spinner'))));
+
             view.isReady().then( () => {
                 let $container = view.getContainer();
 
@@ -110,7 +112,8 @@ export default class WidgetMany2Many extends Widget {
 
                 // override with view schema
                 if(this.config.hasOwnProperty('header') && this.config.header.hasOwnProperty('actions')) {
-                    if(this.config.header.actions.hasOwnProperty('ACTION.SELECT')) {
+                    // #memo - adding `select` for a one2many is generally meaningless, since a child can only be linked to a single parent
+                    if((this.rel_type == 'many2many') && this.config.header.actions.hasOwnProperty('ACTION.SELECT')) {
                         has_action_select = (this.config.header.actions['ACTION.SELECT'])?true:false;
                     }
                     if(this.config.header.actions.hasOwnProperty('ACTION.CREATE')) {
