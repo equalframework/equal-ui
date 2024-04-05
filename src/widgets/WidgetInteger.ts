@@ -25,6 +25,11 @@ export default class WidgetInteger extends WidgetString {
             if(this.config.hasOwnProperty('max')) {
                 $input.attr( "max", this.config.max );
             }
+
+            // #todo - handle config.onfocus : 'none', 'select', 'reset'
+            $input.on('focus', function() {
+                $input.trigger('select');
+            });
         }
         else if(this.mode == 'view') {
             // for lists, item is a DIV
