@@ -195,6 +195,11 @@ export class LayoutForm extends Layout {
         console.debug('LayoutForm::feed', objects);
         // display the first object from the collection
 
+        if(objects.length == 0) {
+            this.$layout.empty().append($('<div />').text(TranslationService.instant('SB_VIEW_UNKNOWN_OBJECT')));
+            return;
+        }
+
         let fields = Object.keys(this.view.getViewFields());
         let model_fields = this.view.getModelFields();
         let translation = this.view.getTranslation();
