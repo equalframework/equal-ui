@@ -118,6 +118,8 @@ class WidgetFactory {
      * @return {}                       Returns a widget configuration object.
      */
     public static getWidgetConfig(view: View, field: string, translation: any, model_fields: any, view_fields: any) :any {
+        console.debug('Widget::getWidgetConfig ', view.name, field, model_fields, view_fields);
+
         let config:any = {
             widget_type: 'field'
         };
@@ -160,6 +162,7 @@ class WidgetFactory {
                     case 'text/plain.short':
                         type = 'string';
                         break;
+                    // #deprecated - string/text should not be used
                     case 'string/text':
                     case 'text/plain':
                     case 'text/html':
