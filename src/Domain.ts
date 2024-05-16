@@ -120,29 +120,34 @@ export class Domain {
                 let value = condition.value;
 
                 // handle object references as `value` part
-                if(typeof value === 'string' && value.indexOf('object.') == 0 ) {
-                    let target = value.substring('object.'.length);
-                    if(!object || !object.hasOwnProperty(target)) {
-                        continue;
+                if(typeof value === 'string' && value.indexOf('object.') == 0 && object) {
+                    let path: string = value.substring('object.'.length);
+                    let parts: string[] = path.split('.');
+                    let target: any = object;
+
+                    for(const subfield of parts) {
+                        if(!target.hasOwnProperty(subfield)) {
+                            break;
+                        }
+                        target = target[subfield];
                     }
-                    let tmp = object[target];
                     // target points to an object with subfields
-                    if(typeof tmp === 'object' && !Array.isArray(tmp)) {
-                        if(tmp === null) {
+                    if(typeof target === 'object' && !Array.isArray(target)) {
+                        if(target === null) {
                             continue;
                         }
-                        else if(tmp.hasOwnProperty('id')) {
-                            value = tmp.id;
+                        else if(target.hasOwnProperty('id')) {
+                            value = target.id;
                         }
-                        else if(tmp.hasOwnProperty('name')) {
-                            value = tmp.name;
+                        else if(target.hasOwnProperty('name')) {
+                            value = target.name;
                         }
                         else {
                             continue;
                         }
                     }
                     else {
-                        value = object[target];
+                        value = target;
                     }
                 }
                 // handle user references as `value` part
@@ -220,16 +225,32 @@ export class Domain {
                     operator = '!=';
                 }
 
-                if(operator == 'is' && typeof value == 'number') {
-                    operator = '==';
+                if(typeof value == 'number') {
+                    if(operator == 'is') {
+                        operator = '==';
+                    }
+                    else if(operator == 'is not') {
+                        operator = '!=';
+                    }
                 }
 
                 if(operator == 'is') {
                     if( value === true ) {
                         cc_res = operand;
                     }
-                    else if( [false, null, 'null', 'empty'].includes(value) ) {
-                        cc_res = (['', false, undefined, null].includes(operand) || (Array.isArray(operand) && !operand.length) );
+                    else if( [false, null, 'false', 'null', 'empty'].includes(value) ) {
+                        cc_res = (['', false, undefined, null].includes(operand) || (Array.isArray(operand) && !operand.length));
+                    }
+                    else {
+                        continue;
+                    }
+                }
+                else if(operator == 'is not') {
+                    if( value === false ) {
+                        cc_res = operand;
+                    }
+                    else if( [false, null, 'false', 'null', 'empty'].includes(value) ) {
+                        cc_res = !(['', false, undefined, null].includes(operand) || (Array.isArray(operand) && !operand.length));
                     }
                     else {
                         continue;
@@ -289,16 +310,32 @@ export class Domain {
                     operator = '!=';
                 }
 
-                if(operator == 'is' && typeof value == 'number') {
-                    operator = '==';
+                if(typeof value == 'number') {
+                    if(operator == 'is') {
+                        operator = '==';
+                    }
+                    else if(operator == 'is not') {
+                        operator = '!=';
+                    }
                 }
 
                 if(operator == 'is') {
                     if( value === true ) {
                         cc_res = operand;
                     }
-                    else if( [false, null, 'null', 'empty'].includes(value) ) {
+                    else if( [false, null, 'false', 'null', 'empty'].includes(value) ) {
                         cc_res = (['', false, undefined, null].includes(operand) || (Array.isArray(operand) && !operand.length) );
+                    }
+                    else {
+                        continue;
+                    }
+                }
+                else if(operator == 'is not') {
+                    if( value === false ) {
+                        cc_res = operand;
+                    }
+                    else if( [false, null, 'false', 'null', 'empty'].includes(value) ) {
+                        cc_res = !(['', false, undefined, null].includes(operand) || (Array.isArray(operand) && !operand.length));
                     }
                     else {
                         continue;
