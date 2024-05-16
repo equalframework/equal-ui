@@ -180,7 +180,7 @@ export class View {
                         // inject component as dialog content
                         this.decorateDialogArchiveConfirm($dialog);
 
-                        $dialog.trigger('_open')
+                        $dialog.trigger('Dialog:_open')
                         .on('_ok', async (event, result) => {
                             try {
                                 await ApiService.archive(this.entity, selection);
@@ -210,7 +210,7 @@ export class View {
                         // inject component as dialog content
                         this.decorateDialogDeletionConfirm($dialog);
 
-                        $dialog.trigger('_open')
+                        $dialog.trigger('Dialog:_open')
                         .on('_ok', async (event, result) => {
                             if(result.confirm) {
                                 try {
@@ -511,7 +511,7 @@ export class View {
                                                     $dialog
                                                         .on('_accept', () => defer.resolve($dialog.data('result')))
                                                         .on('_reject', () => defer.reject() );
-                                                    $dialog.trigger('_open');
+                                                    $dialog.trigger('Dialog:_open');
                                                 }
                                                 // confirm dialog
                                                 else {
@@ -522,7 +522,7 @@ export class View {
                                                     $dialog
                                                     .on('_accept', () => defer.resolve())
                                                     .on('_reject', () => defer.reject() );
-                                                    $dialog.trigger('_open');
+                                                    $dialog.trigger('Dialog:_open');
                                                 }
                                             }
                                             else {
@@ -535,7 +535,7 @@ export class View {
                                                     $dialog
                                                         .on('_accept', () => defer.resolve($dialog.data('result')))
                                                         .on('_reject', () => defer.reject() );
-                                                    $dialog.trigger('_open');
+                                                    $dialog.trigger('Dialog:_open');
                                                 }
                                                 // perform action without dialog
                                                 else {
@@ -678,11 +678,10 @@ export class View {
             console.warn('Unable to init view ('+this.entity+'.'+this.getId()+')', err);
         }
 
-        this.is_ready_promise.resolve();
-
         this.$container.show();
-    }
 
+        this.is_ready_promise.resolve();
+    }
 
     private deepCopy(obj:any):any {
         var copy:any;
@@ -729,6 +728,22 @@ export class View {
                 this.subscribers[event] = [];
             }
             this.subscribers[event].push(callback);
+        }
+    }
+
+    public keyboardAction(action: string) {
+        console.log('view received '+action, this);
+        if(action == 'ctrl_s') {
+            if(this.mode == 'edit') {
+                // retrieve the first button amongst the view actions and trigger a click
+                let $saveButton = this.$headerContainer.find('.sb-view-header-actions-std').find('button').first();
+                // blur any active input (in order to trigger `_updatedWidget`)
+                $saveButton.trigger('focus');
+                // wait for the model to be updated and run the action
+                setTimeout( () => {
+                    $saveButton.trigger('click');
+                }, 250);
+            }
         }
     }
 
@@ -965,12 +980,13 @@ export class View {
 
                 if(elem.hasOwnProperty('items')) {
                     for (let item of elem['items']) {
-                        if(item.type == 'field' && item.hasOwnProperty('value')){
+                        if(item.type == 'field' && item.hasOwnProperty('value')) {
                             this.view_fields[item.value] = item;
                         }
                     }
                 }
                 else {
+                    // recurse through layout structure
                     for (let step of path) {
                         if(elem.hasOwnProperty(step)) {
                             for (let obj of elem[step]) {
@@ -1284,7 +1300,7 @@ export class View {
 
         UIHelper.createListItem('SB_FILTERS_ADD_CUSTOM_FILTER', TranslationService.instant('SB_FILTERS_ADD_CUSTOM_FILTER'))
             .appendTo($filters_list)
-            .on('click', (event) => $custom_filter_dialog.trigger('_open') );
+            .on('click', (event) => $custom_filter_dialog.trigger('Dialog:_open') );
 
 
         UIHelper.decorateMenu($filters_menu);
@@ -1521,10 +1537,17 @@ export class View {
             $switch_grid_button.show();
         });
 
-        $pagination.find('.pagination-container')
-        .prepend( $switch_chart_button )
-        .prepend( $switch_grid_button )
-        .prepend( $refresh_list_button );
+        let modes = ['chart', 'grid'];
+        if(this.config.hasOwnProperty('header') && this.config.header.hasOwnProperty('modes')) {
+            modes = this.config.header.modes;
+        }
+        if(modes.includes('chart')) {
+            $pagination.find('.pagination-container').prepend( $switch_chart_button );
+        }
+        if(modes.includes('grid')) {
+            $pagination.find('.pagination-container').prepend( $switch_grid_button );
+        }
+        $pagination.find('.pagination-container').prepend( $refresh_list_button );
 
         $level2.append( $pagination );
 
@@ -2133,9 +2156,11 @@ export class View {
         let $select_operator = $();
         let $select_value = $();
 
+        /*
         $dialog.on('_open', () => {
             $select_field.find('input').trigger('change');
         });
+        */
 
         let fields:any = {};
         const filterable_types = ['integer', 'float', 'boolean', 'string', 'date', 'time', 'datetime', 'many2one'];
@@ -2151,8 +2176,10 @@ export class View {
 
         $select_field = UIHelper.createSelect(this.uuid+'_custom-filter-select-field', TranslationService.instant('SB_FILTERS_DIALOG_FIELD'), fields, Object.keys(fields)[0]).appendTo($elem);
         // setup handler for relaying value update to parent layout
-        $select_field.addClass('dialog-select').find('input')
+        $select_field.addClass('dialog-select');
+        $select_field.find('input').first()
             .on('change', (event) => {
+                console.debug('CustomFilterDialog: received change on input select_field - updating widgets');
                 let $this = $(event.currentTarget);
                 selected_field = <string> $this.val();
 
@@ -2164,10 +2191,14 @@ export class View {
                 selected_operator = operators[0];
                 $select_operator = UIHelper.createSelect(this.uuid+'_custom-filter-select-operator', TranslationService.instant('SB_FILTERS_DIALOG_OPERATOR'), operators, operators[0]);
                 // setup handler for relaying value update to parent layout
-                $select_operator.addClass('dialog-select').find('input').on('change', (event) => {
-                    let $this = $(event.currentTarget);
-                    selected_operator = <string> $this.val();
-                });
+                $select_operator.addClass('dialog-select').find('input').first()
+                    .on('change', (event) => {
+                        console.debug('CustomFilterDialog: received change on input select_operator - updating widgets');
+                        let $this = $(event.currentTarget);
+                        selected_operator = <string> $this.val();
+                    });
+
+                $select_operator.trigger('select', operators[0]);
 
                 let config = WidgetFactory.getWidgetConfig(this, selected_field, this.translation, this.model_fields, this.view_fields);
                 // form form layout
@@ -2200,7 +2231,7 @@ export class View {
         $dialog.find('.mdc-dialog__content').append($elem);
 
         // init
-        $select_field.trigger('change');
+        $select_field.trigger('select', Object.keys(fields)[0]);
 
         $dialog.on('_accept', async () => {
             let operand = selected_field;
@@ -2318,7 +2349,7 @@ export class View {
 
         // reset selection
         this.selected_ids = [];
-        if(this.type == 'list') {
+        if(['list', 'chart'].includes(this.type)) {
             this.layout.loading(true);
         }
         await this.model.refresh(full);
@@ -2523,7 +2554,7 @@ export class View {
     }
 
     public async decorateActionDialog($dialog: JQuery, action: any, params: any, object: any = {}, user: any = {}, parent: any = {}) {
-        console.debug('View::decorateActionDialog', action, params);
+        console.debug('View::decorateActionDialog', action, params, object, user, parent);
         let $elem = $('<div />');
 
         let widgets:any = {};
@@ -2548,10 +2579,10 @@ export class View {
             };
 
             let config = WidgetFactory.getWidgetConfig(this, field, translation, model_fields, view_fields);
-            // #memo - by default the layout will be the one of the parent view
+            // #memo - by default the layout is the one of the parent view
             config.layout = 'form';
 
-            let widget:Widget = WidgetFactory.getWidget(this, config.type, config.title, '', config);
+            let widget: Widget = WidgetFactory.getWidget(this, config.type, config.title, '', config);
             widget.setMode('edit');
             widget.setReadonly(config.readonly);
 
