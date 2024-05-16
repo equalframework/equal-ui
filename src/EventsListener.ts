@@ -133,6 +133,9 @@ class EventsListener {
         }
     }
 
+    /**
+     * This method is used to generate an Action Button DOM element to be injected in a non-equal App (e.g. Angular native component)
+    */
     public async getActionButton(entity: string, view_id: string, domain: any[]) {
         let type = 'list';
         let name = 'default';
@@ -198,6 +201,7 @@ class EventsListener {
             this.mute = true;
             // #memo - after closing, the frame is deleted (@see _closeContext())
             await this.frames[config.target].closeAll();
+            delete this.frames[config.target];
             // restore callbacks runs
             this.mute = false;
         }
@@ -205,6 +209,11 @@ class EventsListener {
         if(!this.frames.hasOwnProperty(config.target)) {
             this.frames[config.target] = new Frame(this, config.target);
         }
+
+        for(let index in this.frames) {
+            this.frames[index].setActive(false);
+        }
+        this.frames[config.target].setActive(true);
 
         await this.frames[config.target]._openContext(config);
 
@@ -317,13 +326,16 @@ class EventsListener {
                 EnvService.setEnv('lang', this.user.language);
                 TranslationService.init();
             }
-            // #todo - add support for user locale
+
             // attempt to retrieve app config
+            /*
+            // merged with envinfo
             const settings = await ApiService.getSettings();
 
             for(let key in settings) {
                 EnvService.setEnv(key, settings[key]);
             }
+            */
         }
         catch(err) {
             console.warn('unable to retrieve user info, fallback to guest');
