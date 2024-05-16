@@ -89,12 +89,12 @@ class UIHelper {
     }
 
     public static createSplitButton(id:string, label:string, type:string='', icon:string='', variant:string='') {
-        let $elem = $('<div id="'+id+'" style="display: inline-flex;"></div>');
+        let $elem = $('<div id="'+id+'" style="display: inline-flex;"></div>').addClass('sb-ui-split_button').addClass('mdc-menu-surface--anchor');
 
         let $button = this.createButton(id+'_button', label, type, icon, variant).addClass('mdc-button-split_button');
         let $drop_button = this.createButton(id+'_drop', '', type, 'arrow_drop_down', variant).addClass('mdc-button-split_drop');
 
-        let $drop_menu = this.createMenu(id+'_drop'+'menu').appendTo($drop_button);
+        let $drop_menu = this.createMenu(id+'_drop'+'menu');
         let $menu_list = this.createList(id+'_drop'+'menu-list').addClass('menu-list').appendTo($drop_menu);
 
         this.decorateMenu($drop_menu);
@@ -115,18 +115,17 @@ class UIHelper {
             return false;
         });
 
-        return $elem.append($button).append($drop_button);
+        return $elem.append($button).append($drop_button).append($drop_menu);
     }
 
     public static createDropDown(id:string, label:string, type:string='', icon:string='', variant:string='') {
-        let $elem = $('<div id="'+id+'" style="display: inline-flex;"></div>');
-
+        let $elem = $('<div id="'+id+'" style="display: inline-flex;"></div>').addClass('mdc-menu-surface--anchor');
         let $drop_button = this.createButton(id+'_button', label, type, icon, variant).addClass('mdc-dropdown');
 
         $drop_button.append($('<i/>').addClass('material-icons mdc-button__icon').text('arrow_drop_down'))
 
 
-        let $drop_menu = this.createMenu(id+'_drop-'+'menu').appendTo($drop_button);
+        let $drop_menu = this.createMenu(id+'_drop-'+'menu');
         let $menu_list = this.createList(id+'_drop-'+'menu-list').addClass('menu-list').appendTo($drop_menu);
 
         this.decorateMenu($drop_menu);
@@ -147,9 +146,8 @@ class UIHelper {
             return false;
         });
 
-        return $elem.append($drop_button);
+        return $elem.append($drop_button).append($drop_menu);
     }
-
 
     public static createTooltip(id:string, label: string) {
         let $elem = $('<div/>').attr('id', id+'-tooltip').addClass('mdc-tooltip').attr('role', 'tooltip').attr('aria-hidden', 'true')
@@ -181,6 +179,20 @@ class UIHelper {
         </div>');
         // #memo - seems to update the parent id (removes 'bool_')
         new MDCSwitch($elem.find('.mdc-switch')[0]);
+        // fix for marking the thumb as active when reaching through <tab> (MDCRipple is not set at init but when giving focus with click)
+        $elem.find('input').on('keyup', (event:any)  => {
+            // tab
+            if(event.which == 9) {
+                // manual ripple upgrade
+                $elem.find('.mdc-switch__thumb-underlay').css({
+                    '--mdc-ripple-fg-size': '28px',
+                    '--mdc-ripple-fg-scale': '1.7',
+                    '--mdc-ripple-left': '10px',
+                    '--mdc-ripple-top': '10px'
+                });
+                $elem.find('.mdc-switch__thumb-underlay').addClass('mdc-ripple-upgraded--background-focused');
+            }
+        });
         return $elem;
     }
 
@@ -375,8 +387,9 @@ class UIHelper {
     }
 
     public static createSelect(id: string, label: string, values: any, selected: any='', helper:string = '', disabled: boolean=false) {
+        // #memo - tabindex=0 is used to tell browser that mdc-select__anchor is focusable
         let $elem = $('\
-        <div id="'+id+'" class="mdc-select mdc-select--filled '+( (label.length)?'':'mdc-select--no-label' )+' '+ ( (disabled)?'mdc-select--disabled':'' ) +'"> \
+        <div id="'+id+'" class="mdc-select mdc-select--filled mdc-menu-surface--anchor '+( (label.length)?'':'mdc-select--no-label' )+' '+ ( (disabled)?'mdc-select--disabled':'' ) +'"> \
             <div class="mdc-select__anchor" role="button" tabindex="0"> \
                 <span class="mdc-select__ripple"></span> \
                 '+ ( (label.length)?'<span class="mdc-floating-label">'+label+'</span>':'' ) +'\
@@ -405,13 +418,19 @@ class UIHelper {
         if( !Array.isArray(values) ) {
             for(let key in values) {
                 let $line = $(' \
-                <li id="'+id+'_menu_list-'+key+'" class="mdc-list-item" role="option" data-value="'+key+'"> \
-                    <span class="mdc-list-item__ripple"></span> \
-                    <span class="mdc-list-item__text">'+values[key]+'</span> \
-                </li>');
+                    <li id="'+id+'_menu_list-'+key+'" class="mdc-list-item" role="option" data-value="'+key+'"> \
+                        <span class="mdc-list-item__ripple"></span> \
+                        <span class="mdc-list-item__text">'+values[key]+'</span> \
+                    </li>');
                 if(key == selected) {
                     $line.addClass('mdc-list-item--selected').attr('aria-selected', 'true');
                 }
+                $line.on('click', (event: any) => {
+                    console.debug('Select: received click on item', event);
+                    $elem.find('.mdc-select__selected-text').text(values[key]);
+                    $elem.find('.mdc-floating-label').addClass('mdc-floating-label--float-above');
+                    $elem.find('input').val(key).trigger('change');
+                });
                 $list.append($line);
             }
         }
@@ -419,31 +438,71 @@ class UIHelper {
         else {
             for(let value of values) {
                 let $line = $(' \
-                <li class="mdc-list-item" tabindex="-1" role="option" data-value="'+value+'"> \
-                    <span class="mdc-list-item__ripple"></span> \
-                    <span class="mdc-list-item__text">'+value+'</span> \
-                </li>');
+                    <li class="mdc-list-item" tabindex="-1" role="option" data-value="'+value+'"> \
+                        <span class="mdc-list-item__ripple"></span> \
+                        <span class="mdc-list-item__text">'+value+'</span> \
+                    </li>');
                 if(value == selected) {
                     $line.addClass('mdc-list-item--selected').attr('aria-selected', 'true');
                 }
+                $line.on('click', (event: any) => {
+                    console.debug('Select: received click on item', event);
+                    $elem.find('.mdc-select__selected-text').text(value);
+                    $elem.find('.mdc-floating-label').addClass('mdc-floating-label--float-above');
+                    $elem.find('input').val(value).trigger('change');
+                });
                 $list.append($line);
             }
         }
 
-        const select = new MDCSelect($elem[0]);
+        let $menu = $elem.find('.mdc-menu');
+        // const select = new MDCSelect($elem[0]);
+        this.decorateMenu($menu);
 
         // make the element behave like an `input` element
+        /*
         select.listen('MDCSelect:change', () => {
             $elem.find('input').val(select.value).trigger('change');
+            $elem.find('.mdc-menu').trigger('_close');
         });
-
         $elem.on('select', (event: any, value: string) => {
             select.value = value;
         });
+        */
+
+        $elem.on('select', (event: any, value: string) => {
+            console.debug('Select: received select', event, value);
+            let val: string = value;
+            if( !Array.isArray(values) ) {
+                val = values[val];
+            }
+            $elem.find('.mdc-select__selected-text').text(val);
+            $elem.find('.mdc-floating-label').addClass('mdc-floating-label--float-above');
+        });
+
+        $elem.find('.mdc-select__anchor')
+            .on('click', (event:any) => {
+                if(!$menu.hasClass('mdc-menu-surface--open')) {
+                    console.debug('Select: received click - triggering menu _open', event);
+                    $menu.trigger('_open');
+                }
+            });
+            // #memo - dealing with blur event leads to edge cases
+            /*
+            .on('blur', (event:any) => {
+                if($menu.hasClass('mdc-menu-surface--open')) {
+                    console.debug('Select: received blur - setting timeout for menu _close', event);
+                    // delay in order to process pending selection, if any
+                    setTimeout( () => {
+                        // $menu.trigger('_close');
+                    }, 100);
+                }
+            })
+            */
 
         // workaround for --fixed style width (mandatory to display list above inputs as sub-items)
         $elem.on('click', () => {
-            $elem.find('.mdc-menu-surface').width(<number>$elem.width());
+            // $elem.find('.mdc-menu-surface').width(<number>$elem.width());
         });
 
         return $elem;
@@ -455,7 +514,7 @@ class UIHelper {
     }
 
     public static createMenu(id:string, label:string='', values:any=[]) {
-        let $elem = $('<div id="'+id+'" tabindex="-1" class="sb-ui-menu mdc-menu mdc-menu-surface mdc-menu-surface--fixed"></div>');
+        let $elem = $('<div id="'+id+'" tabindex="-1" class="sb-ui-menu mdc-menu mdc-menu-surface mdc-menu-surface--fixed mdc-menu-surface--is-open-below"></div>');
         return $elem;
     }
 
@@ -513,15 +572,15 @@ class UIHelper {
         let $elem = $('\
         <div class="mdc-dialog" id="'+id+'"> \
             <div class="mdc-dialog__container"> \
-                <div class="mdc-dialog__surface" role="alertdialog" aria-modal="true" style="overflow: hidden"> \
+                <div class="mdc-dialog__surface" role="alertdialog" aria-modal="true" style="overflow: hidden" tabindex="-1"> \
                     <h2 class="mdc-dialog__title">'+title+'</h2> \
                     <div class="mdc-dialog__content"></div> \
                     <div class="mdc-dialog__actions"> \
-                        <button tabindex="0" type="button" class="mdc-button mdc-dialog__button" data-mdc-dialog-action="cancel"> \
+                        <button type="button" class="mdc-button mdc-dialog__button" data-mdc-dialog-action="cancel"> \
                             <div class="mdc-button__ripple"></div> \
                             <span class="mdc-button__label">'+label_cancel+'</span> \
                         </button> \
-                        <button tabindex="0" type="button" class="mdc-button mdc-dialog__button" data-mdc-dialog-action="accept"> \
+                        <button type="button" class="mdc-button mdc-dialog__button" data-mdc-dialog-action="accept" data-mdc-dialog-button-default data-mdc-dialog-initial-focus> \
                             <div class="mdc-button__ripple"></div> \
                             <span class="mdc-button__label">'+label_accept+'</span> \
                         </button> \
@@ -533,23 +592,27 @@ class UIHelper {
 
         const dialog = new MDCDialog($elem[0]);
 
+        $elem.on('Dialog:_open', (event:any) => {
+            console.debug('MDCDialog: received Dialog:_open');
+            dialog.open();
+            event.stopPropagation();
+            return;
+        });
+
         dialog.listen('MDCDialog:opened', () => {
+            console.debug('MDCDialog: received opened');
             dialog.layout();
-            $elem.find('button[tabindex=0]').focus();
+            // $elem.find('button.mdc-dialog__button').last().trigger('focus');
         });
 
         dialog.listen('MDCDialog:closed', (event:any) => {
+            console.debug('MDCDialog:closed');
             if(event.detail.action == 'accept') {
                 $elem.trigger('_accept');
             }
             if(event.detail.action == 'reject') {
                 $elem.trigger('_reject');
             }
-        });
-
-
-        $elem.on('_open', () => {
-            dialog.open();
         });
 
         return $elem;
@@ -563,47 +626,233 @@ class UIHelper {
  */
 
     public static decorateMenu($elem:any) {
-        if(!$elem.length) {
-            return;
-        }
-        let fields_toggle_menu = new MDCMenu($elem[0]);
-        // prevent menu from getting the focus
-        fields_toggle_menu.setDefaultFocusState(DefaultFocusState.NONE);
 
-        // UI elements having a menu rely on this custom _toggle
+        if(!$elem.length) {
+            return null;
+        }
+        console.debug('decorateMenu', $elem);
+
+        $elem.hide();
+
+        $(document).on('click', function(event:any) {
+            if(!$(event.target).closest('.mdc-menu-surface--anchor').length) {
+                if($elem.hasClass('mdc-menu-surface--open')) {
+                    console.debug('Menu: click outside detected - closing menu');
+                    $elem.trigger('_close');
+                }
+            }
+        });
+
+        $elem.on('_toggle', (event: any) => {
+            console.debug('Menu: received _toggle - toggling menu', event);
+            $elem.toggle();
+            if($elem.hasClass('mdc-menu-surface--open')) {
+                $elem.trigger('_close');
+            }
+            else {
+                $elem.trigger('_open');
+            }
+            event.stopPropagation();
+            return;
+        });
+
+        $elem.on('_open', (event: any) => {
+            console.debug('Menu: received _open - opening menu', event);
+            if(!$elem.hasClass('mdc-menu-surface--open')) {
+                $(document).find('.mdc-menu').trigger('_close');
+                $elem.addClass('mdc-menu-surface--open');
+                $elem.show();
+                $elem.trigger('_reset');
+                $elem.trigger('_resize');
+            }
+            event.stopPropagation();
+            return;
+        });
+
+        $elem.on('_close', (event: any) => {
+            if($elem.hasClass('mdc-menu-surface--open')) {
+                console.debug('Menu: received _close - closing menu', event);
+                $elem.hide();
+                $elem.removeClass('mdc-menu-surface--open');
+            }
+            event.stopPropagation();
+            return;
+        });
+
+        // reset the highlighted item to index 0
+        $elem.on('_reset', () => {
+            console.debug('Menu: received _reset - resetting menu');
+            $elem.attr('data-selection_index', 0);
+            $elem.find('.mdc-list-item').removeClass('mdc-list-item--selected').eq(0).addClass('mdc-list-item--selected');
+            $elem.find('.mdc-list-item').on('click', () => {
+                console.log('Menu: setting timeout for _close');
+                // leave a delay for other callbacks, then close menu
+                setTimeout( () => {
+                    $elem.trigger('_close');
+                }, 250);
+            });
+        });
+
+        // resize and position the menu according to its parent and position inside the window
+        $elem.on('_resize', () => {
+            console.log('Menu: received _resize - resizing menu');
+            const view_width = $(window).width() ?? 0;
+            const view_height = $(window).height() ?? 0;
+            const $parent = $elem.parent();
+
+            // pass-1 - set width and horizontal pos according to parent
+            let parentRect = $parent[0].getBoundingClientRect();
+            let css:any = {
+                left: parentRect.left + 'px',
+                top:   parentRect.bottom + 'px',
+                width: parentRect.width + 'px',
+                // force setting height according to inner content
+                height: 'auto'
+            };
+            if($elem.hasClass('mdc-menu-surface--is-open-left')) {
+                css.left = 'unset';
+                css.right = (view_width - parentRect.right) + 'px';
+            }
+            if($elem.hasClass('mdc-menu-surface--is-width-auto')) {
+                css.width = 'auto';
+            }
+            $elem.css(css);
+
+            // pass-2 - set vertical pos according to inner and window heights
+            let rect = $elem[0].getBoundingClientRect();
+            let left = rect.left;
+            let top = rect.top;
+
+            // prevent horizontal right overflow
+            if(left + rect.width > view_width) {
+                left = parentRect.right - rect.width;
+                $elem.css({left: left + 'px'});
+            }
+
+            // position above or below the parent
+            if($elem.hasClass('mdc-menu-surface--is-open-below') && (view_height - parentRect.top - parentRect.height) >= rect.height) {
+                // there is enough room below : leave top as-is
+            }
+            else {
+                if(rect.top > (view_height - parentRect.height - rect.top)) {
+                    top = top - rect.height - parentRect.height - 10;
+                    $elem.css({top: top + 'px'});
+                }
+            }
+
+            // pass-3 - resize height (scroll) in case of vertical overflow
+            rect = $elem[0].getBoundingClientRect();
+            let min_top : number = 20;
+            let max_bottom : number = <number> $(window).height() - 20;
+
+            if(rect.top < min_top) {
+                // move top to 0 and add diff to height
+                let diff = Math.abs(min_top - rect.top);
+                let height = Math.floor(rect.height - diff);
+                $elem.css({
+                        top: min_top + 'px',
+                        height: height + 'px'
+                    });
+            }
+            rect = $elem[0].getBoundingClientRect();
+            if(rect.bottom > max_bottom) {
+                // subtract diff from height
+                let diff = Math.abs(rect.bottom - max_bottom);
+                let height = Math.floor(rect.height - diff);
+                $elem.css({
+                        height: height + 'px'
+                    });
+            }
+        });
+
+        $elem.on('_moveup', (event:any) => {
+            if(!$elem.hasClass('mdc-menu-surface--open')) {
+                return;
+            }
+            let selection_index = parseInt($elem.attr('data-selection_index'));
+            if(selection_index > 0) {
+                let $activeItem = $elem.find('.mdc-list-item').eq(selection_index-1);
+                $activeItem.addClass('mdc-list-item--selected');
+                $elem.find('.mdc-list-item').eq(selection_index).removeClass('mdc-list-item--selected');
+                $elem.attr('data-selection_index', selection_index-1);
+                if($activeItem[0].offsetTop < $elem[0].scrollTop) {
+                    $elem[0].scrollTop = $activeItem[0].offsetTop;
+                }
+            }
+        });
+
+        $elem.on('_movedown', (event:any) => {
+            if(!$elem.hasClass('mdc-menu-surface--open')) {
+                return;
+            }
+            let selection_index = parseInt($elem.attr('data-selection_index'));
+            let count = $elem.find('.mdc-list-item').length;
+            if(selection_index < count-1) {
+                let $activeItem = $elem.find('.mdc-list-item').eq(selection_index+1);
+                $activeItem.addClass('mdc-list-item--selected');
+                $elem.find('.mdc-list-item').eq(selection_index).removeClass('mdc-list-item--selected');
+                $elem.attr('data-selection_index', selection_index+1);
+                if($activeItem[0].offsetTop > $elem[0].offsetHeight) {
+                    $elem[0].scrollTop += $activeItem[0].offsetHeight;
+                }
+            }
+        });
+
+        $elem.on('_select', (event:any) => {
+            if(!$elem.hasClass('mdc-menu-surface--open')) {
+                return;
+            }
+            console.log('Menu: received _select');
+            let selection_index = parseInt($elem.attr('data-selection_index'));
+            // #memo - click triggers _close
+            $elem.find('.mdc-list-item').eq(selection_index).trigger('click');
+        });
+
+        /*
+        // #memo - using with MDCMenu involves heavy tweaking of the behavior (abandoned)
+
+        let mdcMenu = new MDCMenu($elem[0]);
+        // prevent menu from getting the focus
+        mdcMenu.setDefaultFocusState(DefaultFocusState.NONE);
+
+        // UI elements having a menu do rely on this custom _toggle
         $elem.on('_toggle', () => {
-            fields_toggle_menu.open = !$elem.hasClass('mdc-menu-surface--open');
+            mdcMenu.open = !$elem.hasClass('mdc-menu-surface--open');
         });
 
         $elem.on('_open', (event: any) => {
             console.debug('MDCMenu _open');
             event.stopPropagation();
-            if(!fields_toggle_menu.open) {
-                fields_toggle_menu.open = true;
-                fields_toggle_menu.selectedIndex = 0;
+            if(!mdcMenu.open) {
+                $elem.show();
+                mdcMenu.open = true;
                 // prevent tab capture
                 $elem.find('.mdc-list-item').attr('tabindex', -1);
             }
+            mdcMenu.selectedIndex = 0;
         });
 
         $elem.on('_close', (event: any) => {
             console.debug('MDCMenu _close');
             // event.stopPropagation();
-            fields_toggle_menu.open = false;
+            if(mdcMenu.open) {
+                $elem.hide();
+                mdcMenu.open = false;
+            }
         });
 
         $elem.on('_moveup', (event:any) => {
             event.stopPropagation();
-            let index:number = <number> fields_toggle_menu.selectedIndex;
-            fields_toggle_menu.selectedIndex = (index > 0)?index-1:0;
+            let index:number = <number> mdcMenu.selectedIndex;
+            mdcMenu.selectedIndex = (index > 0)?index-1:0;
             // prevent tab capture
             $elem.find('.mdc-list-item').attr('tabindex', -1);
         });
 
         $elem.on('_movedown', (event:any) => {
             event.stopPropagation();
-            let index:number = <number> fields_toggle_menu.selectedIndex;
-            fields_toggle_menu.selectedIndex = index + 1;
+            let index:number = <number> mdcMenu.selectedIndex;
+            mdcMenu.selectedIndex = index + 1;
             // prevent tab capture
             $elem.find('.mdc-list-item').attr('tabindex', -1);
         });
@@ -613,6 +862,8 @@ class UIHelper {
             $elem.find('.mdc-list-item--selected').trigger('click');
         });
 
+        return mdcMenu;
+        */
     }
 
     public static decorateTabBar($elem:any) {
