@@ -225,18 +225,19 @@ export class _ApiService {
     }
 
     public async getSettings() {
-        let result: any;
+        let result: any = {};
+        /*
         try {
-            // #todo - replace with envinfo
             const environment = await EnvService.getEnv();
             const response = await $.get({
-                url: environment.rest_api_url+'appinfo'
+                url: environment.rest_api_url+'envinfo'
             });
             result = response;
         }
         catch(response:any) {
             throw response.responseJSON;
         }
+        */
         return result;
     }
 
