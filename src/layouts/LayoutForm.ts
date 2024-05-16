@@ -7,6 +7,10 @@ import { Domain, Clause, Condition, Reference } from "../Domain";
 
 export class LayoutForm extends Layout {
 
+    // used for keeping track of the currently selected widget (assigned when event `_updatedWidget` is triggered),
+    // and for giving back the focus after a refresh
+    public focused_widget_id: number | undefined;
+
     public async init() {
         console.debug('LayoutForm::init');
         try {
@@ -196,7 +200,9 @@ export class LayoutForm extends Layout {
         // display the first object from the collection
 
         if(objects.length == 0) {
-            this.$layout.empty().append($('<div />').text(TranslationService.instant('SB_VIEW_UNKNOWN_OBJECT')));
+            let $viewHeader = this.view.getContainer().find('.sb-view-header').first();
+            $viewHeader.empty();
+            this.$layout.empty().append($('<div />').append($('<div />').css({ 'padding': '30px 20px', 'font-style': 'italic'}).text(TranslationService.instant('SB_VIEW_UNKNOWN_OBJECT'))));
             return;
         }
 
@@ -206,7 +212,7 @@ export class LayoutForm extends Layout {
         const user = this.view.getUser();
 
         // remember which element has focus (DOM is going to be modified)
-        let focused_widget_id = $("input:focus").closest('.sb-widget').attr('id');
+        // let focused_widget_id = this.$layout.find("input:focus").closest('.sb-widget').attr('id');
 
         if(objects.length > 0) {
             // #todo - keep internal index of the object to display (with a prev/next navigation in the header)
@@ -221,7 +227,7 @@ export class LayoutForm extends Layout {
                 let $status_container = $view_actions.find('#'+this.uuid+'_status');
                 if($status_container.length == 0) {
                     let status_title = TranslationService.resolve(translation, 'model', [], 'status', 'status', 'label');
-                    $status_container = $('<div style="margin-left: auto;"></div>').attr('id', this.uuid+'_status').append( $('<span style="line-height: 46px;margin-right: 12px; text-transform: capitalize;">'+status_title+': <span class="status-value"></span></span>') ).appendTo($view_actions);
+                    $status_container = $('<div style="margin-left: auto;"></div>').attr('id', this.uuid+'_status').append( $('<span style="line-height: 46px; margin-right: 12px; text-transform: capitalize;">'+status_title+': <span class="status-value"></span></span>') ).appendTo($view_actions);
                 }
 
                 let translated = TranslationService.resolve(translation, 'model', [], 'status', model_fields['status'].selection, 'selection');
@@ -250,7 +256,7 @@ export class LayoutForm extends Layout {
                             visible = domain.evaluate(object, user);
                         }
                         else {
-                            visible = <boolean>action.visible;
+                            visible = <boolean> action.visible;
                         }
                     }
                     if(visible && action.hasOwnProperty('access') && action.access.hasOwnProperty('groups') && Array.isArray(action.access.groups)) {
@@ -285,6 +291,7 @@ export class LayoutForm extends Layout {
                 else if(actions.length > 1) {
                     let $actions_dropdown = UIHelper.createDropDown(this.uuid+'_actions-dropdown', 'Actions', 'text', '', '').addClass('layout-actions');
                     $view_actions.append($actions_dropdown);
+                    $actions_dropdown.find('.mdc-menu').addClass('mdc-menu-surface--is-open-left').addClass('mdc-menu-surface--is-width-auto');
                     let $menu_list = $actions_dropdown.find('.menu-list');
                     // keep track of empty lists
                     for(let action of actions) {
@@ -477,6 +484,7 @@ export class LayoutForm extends Layout {
                         // Handle Widget update handler
                         $widget.on('_updatedWidget', async (event:any, refresh: boolean = true) => {
                             console.debug("Layout::feedForm : received _updatedWidget", field, widget.getValue(), refresh);
+                            this.focused_widget_id = widget.getId();
                             // update object with new value
                             let values:any = {};
                             values[field] = widget.getValue();
@@ -537,8 +545,20 @@ export class LayoutForm extends Layout {
                     }
                 }
             }
-            // try to give the focus back to the previously focused widget
-            $('#'+focused_widget_id).find('input').trigger('focus');
+            // attempt to give the focus back to the previously focused widget
+            if(this.focused_widget_id) {
+                let $focusCandidate:any = $('#'+this.focused_widget_id).find('input').first();
+                if($focusCandidate.length == 0 || !$focusCandidate.is(":visible")) {
+                    $focusCandidate = $('#'+this.focused_widget_id).find('[tabindex]').first();
+                }
+                $focusCandidate.trigger('focus');
+            }
+            else {
+                // by convention give the focus to the first input (widget) of the layout
+                setTimeout( () => {
+                    this.$layout.find('input').first().trigger('focus');
+                }, 500);
+            }
         }
 
     }
