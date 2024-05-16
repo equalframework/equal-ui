@@ -39,6 +39,18 @@ export class LayoutChart extends Layout {
         this.feed(objects);
     }
 
+    public loading(loading:boolean) {
+        let $elem = this.$layout.find('.table-wrapper');
+        let $loader = $elem.find('.table-loader');
+
+        if(loading) {
+            $loader.show();
+        }
+        else {
+            $loader.hide();
+        }
+    }
+
     /**
      *
      * This method also stores the list of instantiated widgets to allow switching from view mode to edit mode  (for a form or a cell)
@@ -123,6 +135,9 @@ export class LayoutChart extends Layout {
         if(this.view.getMode() == 'grid') {
             $elem = $('<div/>').addClass('table-wrapper').css({"width": "100%"});
             let $container = $('<div/>').css({"width": "100%"}).appendTo($elem);
+
+            // add spinner
+            $container.append( $('<div class="table-loader"> <div class="table-spinner"><div class="spinner__element"></div></div> <div class="table-overlay"></div> </div>') );
 
             let $table = $('<table/>').css({"width": "100%"}).appendTo($container);
 
