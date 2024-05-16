@@ -41,10 +41,13 @@ export class Frame {
 
     private allow_history_change: boolean = true;
 
+    private is_active: boolean;
+
     constructor(eq:any, domContainerSelector:string='#sb-container') {
         this.eq = eq;
         this.context = <Context>{};
         this.stack = [];
+        this.is_active = true;
         // default mode : contexts are displayed in the same container
         this.display_mode = 'stacked';
         // if there is a single context, prevent closing the frame
@@ -53,6 +56,14 @@ export class Frame {
         this.domContainerSelector = domContainerSelector;
         this.url = window.location.href;
         this.init();
+    }
+
+    public setActive(active: boolean) {
+        this.is_active = active;
+    }
+
+    public isActive() {
+        return this.is_active;
     }
 
     public getContext() {
@@ -88,6 +99,20 @@ export class Frame {
         $(window).on('resize', () => {
             clearTimeout(resize_debounce);
             resize_debounce = setTimeout( async () => this.updateHeader(), 100);
+        });
+
+
+        $(window).on('keydown', (e) => {
+            if(this.is_active) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    // prevent opening 'save-as' dialog
+                    e.preventDefault();
+                    // relay to current context
+                    if(typeof this.context.keyboardAction === 'function') {
+                        this.context.keyboardAction('ctrl_s');
+                    }
+                }
+            }
         });
 
         // #memo - there is no way to prevent popstate if there is non-saved content (since it doesn't trigger `beforeunload`event)
@@ -429,12 +454,17 @@ export class Frame {
 
         let $lang_selector = UIHelper.createSelect('lang-selector', '', this.languages, lang);
         $lang_selector.addClass('lang-selector');
+        $lang_selector.find('.mdc-menu').addClass('mdc-menu-surface--is-open-left');
         $lang_selector.find('.mdc-select__selected-text').css({'text-transform': 'uppercase'}).text(lang);
 
-        $lang_selector.on('change', () => {
-            // when the lang selector is changed by user, update current context
+        // when the lang selector is changed by user, update current context
+        $lang_selector.find('input').on('change', () => {
             let lang:string = <string> $lang_selector.find('input').val();
-            $lang_selector.find('.mdc-select__selected-text').css({'text-transform': 'uppercase'}).text(lang);
+            $lang_selector.trigger('select', lang);
+            // force display lang code instead of full lang name (UI/UX)
+            setTimeout( () => {
+                    $lang_selector.find('.mdc-select__selected-text').css({'text-transform': 'uppercase'}).text(lang);
+                }, 100);
             let context: Context = new Context(this, this.context.getEntity(), this.context.getType(), this.context.getName(), this.context.getDomain(), this.context.getMode(), this.context.getPurpose(), lang, this.context.getCallback(), this.context.getConfig());
             this.context.destroy();
             this.context = context;
@@ -463,18 +493,27 @@ export class Frame {
             }, 1200);
         })
         .on('mouseout', function() {
-            $crumb.removeClass('has-mouseover');
-            $crumb.find('.header-view-details-popup').hide();
+            let $popup = $crumb.find('.header-view-details-popup');
+            if(!$popup.hasClass('has-mouseover')) {
+                $crumb.removeClass('has-mouseover');
+                $crumb.find('.header-view-details-popup').hide();
+            }
         });
 
         $('<div />').addClass('header-view-details-popup').hide()
             .append( $('<div />').addClass('header-view-details-title').text('View details') )
             .append( $('<div />').addClass('header-view-details-body')
-                .append( $('<div />').html('Entity: <b>'+context.getEntity()+'</b>') )
-                .append( $('<div />').html('View: <b>'+context.getType()+'.'+context.getName()+'</b>') )
-                .append( $('<div />').html('Purpose: <b>'+context.getPurpose()+'</b>') )
-                .append( $('<div />').html('Mode: <b>'+context.getMode()+'</b>') )
+                .append( $('<div />').attr('title', context.getEntity()).html('Entity: <b>'+context.getEntity()+'</b>') )
+                .append( $('<div />').attr('title', context.getType()+'.'+context.getName()).html('View: <b>'+context.getType()+'.'+context.getName()+'</b>') )
+                .append( $('<div />').attr('title', context.getPurpose()).html('Purpose: <b>'+context.getPurpose()+'</b>') )
+                .append( $('<div />').attr('title', context.getMode()).html('Mode: <b>'+context.getMode()+'</b>') )
             )
+            .on('mouseover', function() {
+                $crumb.find('.header-view-details-popup').addClass('has-mouseover');
+            })
+            .on('mouseout', function() {
+                $crumb.find('.header-view-details-popup').removeClass('has-mouseover');
+            })
             .appendTo($crumb);
     }
 
