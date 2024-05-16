@@ -134,7 +134,9 @@ export class Model {
         let result:any = {};
         let schema = this.view.getModelFields();
         for(let field in schema) {
-            if(!object.hasOwnProperty(field)) continue;
+            if(!object.hasOwnProperty(field)) {
+                continue;
+            }
             let type = this.getFinalType(field);
             if(type == 'many2one') {
                 if(typeof object[field] == 'object' && object[field]) {
@@ -162,26 +164,46 @@ export class Model {
         console.debug('Model::refresh');
 
         // fetch fields that are present in the parent View
-        let view_fields: any[] = <[]>Object.keys(this.view.getViewFields());
+        let view_fields: any = this.view.getViewFields();
         let schema = this.view.getModelFields();
 
         let fields = [];
 
-        for(let i in view_fields) {
+        for(let field in view_fields) {
 
-            let field = view_fields[i];
+            // view item as provided in view schema
+            let item: any = view_fields[field];
+
+            // path to subfield, for relational fields (when dot notation is present)
+            let path: string = '';
+
+            if(field.indexOf('.') > 0) {
+                let parts: string[] = field.split('.');
+                field = <string> parts.shift();
+                path = parts.join('.');
+            }
+
             if(!schema || !schema.hasOwnProperty(field)) {
                 console.warn('unknown field', field);
                 continue;
             }
             let type = this.getFinalType(field);
             // append `name` subfield for relational fields, using the dot notation
-            if( 'many2one' == type ) {
+            if('many2one' == type) {
                 fields.push(field + '.name');
+                // append path to subfield, if any
+                if(path.length > 0) {
+                    fields.push(field + '.' + path);
+                }
+                if(item.hasOwnProperty('widget') && item.widget.hasOwnProperty('fields') && Array.isArray(item.widget.fields)) {
+                    for(let subfield of item.widget.fields) {
+                        fields.push(field + '.' + subfield);
+                    }
+                }
             }
             // we do not load relational fields, these can result in potentially long lists which are handled by the Widgets
             else if(['one2many', 'many2many'].indexOf(type) > -1) {
-                delete fields[i];
+                // ignore
             }
             else {
                 fields.push(field);
@@ -190,12 +212,12 @@ export class Model {
 
         try {
             let body:any = {
-                get: this.view.getController(),
-                entity: this.view.getEntity(),
-                fields: fields,
-                domain: this.view.getDomain(),
-                ...this.view.getParams()
-            };
+                    get: this.view.getController(),
+                    entity: this.view.getEntity(),
+                    fields: fields,
+                    domain: this.view.getDomain(),
+                    ...this.view.getParams()
+                };
 
             // fetch objects using controller given by View (default is core_model_collect)
             let response = await ApiService.fetch('/', body);
@@ -313,7 +335,7 @@ export class Model {
 
     /**
      * Returns a collection holding only modified objects with their modified fields (not original objects).
-     * The collection will be empty if no changes occured.
+     * The collection will be empty if no changes occurred.
      *
      * @param ids array list of objects identifiers that must be returned (if changed)
      */
@@ -323,10 +345,14 @@ export class Model {
         }
         let collection = [];
         for(let id in this.has_changed) {
-            if(ids.length && ids.indexOf(+id) < 0) continue;
+            if(ids.length && ids.indexOf(+id) < 0) {
+                continue;
+            }
             let fields = this.has_changed[id];
             let object = this.objects.find( (object:any) => object.id == id );
-            if(object == undefined) continue;
+            if(object == undefined) {
+                continue;
+            }
             let result:any = {id: id};
             for(let field of fields) {
                 result[field] = object[field];
