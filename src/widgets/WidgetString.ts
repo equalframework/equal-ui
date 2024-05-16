@@ -39,15 +39,22 @@ export default class WidgetString extends Widget {
                     this.$elem.css({"width": "calc(100% - 10px)"});
                 }
 
-                // #memo - not dealing with keydown is preferred to avoid confusion about special keys role
+                let $input = this.$elem.find('input');
+
+                // #memo - not dealing with keydown is preferred in order to avoid confusion with special keys
                 // #memo - we use 'change' event to cover float and integers changes with up and down buttons (same timeout)
-                this.$elem.find('input').on('change', (event:any) => {
+                $input.on('change', (event:any) => {
                     let $this = $(event.currentTarget);
 
                     if(this.value != $this.val()) {
                         this.value = $this.val();
                         this.$elem.trigger('_updatedWidget', [false]);
                     }
+                });
+
+                // #todo - handle config.onfocus : 'none', 'select', 'reset'
+                $input.on('focus', function() {
+                    $input.trigger('select');
                 });
 
                 break;
@@ -78,14 +85,15 @@ export default class WidgetString extends Widget {
                     if(this.config.layout == 'list') {
                         if(usage.indexOf('icon') >= 0) {
 		                    let map_icons:any = {
-                                	success:  {icon: "check_circle", color: "green"},
-                                    info:     {icon: "info", color: "blue"},
-                                    warn:     {icon: "warning", color: "orange"},
-                                    major:    {icon: "error", color: "orangered"},
-                                    error:    {icon: "report", color: "red"},
-                                    paid:     {icon: "paid", color: "green"},
-                                    due:      {icon: "money_off", color: "red"},
-                            };
+                                	success:   {icon: "check_circle", color: "green"},
+                                    info:      {icon: "info", color: "blue"},
+                                    warn:      {icon: "warning", color: "orange"},
+                                    major:     {icon: "error", color: "orangered"},
+                                    important: {icon: "error", color: "orangered"},
+                                    error:     {icon: "report", color: "red"},
+                                    paid:      {icon: "paid", color: "green"},
+                                    due:       {icon: "money_off", color: "red"},
+                                };
 
                             this.$elem = $('<div />');
                             if(map_icons.hasOwnProperty(value)) {
