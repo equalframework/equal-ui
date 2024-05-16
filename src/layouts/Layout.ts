@@ -76,6 +76,10 @@ export class Layout implements LayoutInterface{
         return this.view.getEnv();
     }
 
+    public getContainer() {
+        return this.$layout;
+    }
+
     /**
      * Relay Context opening requests to parent View.
      *
@@ -329,9 +333,9 @@ export class Layout implements LayoutInterface{
                         await this.view.decorateActionDialog($dialog, action, missing_params, object, user, parent);
                         $dialog.addClass('sb-view-dialog').appendTo(this.view.getContainer());
                         $dialog
-                        .on('_accept', () => defer.resolve($dialog.data('result')))
-                        .on('_reject', () => defer.reject() );
-                        $dialog.trigger('_open');
+                            .on('_accept', () => defer.resolve($dialog.data('result')))
+                            .on('_reject', () => defer.reject() );
+                        $dialog.trigger('Dialog:_open');
                     }
                     // confirm dialog
                     else {
@@ -340,9 +344,9 @@ export class Layout implements LayoutInterface{
                         $dialog.find('.mdc-dialog__content').append($description);
                         $dialog.appendTo(this.view.getContainer());
                         $dialog
-                        .on('_accept', () => defer.resolve())
-                        .on('_reject', () => defer.reject() );
-                        $dialog.trigger('_open');
+                            .on('_accept', () => defer.resolve())
+                            .on('_reject', () => defer.reject() );
+                        $dialog.trigger('Dialog:_open');
                     }
                 }
                 else {
@@ -353,9 +357,9 @@ export class Layout implements LayoutInterface{
                         await this.view.decorateActionDialog($dialog, action, missing_params, object, user, parent);
                         $dialog.addClass('sb-view-dialog').appendTo(this.view.getContainer());
                         $dialog
-                        .on('_accept', () => defer.resolve($dialog.data('result')))
-                        .on('_reject', () => defer.reject() );
-                        $dialog.trigger('_open');
+                            .on('_accept', () => defer.resolve($dialog.data('result')))
+                            .on('_reject', () => defer.reject() );
+                        $dialog.trigger('Dialog:_open');
                     }
                     // perform action
                     else {
@@ -365,7 +369,11 @@ export class Layout implements LayoutInterface{
 
                 defer.promise().then( async (result:any) => {
                     // mark action button as loading
-                    let $action_button = $button.closest('button');
+                    let $action_button = $button;
+                    if($button.prop('nodeName') != 'BUTTON') {
+                        $action_button = $button.closest('.mdc-menu-surface--anchor').find('.mdc-button');
+                    }
+
                     $action_button.addClass('mdc-button--spinner');
                     try {
                         await this.view.performAction(action, {...resulting_params, ...result}, response_descr);
