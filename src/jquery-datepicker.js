@@ -2,24 +2,24 @@
 (function (root, factory) {
     if (typeof define === "function" && define.amd) {
         define(["jquery"], factory);
-    } 
+    }
 	else if (typeof exports === "object") {
         module.exports = factory(require("jquery"));
-    } 
+    }
 	else {
         factory(root.jQuery);
     }
-} (this, function ($) { 
+} (this, function ($) {
 
 	console.log('Init jquery-datepicker', $.datepicker);
 	// overriding functions meant to be private (starting with an underscore)
 	$.datepicker._updateDatepicker_orig = $.datepicker._updateDatepicker;
 	$.datepicker._doKeyDown_orig = $.datepicker._doKeyDown;
-	$.datepicker._newInst_orig = $.datepicker._newInst;    
+	$.datepicker._newInst_orig = $.datepicker._newInst;
     $.datepicker._getDateDatepicker_orig = $.datepicker._getDateDatepicker;
-	
+
 	$.extend($.datepicker, {
-        
+
         _newInst: function( target, inline ) {
             var inst = this._newInst_orig(target, inline);
 
@@ -33,10 +33,10 @@
             this.setHours(inst, today.getHours());
             this.setMinutes(inst, today.getMinutes());
             this.setSeconds(inst, 0);
-            
+
             return inst;
         },
-        
+
 		_doKeyDown: function(event) {
 			var inst = $.datepicker._getInst(event.target);
 			var handled = true;
@@ -55,7 +55,7 @@
                             // hide on esc
                             $.datepicker._hideDatepicker();
                         }
-                        break; 
+                        break;
 					default:
                         //call the original function
                         $.datepicker._doKeyDown_orig(event);
@@ -66,7 +66,7 @@
 				$.datepicker._doKeyDown_orig(event);
 			}
 		},
-        
+
         _setDateTimeDatepicker:  function(target, date) {
             var inst = $.datepicker._getInst(target);
             this._setDateDatepicker(target, date);
@@ -78,14 +78,14 @@
 
         _getDateDatepicker: function( target, noDefault ) {
             var date = this._getDateDatepicker_orig( target, noDefault );
-            var inst = $.datepicker._getInst(target); 
-			
+            var inst = $.datepicker._getInst(target);
+
             if(!date) {
 				date = new Date();
 			}
 			if(inst) {
 				date = new Date(date.getFullYear(), date.getMonth(), date.getDate(), inst.selectedHour, inst.selectedMin, inst.selectedSec);
-			}            
+			}
 
             return date;
         },
@@ -106,22 +106,22 @@
 			var uidptitle = inst.dpDiv.find('.ui-datepicker-title');
 
 			inst.dpDiv.append(this._generateMonthYearPicker(inst));
-            
+
             if(inst.settings.datetime) {
                 var time_button = $('<button class="mdc-button mdc-button--raised"><span class="material-icons mdc-fab__icon">access_time</span></button>');
                 uidptitle.parent().append($('<div />').addClass('ui-datepicker-header-time-switch').append(time_button));
-                
+
                 time_button.on('click', function() {
                     $.datepicker._toggleDisplay('#' + inst.id, 4); return false;
                 });
-                
+
                 inst.dpDiv.append(this._generateTimePicker(inst));
-                this.setText(inst);                
+                this.setText(inst);
             }
-            
+
 			var uidptitle_link = uidptitle.wrapInner('<a href="#"/>');
 			uidptitle_link.on('click', function(){$.datepicker._toggleDisplay('#' + inst.id, 2); return false;});
-            
+
 		},
 
 		//focus the date input field
@@ -170,29 +170,29 @@
         _incrementTime: function(inst, targetClass, operator) {
             if (targetClass.endsWith('hours')) {
                 this.setHours(inst, eval(this.getHours(inst) + operator + '1'));
-            } 
+            }
             else if (targetClass.endsWith('minutes')) {
                 this.setMinutes(inst, eval(this.getMinutes(inst) + operator + '1'));
-            } 
+            }
             else if (targetClass.endsWith('seconds')) {
                 this.setSeconds(inst, eval(this.getSeconds(inst) + operator + '1'));
-            } 
+            }
             else {
                 this.setMeridiem(inst);
             }
             this.setText(inst);
             if(inst.input && inst.input.hasClass('hasDatepicker')) {
                 inst.input.change();
-            }            
+            }
         },
-        
+
         setText: function (inst) {
             $(inst.dpDiv).find('.timepicker__controls__control--hours').text( this.getHours(inst).toString().padStart(2, '0') );
             $(inst.dpDiv).find('.timepicker__controls__control--minutes').text( this.getMinutes(inst).toString().padStart(2, '0') );
             $(inst.dpDiv).find('.timepicker__controls__control--seconds').text( this.getSeconds(inst).toString().padStart(2, '0') );
             $(inst.dpDiv).find('.timepicker__controls__control--meridiem').text( this.getMeridiem(inst) );
         },
-        
+
         setHours: function (inst, hours) {
             if(inst.settings.twentyFour) {
                 if(hours > 23) hours = 0;
@@ -207,14 +207,14 @@
             }
             inst.selectedHour = hours;
         },
-        
+
         setMinutes: function (inst, minutes) {
             if(minutes > 59) minutes = minutes % 60;
             if(minutes < 0) minutes = 59;
-            
+
             inst.selectedMin = minutes;
         },
-        
+
         setSeconds: function (inst, seconds) {
             inst.selectedSec = seconds;
         },
@@ -232,7 +232,7 @@
         },
 
         getMinutes: function (inst) {
-            return inst.selectedMin;        
+            return inst.selectedMin;
         },
 
         getSeconds: function (inst) {
@@ -242,11 +242,11 @@
         getMeridiem: function (inst) {
             return inst.selectedMeridiem;
         },
-      
+
 
 		_generateTimePicker: function(inst) {
-            var $elem = $('<div />').addClass('ui-datepicker-select-time').hide();            
-            
+            var $elem = $('<div />').addClass('ui-datepicker-select-time').hide();
+
             var picker = '<div class="timepicker"><ul class="timepicker__controls"><li class="timepicker__controls__control"><span class="timepicker__controls__control-up"></span><span class="timepicker__controls__control--hours" tabindex="-1">00</span><span class="timepicker__controls__control-down"></span></li><li class="timepicker__controls__control--separator"><span class="timepicker__controls__control--separator-inner">:</span></li><li class="timepicker__controls__control"><span class="timepicker__controls__control-up"></span><span class="timepicker__controls__control--minutes" tabindex="-1">00</span><span class="timepicker__controls__control-down"></span></li>';
             if (inst.settings.showSeconds) {
                 picker += '<li class="timepicker__controls__control--separator"><span class="timepicker__controls__control--separator-inner">:</span></li><li class="timepicker__controls__control"><span class="timepicker__controls__control-up"></span><span class="timepicker__controls__control--seconds" tabindex="-1">00</span><span class="timepicker__controls__control-down"></span> </li>';
@@ -254,21 +254,21 @@
             if (!inst.settings.twentyFour) {
                 picker += '<li class="timepicker__controls__control"><span class="timepicker__controls__control-up"></span><span class="timepicker__controls__control--meridiem" tabindex="-1">AM</span><span class="timepicker__controls__control-down"></span></li></ul></div>';
             }
-  
+
             var $picker = $(picker);
 
             var self = this;
-            
+
             var timeOut = null;
             $picker.find('.timepicker__controls__control-up').add($picker.find('.timepicker__controls__control-down'))
             .on('mousedown touchstart', function (event) {
-                var operator = (this.className.indexOf('up') > -1) ? '+' : '-';               
+                var operator = (this.className.indexOf('up') > -1) ? '+' : '-';
                 var $next = $(this.nextSibling);
                 var $prev = $(this.previousSibling);
                 var $target = (operator === '+') ? $next : $prev;
                 var targetClass = $target.attr('class');
                 timeOut = setInterval(function () {
-                    self._incrementTime(inst, targetClass, operator);                    
+                    self._incrementTime(inst, targetClass, operator);
                 }, 200);
                 return false;
             })
@@ -277,20 +277,20 @@
                 return false;
             })
             .on('click', function () {
-                var operator = (this.className.indexOf('up') > -1) ? '+' : '-';               
+                var operator = (this.className.indexOf('up') > -1) ? '+' : '-';
                 var $next = $(this.nextSibling);
                 var $prev = $(this.previousSibling);
                 var $target = (operator === '+') ? $next : $prev;
-                var targetClass = $target.attr('class');                
+                var targetClass = $target.attr('class');
 
                 self._incrementTime(inst, targetClass, operator);
                 return false;
             });
-               
+
             $elem.append($picker);
             return $elem;
         },
-        
+
 		_generateMonthYearPicker: function(inst) {
 			var minDate = this._getMinMaxDate(inst, 'min');
 			var maxDate = this._getMinMaxDate(inst, 'max');
@@ -309,16 +309,16 @@
             var target = $( id ), inst = this._getInst( target[ 0 ] );
             // keep track of the current drawYear (will be erased by next call)
             var drawYear = inst.drawYear;
-            
+
 			var dummySelect = $('<select/>').append( new Option(valueMY, valueMY, true, true) );
 			//select month/year and show datepicker
 			this._selectMonthYear(id, dummySelect[0], period);
 
             // if a month has been selected, select tht displayed date as well
-			if(period == 'M') {                               
+			if(period == 'M') {
                 dummySelect = $('<select/>').append( new Option(drawYear, drawYear, true, true) );
                 this._selectMonthYear(id, dummySelect[0], 'Y');
-            }         
+            }
 
             // if we selected a year, force display of the monthpicker
 			if(period == 'Y') {
@@ -386,7 +386,7 @@
 						dpPrev.unbind('click');
 						if(!inMinYear) {
 							dpPrev.removeClass('ui-state-disabled').on('click', function() {
-                                _advanceYear_MYP(-1); 
+                                _advanceYear_MYP(-1);
                                 self._instInputFocus_MYP(inst);
                             });
 						}
@@ -396,7 +396,7 @@
 						dpNext.unbind('click');
 						if(!inMaxYear) {
 							dpNext.removeClass('ui-state-disabled').on('click', function() {
-                                _advanceYear_MYP(1); 
+                                _advanceYear_MYP(1);
                                 self._instInputFocus_MYP(inst);
                             });
 						}
@@ -407,7 +407,7 @@
 					//change title link behaviour
 					dpTitle.html('<a href="#" class="ui-datepicker-yearpicker" onclick="$.datepicker._toggleDisplay(\'#' + inst.id + '\', 3);return false;">' + drawYear +'</a>');
 					// update prev next behaviour
-					dpPrev.off('click').removeAttr('onclick');  
+					dpPrev.off('click').removeAttr('onclick');
 					dpNext.off('click').removeAttr('onclick');
 					_updatePrevNextYear_MYP();
 
@@ -416,7 +416,7 @@
 
 					inst.dpDiv.find('table.ui-datepicker-calendar').hide();
                     inst.dpDiv.find('.ui-datepicker-select-time').hide();
-					inst.dpDiv.find('.ui-datepicker-select-year').hide();                                        
+					inst.dpDiv.find('.ui-datepicker-select-year').hide();
 					inst.dpDiv.find('.ui-datepicker-select-month').show();
 
 
@@ -462,7 +462,7 @@
 
 						//generate year picker HTML
 						var yearPicker = '<table><tbody><tr>';
-						//show years in 4x3 matrix 
+						//show years in 4x3 matrix
 						year--; //last year of the previous decade
                         try {
                             for (var i = 1; i <= 12; i++) {
@@ -501,18 +501,18 @@
 
 					inst.dpDiv.find('table.ui-datepicker-calendar').hide();
 					inst.dpDiv.find('.ui-datepicker-select-month').hide();
-					inst.dpDiv.find('.ui-datepicker-select-time').hide();                    
+					inst.dpDiv.find('.ui-datepicker-select-time').hide();
 					inst.dpDiv.find('.ui-datepicker-select-year').show();
 
-					
+
 					break;
                 case 4:
 
 					inst.dpDiv.find('table.ui-datepicker-calendar').hide();
 					inst.dpDiv.find('.ui-datepicker-select-month').hide();
-					inst.dpDiv.find('.ui-datepicker-select-year').hide();                    
+					inst.dpDiv.find('.ui-datepicker-select-year').hide();
 					inst.dpDiv.find('.ui-datepicker-select-time').show();
-                    
+
                     break;
 			}
 
