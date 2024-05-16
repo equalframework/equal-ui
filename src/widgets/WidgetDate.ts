@@ -8,33 +8,81 @@ import { $, jqlocale } from "../jquery-lib";
 
 export default class WidgetDate extends Widget {
 
-
     constructor(layout: Layout, label: string, value: any, config: {}) {
         super(layout, 'date', label, value, config);
     }
 
+    private jqueryToMomentFormat(format: string): string {
+        let result: string = format;
+        const formatAdapter : any = {
+            'dd': 'DD',
+            'mm': 'MM',
+            'yy': 'YYYY'
+        };
+        for(const key in formatAdapter) {
+            let re = new RegExp(key, 'g');
+            result = result.replace(re, formatAdapter[key]);
+        }
+        return result;
+    }
+
+    /**
+     * Converts a date from jquery-ui format (dateFormat) to ISO string according to provided format.
+     * Uses moment.js for the formatting.
+     *
+     * @param date
+     * @param format
+     */
+    private adaptFromDateFormat(date: any, format: string): string {
+        return moment(date).format(this.jqueryToMomentFormat(format));
+    }
+
     public change(value: any) {
-        console.log('WidgetDate::change', value);
-        this.$elem.find('input').datepicker('setDate', value).trigger('change');
+        // #memo - this is used by inline edit for list views : we cannot trigger a change since it would result in infinite loop (triggering _updatedWidget)
+        console.debug('WidgetDate::change', value);
+        let $datepicker = this.$elem.find('.datepicker');
+        let format = $datepicker.datepicker('option', 'dateFormat');
+        let date = new Date();
+        if(value && value.length) {
+            date = new Date(value);
+        }
+        let str_date = this.adaptFromDateFormat(date, format);
+        this.$elem.find('.datepicker').datepicker('setDate', date);
+        this.$elem.find('input').first().val((value && value.length)?str_date:'');
     }
 
     public render(): JQuery {
         let date = new Date(this.value);
-        let value:any;
-         // moment 'll': en = "Jul 8, 2023"; fr = "8 juil. 2023"
-        let format = 'll';
+        if(this.value && this.value.length) {
+            date = new Date(this.value);
+        }
+        let value: any;
+        let format: any;
         switch(this.mode) {
             case 'edit':
+                let $datetimepicker = $('<input type="text" />').addClass('datepicker sb-widget-datetime-datepicker');
+
                 let datepickerConfig = {
-                    showOn: "button",
-                    ...jqlocale[this.getLayout().getEnv().locale],
-                    onClose: () => {
-                        // give the focus back once the widget will have been refreshed
-                        setTimeout( () => {
-                            $('#'+this.getId()).find('input').first().trigger('focus');
-                        }, 250);
-                    }
-                };
+                        autoOpen: false,
+                        ...jqlocale[this.getLayout().getEnv().locale],
+                        onClose: () => {
+                            // relay only in case of change, and if string value is not empty
+                            let newDate = $datetimepicker.datepicker('getDate');
+                            let str_date: string = <string> this.$elem.find('input').first().val();
+                            if(date.getTime() != newDate.getTime() && str_date.length > 0) {
+                                console.debug('onclose', date.getTime(), newDate.getTime(), str_date.length);
+                                // make the date UTC @ 00:00:00
+                                let timestamp = newDate.getTime();
+                                let offset_tz = newDate.getTimezoneOffset()*60*1000;
+                                this.value = (new Date(timestamp-offset_tz)).toISOString().substring(0, 10)+'T00:00:00Z';
+                                this.$elem.trigger('_updatedWidget');
+                            }
+                        }
+                    };
+
+                // #memo - in some cases datepicker fails to parse the date with applied format, and falls back to defaultDate
+                datepickerConfig.defaultDate = date;
+
                 if(this.config.hasOwnProperty('usage')) {
                     if(this.config.usage == 'month' || this.config.usage.indexOf('date/month') == 0) {
                         if(datepickerConfig.hasOwnProperty('dateFormat_month')) {
@@ -42,43 +90,74 @@ export default class WidgetDate extends Widget {
                         }
                     }
                 }
-                // #memo - in some cases datepicker fails to parse the date with applied format, and falls back to current date as initial value
-                datepickerConfig.defaultDate = date;
+
                 // convert jquery format to moment format
                 format = datepickerConfig.dateFormat;
-                let formatAdapter : any = {
-                    'dd': 'DD',
-                    'mm': 'MM',
-                    'yy': 'YYYY'
-                };
-                for(const key in formatAdapter) {
-                    let re = new RegExp(key, 'g');
-                    format = format.replace(re, formatAdapter[key]);
-                }
-                value = moment(date).format(format);
-                this.$elem = UIHelper.createInput('date_'+this.id, this.label, value, this.config.description, 'calendar_today', this.readonly);
+                value = (this.value)?this.adaptFromDateFormat(date, format):'';
+
+                this.$elem = UIHelper.createInput('date_'+this.id, this.label, value, this.config.description, '', this.readonly);
+
+                let $input = this.$elem.find('input').first()
+                    .on('keydown', (event:any) => {
+                        if(event.which == 9) {
+                            event.stopImmediatePropagation();
+                        }
+                    })
+                    .on('change', (event) => {
+                        let $this = $(event.currentTarget);
+                        let date = new Date();
+                        let mdate = moment($this.val(), this.jqueryToMomentFormat(format), true);
+                        if(mdate.isValid()) {
+                            date = mdate.toDate();
+                        }
+                        console.debug('WidgetDate:: first input change', $this.val(), date);
+                        // make the date UTC @ 00:00:00
+                        let timestamp = date.getTime();
+                        let offset_tz = date.getTimezoneOffset()*60*1000;
+                        this.value = (new Date(timestamp-offset_tz)).toISOString().substring(0, 10)+'T00:00:00Z';
+                        $datetimepicker.datepicker('setDate', date);
+                    });
+
+                let $button_open = UIHelper.createButton('date-actions-open_'+this.id, '', 'icon', 'calendar_today')
+                    .css({"position": "absolute", "right": "5px", "top": "5px", "z-index": "1"})
+                    .on('focus', () => $datetimepicker.datepicker('show') )
+                    .on('click', () => {
+                        $datetimepicker.datepicker('show');
+                        let val = <string> $input.val();
+                        if(!val.length) {
+                            $input.val(this.adaptFromDateFormat(new Date(), format)).trigger('change');
+                        }
+                    });
+
                 if(this.config.layout == 'list') {
                     this.$elem.css({"width": "calc(100% - 10px)"});
+                    $button_open.css({"top": "2px"});
                 }
-                // setup handler for relaying value update to parent layout
-                this.$elem.find('input')
-                .datepicker(datepickerConfig)
-                .on('change', (event:any) => {
-                    // update widget value using jQuery `getDate`
-                    let $this = $(event.currentTarget);
-                    // #memo - in some cases datepicker fails to parse the date with applied format, and falls back to current date
-                    // let date = $this.datepicker('getDate');
-                    let date = moment(<string> $this.val(), format).toDate();
-                    // make the date UTC @ 00:00:00
-                    let timestamp = date.getTime();
-                    let offset_tz = date.getTimezoneOffset()*60*1000;
-                    this.value = (new Date(timestamp-offset_tz)).toISOString().substring(0, 10)+'T00:00:00Z';
-                    this.$elem.trigger('_updatedWidget');
-                });
-                this.$elem.find('button').attr('tabindex', -1);
+
+                $button_open.insertAfter($input);
+
+                $datetimepicker.datepicker(datepickerConfig)
+                    .on('keydown', (event: any) => {
+                        // prevent relaying key events to datepicker
+                        event.stopImmediatePropagation();
+                    })
+                    .on('change', (event:any) => {
+                        // update widget value using jQuery `getDate`
+                        let $this = $(event.currentTarget);
+                        let newDate = $this.datepicker('getDate');
+                        console.debug('WidgetDate::datepicker change', newDate);
+                        this.$elem.find('input').first().val(this.adaptFromDateFormat(newDate, format));
+                    });
+
+                $datetimepicker.datepicker('setDateTime', date);
+
+                this.$elem.append($datetimepicker);
+
                 break;
             case 'view':
             default:
+                // moment 'll': en = "Jul 8, 2023"; fr = "8 juil. 2023"
+                format = 'll';
                 // #todo - adapt and complete based on retrieved locale from equal (@see packages/core/i18n/.../locale.json)
                 if(this.config.hasOwnProperty('usage')) {
                     if(this.config.usage == 'date' || this.config.usage == 'date/medium' || this.config.usage == 'date/plain.medium') {
