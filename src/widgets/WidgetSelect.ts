@@ -10,6 +10,7 @@ export default class WidgetSelect extends Widget {
     }
 
     public change(value: any) {
+        console.debug('WidgetSelect::change', value);
         this.$elem.trigger('select', value);
     }
 
@@ -23,6 +24,10 @@ export default class WidgetSelect extends Widget {
                 if(this.config.layout == 'list') {
                     this.$elem.css({"width": "calc(100% - 10px)"});
                 }
+                let $select = this.$elem.find('.mdc-select__anchor');
+                let $menu = this.$elem.find('.mdc-menu');
+                // assign displayed value
+                this.$elem.trigger('select', value);
                 // setup handler for relaying value update to parent layout
                 this.$elem.find('input').on('change', (event) => {
                     console.debug('WidgetSelect : received change event');
@@ -39,6 +44,48 @@ export default class WidgetSelect extends Widget {
                     });
                 }
 
+                // if field is empty, open menu on focus
+                $select.on('focus', (event:any) => {
+                        if(value == '' && !$menu.hasClass('mdc-menu-surface--open')) {
+                            $menu.trigger('_open');
+                        }
+                    });
+
+                $select.on('keyup', (event:any) => {
+                        console.debug('WidgetSelect: received keyup');
+
+                        // tab
+                        if(event.which == 9) {
+                            // do nothing
+                        }
+                        // esc
+                        else if(event.which == 27) {
+                            $menu.trigger('_close');
+                        }
+                        // enter
+                        else if(event.which == 13) {
+                            // #memo - this triggers a click on the menu, which triggers a menu close
+                            $menu.trigger('_select');
+                        }
+                        // up arrow
+                        else if(event.which == 38) {
+                            if(!$menu.hasClass('mdc-menu-surface--open')) {
+                                $menu.trigger('_open');
+                            }
+                            else {
+                                $menu.trigger('_moveup');
+                            }
+                        }
+                        // down arrow
+                        else if(event.which == 40) {
+                            if(!$menu.hasClass('mdc-menu-surface--open')) {
+                                $menu.trigger('_open');
+                            }
+                            else {
+                                $menu.trigger('_movedown');
+                            }
+                        }
+                    });
                 break;
             case 'view':
             default:
