@@ -12,44 +12,18 @@ export default class WidgetMany2One extends Widget {
         super(layout, 'many2one', label, value, config);
     }
 
-    /**
-     * Resizes the height of the menu according to the available vertical space
-     * in the viewport (with 20px of margin at the top and the bottom).
-     *
-     */
-    private resizeMenu($menu: any) {
-        // force setting height according to inner content
-        $menu.css({height: 'auto'});
-        let rect = $menu[0].getBoundingClientRect();
-        if(rect.height == 0) {
-            return;
-        }
-        let min_top : number = 20;
-        let max_bottom : number = <number> $(window).height() - 20;
-        console.log(rect, max_bottom);
-        if(rect.top < min_top) {
-            // move top to 0 and add diff to height
-            let diff = Math.abs(min_top - rect.top);
-            let height = Math.floor(rect.height - diff);
-            $menu.css({ top: min_top + 'px', height: height + 'px' });
-        }
-        rect = $menu[0].getBoundingClientRect();
-        if(rect.bottom > max_bottom) {
-            // subtract diff from height
-            let diff = Math.abs(rect.bottom - max_bottom);
-            let height = Math.floor(rect.height - diff);
-            $menu.css({height: height + 'px' });
-        }
-    }
-
     public render():JQuery {
-        console.debug('WidgetMany2One::render', this.config);
-        // in edit mode, we should have received an id, in view mode, a name
-        let value:string = this.value?this.value:'';
+        console.debug('WidgetMany2One::render', this.config, this.value);
+        // in view mode, we should have received a string
+        // in edit mode (or after a view refresh), a map `{id: , name: }`
+        let value:any = (!this.value)?'':((typeof this.value == 'object' && this.value.hasOwnProperty('name'))?this.value.name:this.value.toString());
         let domain:any = [];
         if(this.config.hasOwnProperty('domain')) {
             domain = this.config.domain;
         }
+
+        // remember original value
+        this.config.original_value = value;
 
         // #todo : display many2one as sub-forms
 
@@ -63,9 +37,13 @@ export default class WidgetMany2One extends Widget {
                 let objects:Array<any> = [];
                 this.$elem = $('<div />');
 
+                let $button_reset = UIHelper.createButton('m2o-actions-reset-'+this.id, '', 'icon', 'close').css({"position": "absolute", "right": "45px", "top": "5px", "z-index": "1"}).hide();
+
                 let $select = UIHelper.createInput('m2o-input-'+this.id, this.label, value, this.config.description, '', this.readonly)
-                                      .addClass('mdc-menu-surface--anchor')
-                                      .css({"width": "100%", "display": "inline-block"});
+                    .addClass('mdc-menu-surface--anchor')
+                    .css({"width": "100%", "display": "inline-block"});
+
+                let $input = $select.find('input');
                 let $menu = UIHelper.createMenu('m2o-menu-'+this.id).appendTo($select);
                 let $menu_list = UIHelper.createList('m2o-menu-list-'+this.id).appendTo($menu);
                 let $link_search = UIHelper.createListItem('m2o-actions-search-'+this.id, '<a style="text-decoration: underline;">'+TranslationService.instant('SB_WIDGETS_MANY2ONE_ADVANCED_SEARCH')+'</a>');
@@ -76,6 +54,15 @@ export default class WidgetMany2One extends Widget {
                 }
 
                 UIHelper.decorateMenu($menu);
+
+                $button_reset.on('click', (event:any) => {
+                    this.value = {id: 0, name:''};
+                    $select.attr('data-selected', 0);
+                    $select.find('input').val('').trigger('change');
+                    $button_reset.hide();
+                    $select.find('input').prop('readonly', false);
+                    this.$elem.trigger('_updatedWidget');
+                });
 
                 if(value.length) {
                     $button_create.hide();
@@ -171,7 +158,7 @@ export default class WidgetMany2One extends Widget {
                         // if successful, select the newly created item
                         this.value = {id: object.id, name: value};
                         // update widget displayed value in case it is not part of a view (e.g. filters)
-                        $select.find('input').val(value).trigger('change');
+                        $input.val(value).trigger('change');
                         this.$elem.trigger('_updatedWidget');
                     }
                     catch(response) {
@@ -211,8 +198,9 @@ export default class WidgetMany2One extends Widget {
 
                 let feedObjects = async () => {
                     console.debug('WidgetMany2One::feedObjects (call)');
-                    let $input = $select.find('input');
-                    if(!$input.length) return;
+                    if(!$input.length) {
+                        return;
+                    }
                     let val = <string> $input.val();
                     let parts:string[] = val.split(" ");
 
@@ -237,20 +225,24 @@ export default class WidgetMany2One extends Widget {
                             $menu_list.empty();
                             for(let object of objects) {
                                 UIHelper.createListItem(this.id+'-object-'+object.id, object.name.replaceAll(' ', '&nbsp;'))
-                                .appendTo($menu_list)
-                                .attr('id', object.id)
-                                .on('click', (event) => {
-                                    $input.val(object.name).trigger('change');
-                                    $select.attr('data-selected', object.id);
-                                    $select.trigger('update');
-                                })
+                                    .appendTo($menu_list)
+                                    .attr('id', object.id)
+                                    // #memo - a handler is set on item click as well in the menu
+                                    .on('click', (event) => {
+                                        console.log('WidgetMany2one: received click on item', object.id);
+                                        $select.attr('data-selected', object.id);
+                                        $input.val(object.name).trigger('change');
+                                        $button_reset.show();
+                                        $select.find('input').prop('readonly', true);
+                                        $select.trigger('update');
+                                    })
                             }
                             if(objects.length) {
                                 if(objects.length == 1 && (!this.config.hasOwnProperty('autoselect') || this.config.autoselect == true)) {
                                     // if list is exactly 1 object long : auto select
                                     let object = objects[0];
-                                    $input.val(object.name).trigger('change');
                                     $select.attr('data-selected', object.id);
+                                    $input.val(object.name).trigger('change');
                                     $select.trigger('update');
                                 }
                                 else {
@@ -278,133 +270,66 @@ export default class WidgetMany2One extends Widget {
                 };
 
                 if(this.config.layout == 'form' && !this.readonly) {
-                    console.debug('WidgetMany2One:: setting up listener on $select');
-
-                    let $button_reset = UIHelper.createButton('m2o-actions-reset-'+this.id, '', 'icon', 'close').css({"position": "absolute", "right": "45px", "top": "5px", "z-index": "1"});
+                    console.debug('WidgetMany2One: setting up listener on $select');
 
                     if(!this.config.has_action_open && !this.config.has_action_create) {
                         $button_reset.css({"right": "5px"});
                     }
 
-                    if(value.length) {
-                        this.config.original_value = value;
-                        // make room for reset button
-                        $select.find('input').prop('readonly', true).css({'width': 'calc(100% - 50px)'});
-                        $button_reset.insertAfter($select);
+                    // make room for reset button
+                    $select.find('input').css({'width': 'calc(100% - 50px)'});
+                    // insert before other buttons, if any, to respect tabindex
+                    $button_reset.insertAfter($select);
+
+                    if(value.length && !this.readonly) {
+                        $button_reset.show();
+                        $select.find('input').prop('readonly', true);
                     }
 
-                    let has_focus:boolean = false;
-                    let dblclick_timeout:boolean = false;
-
-                    $button_reset.on('click', (event:any) => {
-                        this.value = {id: 0, name:''};
-                        $select.attr('data-selected', 0);
-                        this.$elem.trigger('_updatedWidget');
-                        // if keyboard, give back the focus to the input after refreshing the view (other object, same ID)
-                        if (event.screenX == 0 && event.screenY == 0) {
-                            setTimeout( () => {
-                                $('#m2o-input-'+this.id).find('input').prop('readonly', false).trigger('focus');
-                                $('#m2o-input-'+this.id).trigger('click');
-                            }, 500);
-                        }
-                    });
-
-                    $select.find('input').on('blur', (event:any) => {
-                        console.debug('WidgetMany2One:: $select received blur');
-                        event.stopPropagation();
-                        if(dblclick_timeout) {
-                            return;
-                        }
-                        if(!has_focus) {
-                            return;
-                        }
-                        // wait for the focus be given at next widget AND change to be relayed, if any
-                        setTimeout( () => {
-                            has_focus = false;
-                            console.debug('WidgetMany2One:: $select closing menu');
-                            $menu.trigger('_close');
-                        }, 150);
-                    });
-
-                    $select.on('click', (event:any) => {
-                        console.debug('WidgetMany2One:: $select received click');
-                        event.stopPropagation();
-                        if(dblclick_timeout) {
-                            return;
-                        }
-                        // click on a focused input blurs the input (workaround for disappearing menu)
-                        if(has_focus) {
-                            has_focus = false;
-                            dblclick_timeout = true;
-                            $select.find('input').blur();
-                            setTimeout( () => {
-                                dblclick_timeout = false;
-                                // $menu.trigger('_close');
-                            }, 500);
-                        }
-                        else {
-                            if(!value.length) {
-                                $menu.trigger('_open');
-                            }
-                        }
-                    });
-
-                    $select.find('input').on('focus', async (event:any) => {
-                        console.debug('WidgetMany2One:: $select received focus');
-                        event.stopPropagation();
-
-                        if($select.attr('data-selected')) {
-                            return;
-                        }
-                        if(dblclick_timeout) {
-                            $select.find('input').blur();
-                            return;
-                        }
-                        if(has_focus) {
-                            return;
-                        }
-                        has_focus = false;
-                        await feedObjects();
-                        // delay has_focus to distinguish first focus and later
-                        setTimeout( () => {
-                            has_focus = true;
-                            this.resizeMenu($select.find('.mdc-menu-surface'));
-                        }, 250);
-
-                    });
-
+                    // debounce
                     let timeout:any = null;
 
-                    $select.find('input')
-                    .on('keyup', (event:any) => {
+                    $select.find('input').on('keydown', (event:any) => {
+                            console.debug('WidgetMany2One: $select received keydown');
+                            // tab
+                            if(event.which == 9) {
+                                $menu.trigger('_close');
+                            }
+                        });
+
+                    $select.find('input').on('keyup', (event:any) => {
+                        console.debug('WidgetMany2One: $select received keyup');
+                        // tab
                         if(event.which == 9) {
-                            // tab - give focus to select
-                            $select.trigger('click');
-                            // prevent double handling tab
-                            return;
+                            // do nothing
                         }
+                        // esc
                         else if(event.which == 27) {
-                            // esc - revert to initial value, if any
-                            $select.trigger('click');
-                            let $input = $select.find('input');
-                            $input.prop('readonly', true).css({'width': 'calc(100% - 50px)'});
-                            $input.val(this.config.original_value).trigger('change');
-                            this.$elem.append($button_reset);
+                            // revert to initial value, if any
+                            $select.find('input').val(this.config.original_value).trigger('change');
+                            $select.attr('data-selected', 0);
+                            if(this.config.original_value.length) {
+                                $button_reset.show();
+                                $select.find('input').prop('readonly', true);
+                            }
+                            $menu.trigger('_close');
                         }
+                        // enter
                         else if(event.which == 13) {
-                            // enter
+                            // #memo - this triggers a click on the menu, which triggers a menu close
                             $menu.trigger('_select');
                         }
+                        // up arrow
                         else if(event.which == 38) {
-                            // up arrow
                             $menu.trigger('_moveup');
                         }
+                        // down arrow
                         else if(event.which == 40) {
-                            // down arrow
                             $menu.trigger('_movedown');
                         }
+                        // new char
                         else {
-                            // new char : update results
+                            // update results
                             let original_instant_label:string = TranslationService.instant('SB_ACTIONS_BUTTON_CREATE')+' "{value}"';
                             $link_instant.find('a').text(original_instant_label.replace('{value}', <string> $select.find('input').val()));
                             if(timeout) {
@@ -413,29 +338,9 @@ export default class WidgetMany2One extends Widget {
                             timeout = setTimeout( async () => {
                                 timeout = null;
                                 await feedObjects();
-                                this.resizeMenu($select.find('.mdc-menu-surface'));
+                                $menu.trigger('_resize');
+                                $menu.trigger('_reset');
                             }, 250);
-                        }
-                    });
-
-                    // upon value change, relay updated value to parent layout
-                    $select.on('update', (event) => {
-                        console.debug('WidgetMany2One : received change event', $select.attr('data-selected'));
-                        // m2o relations are always loaded as an object with {id:, name:}
-                        let object:any = objects.find( o => o.id == $select.attr('data-selected'));
-                        if(object) {
-                            if(this.config.has_action_open) {
-                                $button_open.show();
-                            }
-                            $button_create.hide();
-                            this.value = {id: object.id, name: object.name};
-                            this.$elem.trigger('_updatedWidget');
-                        }
-                        else {
-                            if(this.config.has_action_create) {
-                                $button_create.show();
-                            }
-                            $button_open.hide();
                         }
                     });
                 }
@@ -443,23 +348,69 @@ export default class WidgetMany2One extends Widget {
                     console.debug('WidgetMany2One:: ignored setting up listener on $select');
                 }
 
+                // upon value change, relay updated value to parent layout
+                $select.on('update', (event) => {
+                    console.debug('WidgetMany2One: received update event', $select.attr('data-selected'));
+                    // m2o relations are always loaded as an object with {id:, name:}
+                    let object:any = objects.find( o => o.id == $select.attr('data-selected'));
+                    if(object) {
+                        if(this.config.has_action_open) {
+                            $button_open.show();
+                        }
+                        $button_create.hide();
+                        this.value = {id: object.id, name: object.name};
+                        // #memo - this will give the focus back to the input
+                        this.$elem.trigger('_updatedWidget');
+                    }
+                    else {
+                        if(this.config.has_action_create) {
+                            $button_create.show();
+                        }
+                        $button_open.hide();
+                    }
+                });
+
+                // #memo - dealing with blur event leads to edge cases
+                /*
+                $select.find('input').on('blur', (event:any) => {
+                    event.stopPropagation();
+                    // blur can result from a click on an item, wait for the click handler to proceed
+                    setTimeout( () => {
+                        $menu.trigger('_close');
+                    }, 100);
+                });
+                */
+
+                $select.find('input').on('focus', async (event:any) => {
+                    let selection: number = parseInt(<string> $select.attr('data-selected')) || 0;
+                    console.debug('WidgetMany2one: received focus event on input', $select.attr('data-selected'), selection);
+                    if(selection == 0 && !$menu.hasClass('mdc-menu-surface--open')) {
+                        await feedObjects();
+                        $menu.trigger('_open');
+                    }
+                });
+
                 // #memo - we condition load on init to fields with empty values AND having a domain set
                 // (to prevent burst requests when view is displayed in edit mode)
+                /*
                 if( (!value || !value.length) && domain.length) {
-                    setTimeout( () => feedObjects(), 250);
+                    setTimeout( async () => {
+                            await feedObjects();
+                            $menu.trigger('_open');
+                        }, 250);
                 }
-
+                */
                 break;
             case 'view':
             default:
                 this.$elem = $('<div />');
-                let $input = UIHelper.createInputView('', this.label, value.toString(), this.config.description);
+                let $viewInput = UIHelper.createInputView('', this.label, value, this.config.description);
 
                 switch(this.config.layout) {
                     case 'form':
-                        $input.css({"width": "calc(100% - 48px)", "display": "inline-block"});
+                        $viewInput.css({"width": "calc(100% - 48px)", "display": "inline-block"});
 
-                        this.$elem.append($input);
+                        this.$elem.append($viewInput);
 
                         if(this.config.has_action_open) {
                             this.$elem.append($button_open);
@@ -483,7 +434,7 @@ export default class WidgetMany2One extends Widget {
                             this.$elem.addClass('is-first');
                         }
 
-                        this.$elem.text(value.toString());
+                        this.$elem.text(value);
                         this.$elem.css({"width": "100%", "height": "auto", "max-height": "calc(44px - 2px)", "white-space": "break-spaces", "overflow": "hidden", "cusor": "pointer"});
 
                         if(!this.is_first) {
