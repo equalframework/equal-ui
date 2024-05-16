@@ -29,7 +29,8 @@ export default class WidgetFloat extends WidgetString {
 
         if(this.mode == 'edit') {
             $input.attr( "type", "number" );
-
+            // @memo - browser accepts only one separator: . or ,
+            $input.val(EnvService.formatFinancialNumber(this.value));
             // #todo - handle config.onfocus : 'none', 'select', 'reset'
             $input.on('focus', function() {
                 $input.trigger('select');
