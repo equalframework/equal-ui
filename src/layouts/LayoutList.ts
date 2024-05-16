@@ -493,12 +493,29 @@ export class LayoutList extends Layout {
         .attr('data-id', object.id)
         .attr('data-edit', '0')
         // open form view on click
-        .on('click', (event:any) => {
+        .on('click', async (event:any) => {
             let $this = $(event.currentTarget);
             // discard click when row is being edited
             if($this.attr('data-edit') == '0') {
+                let childViewSchema = await ApiService.getView(this.view.getEntity(), 'form' + '.' + this.view.getName());
                 // #todo - allow overloading default action ('ACTIONS.UPDATE')
-                this.openContext({entity: this.view.getEntity(), type: 'form', name: this.view.getName(), mode: this.view.getMode(), domain: ['id', '=', object.id]});
+                // fallback to view mode if `header.actions.ACTION.EDIT` is set to false
+                let mode = this.view.getMode();
+                if(childViewSchema.hasOwnProperty("header") && childViewSchema.header.hasOwnProperty("actions")) {
+                    if(childViewSchema.header.actions.hasOwnProperty("ACTION.EDIT") && childViewSchema.header.actions["ACTION.EDIT"] === false) {
+                        mode = 'view';
+                    }
+                }
+
+                let config: any = {entity: this.view.getEntity(), type: 'form', name: this.view.getName(), mode: mode, domain: ['id', '=', object.id]};
+                // if current list is a widget, reload content after child context has been closed
+                if(this.view.getPurpose() == 'widget') {
+                    config.callback = (data:any) => {
+                        // trigger a refresh of the current view
+                        this.view.onchangeView();
+                    };
+                }
+                this.openContext(config);
             }
         })
         // toggle mode for all cells in row
