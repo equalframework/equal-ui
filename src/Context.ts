@@ -181,6 +181,10 @@ export class Context {
         return this.frame.getParentContext();
     }
 
+    public keyboardAction(action: string) {
+        this.view.keyboardAction(action);
+    }
+
     /**
      * Calling this method means that we need to update the model : values displayed by the context have to be re-fetched from server
      */
