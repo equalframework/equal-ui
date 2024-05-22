@@ -425,6 +425,9 @@ export class LayoutForm extends Layout {
                                 value = object[field]['name'];
                                 config.object_id = object[field]['id'];
                             }
+                            else if(config.hasOwnProperty('object_id')) {
+                                delete config.object_id;
+                            }
                         }
                         else if(type == 'many2many' || type == 'one2many') {
                             // init field if not present yet (o2m and m2m are not loaded by Model)
@@ -537,6 +540,7 @@ export class LayoutForm extends Layout {
                             }
                             this.view.onchangeViewModel([object.id], values, refresh);
                         });
+
                         // prevent refreshing objects that haven't changed
                         if(has_changed) {
                             // append rendered widget
