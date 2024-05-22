@@ -85,7 +85,12 @@ export class _EnvService {
                 decimal_sep = this.environment['core.locale.numbers.decimal_separator'];
             }
         }
-        let parts:any = value.toFixed(scale).split(".");
+        // sanitize received value
+        let n = Number(value)
+        if(isNaN(n)) {
+            n = 0;
+        }
+        let parts:any = n.toFixed(scale).split(".");
         parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, thousand_sep);
         if(scale > 0 && parts.length == 1) {
             parts[1] = ''.padStart(scale, '0');
