@@ -14,9 +14,11 @@ export default class WidgetTime extends Widget {
     }
 
     public render():JQuery {
+        // #todo - adaptIN - times should always be UTC - we should apply time offset here
         let value:any = this.value;
         // if we received a date, convert it to a string
         if(Object.prototype.toString.call(value) === '[object Date]') {
+            // #todo - adaptIN - we should rather use `toUTCString()`
             value = value.toTimeString().substring(0,5);
         }
 
@@ -32,6 +34,7 @@ export default class WidgetTime extends Widget {
                 this.$elem.find('input').on('change', (event:any) => {
                     let $this = $(event.currentTarget);
 
+                    // #todo - adapt-OUT - times should always be UTC - we should apply time offset here
                     if(this.value != $this.val()) {
                         this.value = $this.val();
                         this.$elem.trigger('_updatedWidget', [false]);
