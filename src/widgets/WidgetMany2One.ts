@@ -15,7 +15,7 @@ export default class WidgetMany2One extends Widget {
     public render():JQuery {
         console.debug('WidgetMany2One::render', this.config, this.value);
         // in view mode, we should have received a string
-        // in edit mode (or after a view refresh), a map `{id: , name: }`
+        // in edit mode (or after a view refresh), a map `{id: , name: }` or NULL
         let value:any = (!this.value)?'':((typeof this.value == 'object' && this.value.hasOwnProperty('name'))?this.value.name:this.value.toString());
         let domain:any = [];
         if(this.config.hasOwnProperty('domain')) {
@@ -56,7 +56,7 @@ export default class WidgetMany2One extends Widget {
                 UIHelper.decorateMenu($menu);
 
                 $button_reset.on('click', (event:any) => {
-                    this.value = {id: 0, name:''};
+                    this.value = null;
                     $select.attr('data-selected', 0);
                     $select.find('input').val('').trigger('change');
                     $button_reset.hide();
@@ -383,7 +383,7 @@ export default class WidgetMany2One extends Widget {
 
                 $select.find('input').on('focus', async (event:any) => {
                     let selection: number = parseInt(<string> $select.attr('data-selected')) || 0;
-                    console.debug('WidgetMany2one: received focus event on input', $select.attr('data-selected'), selection);
+                    console.debug('WidgetMany2one: received focus event on input', $select.attr('data-selected'), selection, $menu);
                     if(selection == 0 && !$menu.hasClass('mdc-menu-surface--open')) {
                         await feedObjects();
                         $menu.trigger('_open');
