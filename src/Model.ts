@@ -143,7 +143,7 @@ export class Model {
                     result[field] = object[field].id;
                 }
                 else {
-                    result[field] = object[field];
+                    result[field] = (object[field])?object[field]:'null';
                 }
             }
             else if(['one2many', 'many2many'].indexOf(type) > -1) {
