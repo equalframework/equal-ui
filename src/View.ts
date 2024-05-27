@@ -29,7 +29,7 @@ export class View {
     private sort: string;
     private start: number;
     private limit: number;
-    private group_by: string[];
+    private group_by: any[];
 
     private controller: string;
     // associative array mapping additional params with their values (relayed to controller)
