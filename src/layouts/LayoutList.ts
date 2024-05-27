@@ -99,6 +99,12 @@ export class LayoutList extends Layout {
                     }
                 });
             });
+
+            this.getView().isReady().then( () => {
+                if(typeof group_by[0] === 'object' && group_by[0].hasOwnProperty('open') && group_by[0].open) {
+                    $fold_toggle.trigger('click');
+                }
+            });
         }
 
         // create other columns, based on the col_model given in the configuration
