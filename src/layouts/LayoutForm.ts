@@ -425,6 +425,7 @@ export class LayoutForm extends Layout {
                                 value = object[field]['name'];
                                 config.object_id = object[field]['id'];
                             }
+                            // config.object_id might have been modified by selection : remove it if not present or empty
                             else if(config.hasOwnProperty('object_id')) {
                                 delete config.object_id;
                             }
