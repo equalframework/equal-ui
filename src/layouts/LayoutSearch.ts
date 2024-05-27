@@ -36,7 +36,7 @@ export class LayoutSearch extends Layout {
 
     /**
      *
-     * This method also stores the list of instanciated widgets to allow switching from view mode to edit mode  (for a form or a cell)
+     * This method also stores the list of instantiated widgets to allow switching from view mode to edit mode  (for a form or a cell)
      *
      */
     protected layout() {
@@ -276,6 +276,10 @@ export class LayoutSearch extends Layout {
                             if(object[field]) {
                                 value = object[field]['name'];
                                 config.object_id = object[field]['id'];
+                            }
+                            // config.object_id might have been modified by selection : remove it if not present or empty
+                            else if(config.hasOwnProperty('object_id')) {
+                                delete config.object_id;
                             }
                         }
                         else if(type == 'many2many' || type == 'one2many') {
