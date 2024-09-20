@@ -196,6 +196,7 @@ body, html {
     left: 0;
     top: 40px;
     min-width: 250px;
+    max-width: 350px;
     height:  150px;
     border:  solid 1px lightgrey;
     z-index: 4;
@@ -283,6 +284,8 @@ body, html {
 
 .sb-view-layout-list .sb-widget-cell .sb-widget-mode-view {
     padding-right: 17px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .sb-view-layout-form {
@@ -682,7 +685,7 @@ body, html {
 }
 
 
-.sb-view-header-actions .sb-view-header-actions-std .disable-overlay {
+.sb-view-header-actions .disable-overlay {
     display: none;
     position: absolute;
     width: 100%;
@@ -923,7 +926,7 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     /* padding-top: 14px; */
 }
 
-/* added for WP compliance */
+/* #wordpress - added for WP compliance */
 .sb-widget.sb-widget-type-boolean .mdc-switch__native-control {
     opacity: 0 !important;
 }
@@ -1278,6 +1281,13 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     position: relative;
     /* #memo - cannot hide overflow : some elements depend on it */
     /* overflow: hidden; */
+}
+
+/* #wordpress - added for WP compliance */
+.mdc-text-field input.mdc-text-field__input {
+    box-shadow: none !important;
+    background-color: transparent !important;
+    border: 0 !important;
 }
 
 .mdc-text-field-helper-line {
