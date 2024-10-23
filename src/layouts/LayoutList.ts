@@ -217,8 +217,8 @@ export class LayoutList extends Layout {
                         if(op_descriptor.hasOwnProperty(field)) {
                             $cell.attr('data-id', 'operation-'+operation+'-'+field);
                             let type = this.view.getModel().getFinalType(field);
-                            if(['float', 'integer'].indexOf(type) >= 0 && field != 'id') {
-                                $cell.css({'text-align': 'right', 'padding-right': '17px'});
+                            if(['float', 'integer', 'time'].indexOf(type) >= 0 && field != 'id') {
+                                $cell.css({'text-align': 'right'});
                             }
                         }
                         else if(pos == 0) {
@@ -268,7 +268,7 @@ export class LayoutList extends Layout {
 
         let $tbody = $('<tbody/>');
 
-        let stack = (group_by.length == 0)?[objects]:[groups];
+        let stack = (group_by.length == 0) ? [objects] : [groups];
 
         while(true) {
             if(stack.length == 0) {
@@ -330,60 +330,75 @@ export class LayoutList extends Layout {
 
                         if(descriptor.hasOwnProperty(item.value)) {
                             let op_type = descriptor[item.value]['operation'];
-                            let op_result:number = 0.0;
-                            let i:number = 0;
+                            let op_result: number = 0.0;
+                            let i: number = 0;
                             for (let object of objects) {
+                                let val = object[item.value];
+                                let usage: string = descriptor[item.value]?.usage ?? '';
+                                if( usage == 'time' || usage == 'time/plain' ) {
+                                    const [hours, minutes, seconds] = val.split(':').map(Number);
+                                    val = hours * 3600 + minutes * 60 + (seconds || 0);
+                                }
                                 switch(op_type) {
+                                    case 'DIFF':
+                                        op_result = (i == 0) ? val : (op_result - val);
+                                        break;
                                     case 'SUM':
-                                        op_result += object[item.value];
+                                        op_result += val;
                                         break;
                                     case 'COUNT':
                                         op_result += 1;
                                         break;
                                     case 'MIN':
-                                        if(i == 0 || op_result > object[item.value]) {
-                                            op_result = object[item.value];
+                                        if(i == 0 || op_result > val) {
+                                            op_result = val;
                                         }
                                         break;
                                     case 'MAX':
-                                        if(i == 0 || op_result < object[item.value]) {
-                                            op_result = object[item.value];
+                                        if(i == 0 || op_result < val) {
+                                            op_result = val;
                                         }
                                         break;
                                     case 'AVG':
-                                        op_result += (object[item.value] - op_result) / (i+1);
+                                        op_result += (val - op_result) / (i+1);
                                         break;
                                 }
                                 ++i;
                             }
-                            let value:any = op_result;
+                            let value:any = op_result.toString();
                             let prefix = '';
                             let suffix = '';
-                            if(descriptor[item.value].hasOwnProperty('usage')) {
-                                let usage = descriptor[item.value]['usage'];
-                                if(usage.indexOf('amount/percent') >= 0 || usage.indexOf('amount/rate') >= 0) {
-                                    suffix = '%';
-                                    value = (value * 100).toFixed(0);
-                                }
-                                else if(usage.indexOf('amount/money') >= 0) {
-                                    value = EnvService.formatCurrency(value);
-                                }
-                                else if(usage.indexOf('number/integer') >= 0 || usage.indexOf('numeric/integer') >= 0) {
-                                    value = value.toFixed(0);
-                                }
-                                else if(usage.indexOf('number/real') >= 0) {
-                                    value = EnvService.formatNumber(value);
-                                }
+                            let usage: string = descriptor[item.value]?.usage ?? '';
+
+                            if(usage == 'time' || usage == 'time/plain') {
+                                value = String(Math.floor(op_result / 3600)).padStart(2, '0') + ':' +
+                                    String(Math.floor((op_result % 3600) / 60)).padStart(2, '0') + ':' +
+                                    String(op_result % 60).padStart(2, '0');
+                            }
+                            else if(usage.indexOf('amount/percent') >= 0 || usage.indexOf('amount/rate') >= 0) {
+                                suffix = '%';
+                                value = (op_result * 100).toFixed(0);
+                            }
+                            else if(usage.indexOf('amount/money') >= 0) {
+                                value = EnvService.formatCurrency(op_result);
+                            }
+                            else if(usage.indexOf('number/integer') >= 0 || usage.indexOf('numeric/integer') >= 0) {
+                                value = op_result.toFixed(0);
+                            }
+                            else if(usage.indexOf('number/real') >= 0) {
+                                value = EnvService.formatNumber(op_result);
                             }
                             else {
                                 value = EnvService.formatNumber(value);
                             }
+
                             if(descriptor[item.value].hasOwnProperty('prefix')) {
                                 prefix = descriptor[item.value]['prefix'];
                             }
                             if(descriptor[item.value].hasOwnProperty('suffix')) {
                                 suffix = descriptor[item.value]['suffix'];
                             }
+
                             this.$layout.find('[data-id="'+'operation-'+operation+'-'+item.value+'"]').text(prefix+value+suffix);
                         }
                     }
@@ -692,6 +707,10 @@ export class LayoutList extends Layout {
 
             let $cell = $('<td/>').addClass('sb-widget-cell').attr('data-type', config.type).attr('data-field', item.value).append(widget.render());
 
+            if(config.align == 'right' || config.align == 'center') {
+                $cell.css({'text-align': config.align});
+            }
+
             $row.append($cell);
         }
         if(parent_group_id && parent_group_id.length) {
@@ -725,11 +744,19 @@ export class LayoutList extends Layout {
         if(group.hasOwnProperty('_operation')) {
             let op_type = group._operation[0];
             let op_field = (group._operation[1].split('.'))[1];
+            const item = schema.layout?.items.find( (item: any) => item.value === op_field );
             let data: any[] = this.getGroupData(group, op_field);
-            let op_result:number = 0;
+            let op_result: number = 0;
             let i:number = 0;
             for(let val of data) {
+                if(item.type == 'time' || item.result_type == 'time') {
+                    const [hours, minutes, seconds] = val.split(':').map(Number);
+                    val = hours * 3600 + minutes * 60 + (seconds || 0);
+                }
                 switch(op_type) {
+                    case 'DIFF':
+                        op_result = (i == 0) ? val : (op_result - val);
+                        break;
                     case 'SUM':
                         op_result += val;
                         break;
@@ -752,7 +779,34 @@ export class LayoutList extends Layout {
                 }
                 ++i;
             }
-            suffix = '['+op_result+']';
+            let value: string = op_result.toString();
+            if(item.type == 'time' || item.result_type == 'time') {
+                value = String(Math.floor(op_result / 3600)).padStart(2, '0') + ':' +
+                    String(Math.floor((op_result % 3600) / 60)).padStart(2, '0') + ':' +
+                    String(op_result % 60).padStart(2, '0');
+            }
+            else if(item.type == 'integer' || item.result_type == 'integer') {
+                value = op_result.toFixed(0);
+            }
+            else if(item && item.hasOwnProperty('usage')) {
+                const usage = item.usage;
+                if(usage.indexOf('amount/percent') >= 0 || usage.indexOf('amount/rate') >= 0) {
+                    value = (op_result * 100).toFixed(0) + '%';
+                }
+                else if(usage.indexOf('amount/money') >= 0) {
+                    value = EnvService.formatCurrency(op_result);
+                }
+                else if(usage.indexOf('number/integer') >= 0 || usage.indexOf('numeric/integer') >= 0) {
+                    value = op_result.toFixed(0);
+                }
+                else if(usage.indexOf('number/real') >= 0) {
+                    value = EnvService.formatNumber(op_result);
+                }
+            }
+            else {
+                value = EnvService.formatNumber(op_result);
+            }
+            suffix = '[' + value + ']';
         }
 
         let $row = $('<tr/>')
