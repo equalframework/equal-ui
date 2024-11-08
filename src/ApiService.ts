@@ -136,8 +136,8 @@ export class _ApiService {
         var class_name = this.getClassName(entity);
 
         if(typeof(this.translations[package_name]) == 'undefined'
-        || typeof(this.translations[package_name][class_name]) == 'undefined'
-        || typeof(this.translations[package_name][class_name][lang]) == 'undefined') {
+                || typeof(this.translations[package_name][class_name]) == 'undefined'
+                || typeof(this.translations[package_name][class_name][lang]) == 'undefined') {
             if(typeof(this.translations[package_name]) == 'undefined') {
                 this.translations[package_name] = {};
             }
@@ -147,6 +147,7 @@ export class _ApiService {
             this.translations[package_name][class_name][lang] = $.Deferred();
 
             EnvService.getEnv().then( (environment:any) => {
+                // #todo change to ?get=translation (requires equal2.0)
                 $.get({
                     url: environment.backend_url+'?get=config_i18n&entity='+entity+'&lang='+lang
                 })
@@ -556,7 +557,7 @@ export class _ApiService {
                 data: params,
                 contentType: 'application/x-www-form-urlencoded; charset=utf-8'
             });
-            // reponse should be an array of ids
+            // response should be an array of ids
             result = response;
         }
         catch(response:any) {
