@@ -36,6 +36,7 @@ export class DateReference {
     /**
      *
      * descriptor syntax: date.[this|prev|next].[day|week|month|quarter|semester|year].[first|last]
+     * #todo - this must be improved to comply with the PHP logic
      * @param descriptor
      */
     public parse(descriptor:string) {
@@ -52,8 +53,8 @@ export class DateReference {
                 let parts = descriptor.split('.');
                 let len = parts.length;
                 if(len > 2) {
-                    let offset = (parts[1] == 'prev')? -1 : ((parts[1] == 'next')? 1 : 0);
-                    let day = (len >= 4 && parts[3] == 'last')?'last':'first';
+                    let offset = (parts[1].indexOf('prev') === 0) ? -1 : ((parts[1].indexOf('next') === 0) ? 1 : 0);
+                    let day = (len >= 4 && parts[3].indexOf('last') === 0) ? 'last' : 'first';
 
                     switch(parts[2]) {
                         case 'day':
