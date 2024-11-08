@@ -66,11 +66,11 @@ export class _EnvService {
         }
     }
 
-    public formatNumber(value: number, scale: number = -1, thousand_sep: string = '', decimal_sep: string = '') {
-        if(scale == -1) {
-            scale = 0;
+    public formatNumber(value: number, precision: number = -1, thousand_sep: string = '', decimal_sep: string = '') {
+        if(precision == -1) {
+            precision = 0;
             if(this.environment && this.environment.hasOwnProperty('core.locale.numbers.decimal_precision')) {
-                scale = this.environment['core.locale.numbers.decimal_precision'];
+                precision = this.environment['core.locale.numbers.decimal_precision'];
             }
         }
         if(thousand_sep == '') {
@@ -90,23 +90,23 @@ export class _EnvService {
         if(isNaN(n)) {
             n = 0;
         }
-        let parts:any = n.toFixed(scale).split(".");
+        let parts:any = n.toFixed(precision).split(".");
         parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, thousand_sep);
-        if(scale > 0 && parts.length == 1) {
-            parts[1] = ''.padStart(scale, '0');
+        if(precision > 0 && parts.length == 1) {
+            parts[1] = ''.padStart(precision, '0');
         }
         return parts.join(decimal_sep);
     }
 
-    public formatFinancialNumber(value:number, scale:number = 2, thousand_sep:string=',', decimal_sep:string='.') {
+    public formatFinancialNumber(value:number, precision:number = 2, thousand_sep:string=',', decimal_sep:string='.') {
         if(this.environment && this.environment.hasOwnProperty('core.locale.currency.decimal_precision')) {
-            scale = this.environment['core.locale.currency.decimal_precision'];
+            precision = this.environment['core.locale.currency.decimal_precision'];
         }
-        return this.formatNumber(value, scale, thousand_sep, decimal_sep);
+        return this.formatNumber(value, precision, thousand_sep, decimal_sep);
     }
 
-    public formatCurrency(value:number, scale:number = 2, thousand_sep:string=',', decimal_sep:string='.') {
-        let result = this.formatFinancialNumber(value, scale, thousand_sep, decimal_sep);
+    public formatCurrency(value:number, precision:number = 2, thousand_sep:string=',', decimal_sep:string='.') {
+        let result = this.formatFinancialNumber(value, precision, thousand_sep, decimal_sep);
         if(this.environment.hasOwnProperty('core.units.currency')) {
             if(this.environment.hasOwnProperty('core.locale.currency.symbol_position') && this.environment['core.locale.currency.symbol_position'] == 'before') {
                 result = this.environment['core.units.currency'] + ' ' + result;
