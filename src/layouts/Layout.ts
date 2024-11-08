@@ -245,6 +245,7 @@ export class Layout implements LayoutInterface{
 
     protected async decorateActionButton($button: JQuery, action: any, object: any = {}) {
         $button.on('click', async () => {
+            let $disable_overlay = this.view.getContainer().find('.sb-view-header-actions .disable-overlay');
             try {
                 let resulting_params:any = {};
                 let missing_params:any = {};
@@ -373,25 +374,30 @@ export class Layout implements LayoutInterface{
                     if($button.prop('nodeName') != 'BUTTON') {
                         $action_button = $button.closest('.mdc-menu-surface--anchor').find('.mdc-button');
                     }
-
+                    $disable_overlay.show();
                     $action_button.addClass('mdc-button--spinner');
                     try {
                         await this.view.performAction(action, {...resulting_params, ...result}, response_descr);
                     }
                     catch(response) {
-
+                        console.debug('unexpected error while performing action', response);
                     }
                     // restore action button
                     $action_button.removeClass('mdc-button--spinner');
+                    setTimeout( () => $disable_overlay.hide(), 1000);
                 })
                 .catch( () => {
                     $button.closest('button').removeClass('mdc-button--spinner');
+                    setTimeout( () => $disable_overlay.hide(), 1000);
                 });
             }
             catch(response) {
                 console.warn('unknown error', response);
-                // restore action button
-                $button.closest('button').removeClass('mdc-button--spinner');
+                // make sure to restore action button
+                setTimeout( () => {
+                        $disable_overlay.hide();
+                        $button.closest('button').removeClass('mdc-button--spinner');
+                    }, 100);
                 await this.view.displayErrorFeedback(this.view.getTranslation(), response);
             }
         });
