@@ -110,12 +110,14 @@ export default class WidgetDateTime extends Widget {
                         let mdate = moment($this.val(), this.jqueryToMomentFormat(format), true);
                         if(mdate.isValid()) {
                             date = mdate.toDate();
+                            console.debug('WidgetDateTime::valid date received', date);
                         }
                         else {
-                            console.debug('WidgetDateTime:invalid date format detected');
+                            console.debug('WidgetDateTime::invalid date received, fallback to current', date);
                         }
                         this.value = date.toISOString();
                         $datetimepicker.datepicker('setDateTime', date);
+                        this.$elem.trigger('_updatedWidget');
                     });
 
                 let $button_open = UIHelper.createButton('datetime-actions-open_'+this.id, '', 'icon', 'calendar_today')
@@ -141,8 +143,7 @@ export default class WidgetDateTime extends Widget {
                         // update widget value using jQuery `getDate`
                         let $this = $(event.currentTarget);
                         let newDate = $this.datepicker('getDate');
-                        console.debug('WidgetDateTime::datetimepicker change', newDate);
-                        // $elem.trigger('_updatedWidget', date.toISOString());
+                        console.debug('WidgetDateTime::datetimepicker native change', newDate);
                         this.$elem.find('input').first().val(this.adaptFromDateFormat(newDate, format));
                     });
 
@@ -162,7 +163,7 @@ export default class WidgetDateTime extends Widget {
                     else if(this.config.usage == 'datetime/full' || this.config.usage == 'date/time.full') {
                         format = 'LLLL';
                     }
-                    else if(this.config.usage == 'date' || this.config.usage == 'date/medium' || this.config.usage == 'date/plain.medium' || this.config.usage == 'date/time.medium') {
+                    else if(this.config.usage == 'datetime/plain.medium' || this.config.usage == 'date/time.medium') {
                         // 06/08/2023
                         format = 'L';
                     }
@@ -172,7 +173,7 @@ export default class WidgetDateTime extends Widget {
                 }
 
                 // convert datetime to string, according to locale and usage
-                value = (this.value)?moment(date).format(format):'';
+                value = (this.value) ? moment(date).format(format) : '';
 
                 // by convention, first column of each row opens the object no matter the type of the field
                 if(this.is_first) {

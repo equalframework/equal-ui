@@ -84,7 +84,7 @@ export default class WidgetDate extends Widget {
                 datepickerConfig.defaultDate = date;
 
                 if(this.config.hasOwnProperty('usage')) {
-                    if(this.config.usage == 'month' || this.config.usage.indexOf('date/month') == 0) {
+                    if(this.config.usage && (this.config.usage == 'month' || this.config.usage.indexOf('date/month') == 0)) {
                         if(datepickerConfig.hasOwnProperty('dateFormat_month')) {
                             datepickerConfig.dateFormat = datepickerConfig.dateFormat_month;
                         }
@@ -104,18 +104,23 @@ export default class WidgetDate extends Widget {
                         }
                     })
                     .on('change', (event) => {
+                        console.debug('WidgetDate:: input change', event);
                         let $this = $(event.currentTarget);
                         let date = new Date();
                         let mdate = moment($this.val(), this.jqueryToMomentFormat(format), true);
                         if(mdate.isValid()) {
                             date = mdate.toDate();
+                            console.debug('WidgetDate::valid date received', date);
                         }
-                        console.debug('WidgetDate:: first input change', $this.val(), date);
+                        else {
+                            console.debug('WidgetDate::invalid date received, fallback to current', date);
+                        }
                         // make the date UTC @ 00:00:00
                         let timestamp = date.getTime();
                         let offset_tz = date.getTimezoneOffset()*60*1000;
                         this.value = (new Date(timestamp-offset_tz)).toISOString().substring(0, 10)+'T00:00:00Z';
                         $datetimepicker.datepicker('setDate', date);
+                        this.$elem.trigger('_updatedWidget');
                     });
 
                 let $button_open = UIHelper.createButton('date-actions-open_'+this.id, '', 'icon', 'calendar_today')
@@ -145,7 +150,7 @@ export default class WidgetDate extends Widget {
                         // update widget value using jQuery `getDate`
                         let $this = $(event.currentTarget);
                         let newDate = $this.datepicker('getDate');
-                        console.debug('WidgetDate::datepicker change', newDate);
+                        console.debug('WidgetDate::datepicker native change', newDate);
                         this.$elem.find('input').first().val(this.adaptFromDateFormat(newDate, format));
                     });
 
@@ -177,7 +182,7 @@ export default class WidgetDate extends Widget {
                 }
 
                 // convert date to string, according to locale and usage
-                value = (this.value)?moment(date).format(format):'';
+                value = (this.value) ? moment(date).format(format) : '';
 
                 // by convention, first column of each row opens the object no matter the type of the field
                 if(this.is_first) {
