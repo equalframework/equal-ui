@@ -373,6 +373,9 @@ body, html {
 
 .sb-view-layout-list .table-operations {
     display: block;
+    width: 100%;
+    /* adjust width with scrollbar width */
+    padding-right: 6px;
 }
 
 .sb-view-layout-list .table-operations .operation {
@@ -395,24 +398,16 @@ body, html {
 }
 
 .sb-view-layout-list .table-operations .operation .operation-row .operation-cell {
-    padding: 12px 2px;
+    padding: 12px 19px 12px 2px;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
     font-weight: 500;
 }
 
-.sb-view-layout-list .table-operations .operation .operation-row .operation-cell:first-child {
-    padding-left: 12px;
-}
-
 .sb-view-header-list {
     position: relative;
     max-height: 112px;
-    /*
-    height: 112px;
-    line-height: 112px;
-    */
 }
 
 .sb-view-header-list.has-advanced-filters {
