@@ -177,9 +177,11 @@ export class Frame {
                 state.stack.push(ctx.getConfig(true));
             }
             // push current context
-            state.stack.push(this.context.getConfig(true));
-            window.history.pushState(state, '');
-            console.log('Frame::pushing state', state);
+            if(this.context && typeof this.context.getConfig === 'function') {
+                state.stack.push(this.context.getConfig(true));
+                window.history.pushState(state, '');
+                console.log('Frame::pushing state', state);
+            }
         }
     }
 
@@ -626,13 +628,14 @@ export class Frame {
             config.lang = this.context.getLang();
         }
 
-        // create a draft object if required: Edition is based on asynchronous creation: a draft is created (or recycled) and is turned into an instance if 'update' action is triggered.
+        // create a draft object if required: Edition is based on asynchronous creation:
+        //   a draft is created (or recycled) and is turned into an instance if 'update' action is triggered.
         if(config.purpose == 'create') {
             try {
                 console.debug('requesting draft object');
                 let defaults    = await this.getNewObjectDefaults(config.entity, config.domain);
                 let object      = await ApiService.create(config.entity, defaults);
-                config.domain   = [['id', '=', object.id], ['state', '=', 'draft']];
+                config.domain   = [ ['id', '=', object.id] ];
             }
             catch(response) {
                 console.warn('unable to create object', response);
