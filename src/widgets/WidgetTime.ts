@@ -15,11 +15,11 @@ export default class WidgetTime extends Widget {
 
     public render():JQuery {
         // #todo - adaptIN - times should always be UTC - we should apply time offset here
-        let value:any = this.value;
+        let value:any = this.value ?? '';
         // if we received a date, convert it to a string
         if(Object.prototype.toString.call(value) === '[object Date]') {
             // #todo - adaptIN - we should rather use `toUTCString()`
-            value = value.toTimeString().substring(0,5);
+            value = value.toTimeString().substring(0, 5);
         }
 
         switch(this.mode) {
@@ -46,7 +46,14 @@ export default class WidgetTime extends Widget {
             default:
                 if(this.config.layout == 'list') {
                     this.$elem = $('<div />').html(value);
-                    this.$elem.css({"width": "100%", "height": "auto", "max-height": "calc(44px - 2px)", "white-space": "break-spaces", "overflow": "hidden"});
+                    // time fields are aligned right
+                    this.$elem.css({
+                        'width': '100%',
+                        'text-align': 'right',
+                        'height': 'auto',
+                        'max-height': 'calc(44px - 2px)',
+                        'white-space': 'break-spaces',
+                        'overflow': 'hidden'});
                 }
                 else {
                     this.$elem = UIHelper.createInputView('', this.label, value, this.config.description);
