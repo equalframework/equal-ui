@@ -237,6 +237,7 @@ export class View {
 
         // override config options, if other are given
         if(config) {
+            // #todo - `show_...` attributes shouldn't be set directly in widgets nor provided config, and should rather be computed based on other values
             this.config = {...this.config, ...config};
         }
 
@@ -307,7 +308,7 @@ export class View {
     }
 
     private async init() {
-        console.debug('View::init', this.entity, this.type, this.name);
+        console.debug('View::init', this.entity, this.type, this.name, this);
         try {
 
             // assign schemas by copy
@@ -394,8 +395,8 @@ export class View {
             // support for custom selection_actions
             // expects a controller to which the selected_ids will be relayed, upon response the list is refreshed
 
-            // #memo - selection action cannot be changed for widget view
-            if(this.purpose == 'view') {
+            // #memo - selection action must be present for widget view
+            if(this.purpose == 'view' || this.purpose == 'widget') {
                 if(this.view_schema.hasOwnProperty('header') && this.view_schema.header.hasOwnProperty('selection')) {
                     if(!this.view_schema.header.selection) {
                         // if selection is disabled, force mode to view (to prevent displaying checkboxes)
@@ -681,6 +682,7 @@ export class View {
         this.$container.show();
 
         this.is_ready_promise.resolve();
+        console.debug("View::init - resulting config", this.config);
     }
 
     private deepCopy(obj:any):any {
@@ -878,8 +880,13 @@ export class View {
         let filters_domain = new Domain([]);
 
         for(let filter_id of this.applied_filters_ids) {
-            // filters clauses are cumulative (conjunctions conditions)
-            filters_domain.merge(new Domain(this.filters[filter_id].clause))
+            if(this.filters[filter_id].hasOwnProperty('clause')) {
+                // filters clauses are cumulative (conjunctions conditions)
+                filters_domain.merge(new Domain(this.filters[filter_id].clause));
+            }
+            else if(this.filters[filter_id].hasOwnProperty('domain')) {
+                filters_domain.merge(new Domain(this.filters[filter_id].domain));
+            }
         }
 
         return (new Domain(this.domain)).merge(filters_domain).parse({}, this.getUser()).toArray();
@@ -1805,6 +1812,10 @@ export class View {
             }
         }
 
+        // overlay to cover the buttons and prevent additional click while action is processing
+        let $disable_overlay = $('<div />').addClass('disable-overlay');
+        $actions_set.append($disable_overlay);
+
         switch(this.mode) {
             case 'view':
                 if(has_action_update) {
@@ -1967,9 +1978,6 @@ export class View {
                     }
                 });
 
-                // overlay to cover the buttons and prevent additional click while action is processing
-                let $disable_overlay = $('<div />').addClass('disable-overlay');
-
                 let $save_button = $();
 
                 if(header_actions["ACTION.SAVE"].length <= 1) {
@@ -2032,9 +2040,7 @@ export class View {
                     });
                 }
 
-
                 $std_actions
-                    .append($disable_overlay)
                     .append($save_button)
                     .append($cancel_button);
                 break;
