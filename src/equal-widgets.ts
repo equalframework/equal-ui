@@ -156,8 +156,24 @@ class WidgetFactory {
                 switch(config.usage) {
                     // #todo - complete the list
                     case 'date':
+                    case 'date/medium':
                     case 'date/plain':
+                    case 'date/plain.short':
+                    case 'date/plain.short.day':
+                    case 'date/plain.medium':
                         type = 'date';
+                        break;
+                    case 'datetime':
+                    case 'datetime/short':
+                    case 'datetime/full':
+                    case 'date/time.short':
+                    case 'date/time.medium':
+                    case 'date/time.full':
+                        type = 'datetime';
+                        break;
+                    case 'time/plain':
+                    case 'time/plain.short':
+                        type = 'time';
                         break;
                     case 'text/plain.short':
                         type = 'string';
@@ -170,11 +186,13 @@ class WidgetFactory {
                         type = 'text';
                         break;
                     case 'url':
+                    case 'uri/url':
+                    case 'uri/url.relative':
                     case 'uri/url:http':
                     case 'uri/url:https':
-                    case 'uri/url':
                         type = 'link';
                         break;
+                    case 'image':
                     case 'image/gif':
                     case 'image/png':
                     case 'image/jpeg':
@@ -220,17 +238,18 @@ class WidgetFactory {
         config.ready = false;
         config.title = TranslationService.resolve(translation, 'model', [], field, label, 'label');
         config.description = TranslationService.resolve(translation, 'model', [], field, description, 'description');
-        config.readonly = (def.hasOwnProperty('readonly'))?def.readonly:(item.hasOwnProperty('readonly'))?item['readonly']:false;
-        config.required = (def.hasOwnProperty('required'))?def.readonly:(item.hasOwnProperty('required'))?item['required']:false;
+        config.readonly = (def.hasOwnProperty('readonly'))?def.readonly:(item.hasOwnProperty('readonly')) ? item['readonly'] : false;
+        config.required = (def.hasOwnProperty('required'))?def.readonly:(item.hasOwnProperty('required')) ? item['required'] : false;
+        let default_align: string = (item.field != 'id' && (config.type == 'integer' || config.type == 'float' || config.type == 'time')) ? 'right' : 'left';
         // default align is left, unless for integer fields (with an exception for 'id' field - which, by convention, should be first column)
-        config.align = item.hasOwnProperty('align')? item.align : ((item.field != 'id' && (config.type == 'integer' || config.type == 'float'))?'right':'left');
+        config.align = item.hasOwnProperty('align') ? item.align : default_align;
         if(config.hasOwnProperty('usage') && config.usage == 'icon') {
             config.align = 'center';
         }
         config.sortable = (item.hasOwnProperty('sortable') && item.sortable);
 
         // only 'list' and 'form' are supported for widgets
-        config.layout = (view.getType() == 'list')?'list':'form';
+        config.layout = (view.getType() == 'list') ? 'list' : 'form';
         config.lang = view.getLang();
         config.locale = view.getLocale();
 
@@ -254,13 +273,13 @@ class WidgetFactory {
         // for relational fields, we need some additional values
         if(['one2many', 'many2one', 'many2many'].indexOf(config.type) > -1) {
             // defined config for Widget's view with a custom domain according to object values
-            let view_id = (config.hasOwnProperty('view'))?config.view:'list.default';
+            let view_id = (config.hasOwnProperty('view') && config.view.length > 0) ? config.view : 'list.default';
             let parts = view_id.split(".", 2);
             let view_type = (parts.length > 1)?parts[0]:'list';
             let view_name = (parts.length > 1)?parts[1]:parts[0];
 
-            let def_domain = (def.hasOwnProperty('domain'))?def['domain']:[];
-            let view_domain = (config.hasOwnProperty('domain'))?config['domain']:[];
+            let def_domain = (def.hasOwnProperty('domain')) ? def['domain'] : [];
+            let view_domain = (config.hasOwnProperty('domain')) ? config['domain'] : [];
 
             let domain = new Domain(def_domain);
             domain.merge(new Domain(view_domain));
@@ -295,7 +314,7 @@ class WidgetFactory {
             }
 
         }
-        console.debug('WidgetFactory::getWidgetConfig - field '+field, config, model_fields, view_fields);
+        console.debug('WidgetFactory::getWidgetConfig result for field '+field, config, model_fields, view_fields);
         return config;
     }
 
