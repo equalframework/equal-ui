@@ -56,7 +56,7 @@ export class LayoutForm extends Layout {
         let view_config = this.view.getConfig();
 
         if(!view_schema.hasOwnProperty('layout') || !view_schema.layout.hasOwnProperty('groups')) {
-            console.warn("invalid layout, stop processing");
+            console.warn("invalid layout, stop processing", this.getView().getName());
             return;
         }
 
@@ -65,9 +65,14 @@ export class LayoutForm extends Layout {
             let $group = $('<div />').addClass('sb-view-form-group').appendTo($elem);
 
             // try to resolve the group title
-            let group_title = (group.hasOwnProperty('label'))?group.label:'';
+            let group_title = (group.hasOwnProperty('label')) ? group.label : '';
             if(group.hasOwnProperty('id')) {
-                group_title = TranslationService.resolve(translation, 'view', [this.view.getId(), 'layout'], group.id, group_title);
+                let translated_group_title = TranslationService.resolve(translation, 'view', [this.view.getId(), 'layout'], group.id, group_title);
+                if(translated_group_title == group_title) {
+                    // no translation found, check default view
+                    translated_group_title = TranslationService.resolve(translation, 'view', [this.view.getType()+'.default', 'layout'], group.id, group_title);
+                }
+                group_title = translated_group_title;
             }
             // append the group title, if any
             if(group_title.length) {
@@ -108,9 +113,14 @@ export class LayoutForm extends Layout {
 
                     if(group.sections.length > 1 || section.hasOwnProperty('label')) {
                         // try to resolve the section title
-                        let section_title = (section.hasOwnProperty('label'))?section.label:section_id;
+                        let section_title = (section.hasOwnProperty('label')) ? section.label : section_id;
                         if(section.hasOwnProperty('id')) {
-                            section_title = TranslationService.resolve(translation, 'view', [this.view.getId(), 'layout'], section.id, section_title);
+                            let translated_section_title = TranslationService.resolve(translation, 'view', [this.view.getId(), 'layout'], section.id, section_title);
+                            if(translated_section_title == section_title) {
+                                // no translation found, check default view
+                                translated_section_title = TranslationService.resolve(translation, 'view', [this.view.getType()+'.default', 'layout'], section.id, section_title);
+                            }
+                            section_title = translated_section_title;
                         }
 
                         let $tab = UIHelper.createTabButton(section_id+'-tab', section_title, (j == selected_section))
@@ -152,8 +162,9 @@ export class LayoutForm extends Layout {
                                 if(typeof this.model_widgets[0] == 'undefined') {
                                     this.model_widgets[0] = {};
                                 }
-
-                                let $cell = $('<div />').addClass('mdc-layout-grid__cell').appendTo($column);
+                                // #memo - flex doesn't work here (we probably need an additional level)
+                                // or it does but only if subitems are flex: 1
+                                let $cell = $('<div />')/*.css({'display': 'flex', 'align-items': 'center'})*/.addClass('mdc-layout-grid__cell').appendTo($column);
                                 // compute the width (on a 12 columns grid basis), from 1 to 12
                                 let width = (item.hasOwnProperty('width'))?Math.round((parseInt(item.width, 10) / 100) * 12): 12;
                                 $cell.addClass('mdc-layout-grid__cell--span-' + width);
@@ -419,15 +430,18 @@ export class LayoutForm extends Layout {
                             }
                         }
 
-                        // by convention, `name` subfield is always loaded for relational fields
                         if(type == 'many2one') {
                             if(object[field]) {
+                                // by convention, `name` subfield is always loaded for relational fields
                                 value = object[field]['name'];
                                 config.object_id = object[field]['id'];
+                                // in some cases, we need the reference to the current object (refs in header domain)
+                                config.object = object;
                             }
                             // config.object_id might have been modified by selection : remove it if not present or empty
                             else if(config.hasOwnProperty('object_id')) {
                                 delete config.object_id;
+                                config.object = null;
                             }
                         }
                         else if(type == 'many2many' || type == 'one2many') {
@@ -437,17 +451,16 @@ export class LayoutForm extends Layout {
                                 // force change detection (upon re-feed, the field do not change and remains an empty array)
                                 $parent.data('value', null);
                             }
-
                             // for m2m fields, the value of the field is an array of ids
                             // by convention, when a relation is to be removed, the id field is set to its negative value
                             value = object[field];
-
                             // select ids to load by filtering targeted objects
                             config.ids_to_add = object[field].filter( (id:number) => id > 0 );
                             config.ids_to_del = object[field].filter( (id:number) => id < 0 ).map( (id:number) => -id );
-
                             // we need the current object id for new objects creation
                             config.object_id = object.id;
+                            // in some cases, we need the reference to the current object (refs in header domain)
+                            config.object = object;
                         }
                     }
 
