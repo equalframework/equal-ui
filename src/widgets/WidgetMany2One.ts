@@ -82,14 +82,23 @@ export default class WidgetMany2One extends Widget {
                 }
                 else {
                     this.$elem.append($button_open);
+                    let view_type = 'form';
+                    let view_name = (this.config.hasOwnProperty('view_name'))?this.config.view_name:'default';
+                    if(this.config.hasOwnProperty('header')) {
+                        if(this.config.header.hasOwnProperty('view')) {
+                            let parts = this.config.header.view.split('.');
+                            if(parts.length) view_type = <string>parts.shift();
+                            if(parts.length) view_name = <string>parts.shift();
+                        }
+                    }
                     // open targeted object in new context
                     $button_open.on('click', async () => {
                         if(this.config.hasOwnProperty('object_id')) {
                             await this.getLayout().openContext({
                                 entity: this.config.foreign_object,
-                                type: 'form',
+                                type: view_type,
                                 mode: 'edit',
-                                name: (this.config.hasOwnProperty('view_name'))?this.config.view_name:'default',
+                                name: view_name,
                                 domain: ['id', '=', this.config.object_id],
                                 callback: (data:any) => {
                                     if(data && data.selection && data.objects && data.selection.length) {
@@ -113,19 +122,44 @@ export default class WidgetMany2One extends Widget {
                     this.$elem.append($button_create);
                     // open creation form in new context
                     $button_create.on('click', async () => {
+                        console.debug('WidgetMany2one:: received click on button create', this.config);
+                        let view_type = 'form';
+                        let view_name = (this.config.hasOwnProperty('view_name'))?this.config.view_name:'default';
                         let contextDomain = new Domain(domain);
                         let value:string = <string> $select.find('input').val();
                         if(value.length > 0) {
                             contextDomain.merge(new Domain(['name', '=', value]));
                         }
+                        if(this.config.hasOwnProperty('header')) {
+                            if(this.config.header.hasOwnProperty('actions') && this.config.header.actions.hasOwnProperty('ACTION.CREATE') ) {
+                                if(this.config.header.actions['ACTION.CREATE'] && Array.isArray(this.config.header.actions['ACTION.CREATE'])) {
+                                    let action: any = this.config.header.actions['ACTION.CREATE'][0];
+                                    if(action.hasOwnProperty('domain')) {
+                                        let tmpDomain = new Domain(action.domain);
+                                        let object = {};
+                                        let user = this.getLayout().getView().getUser();
+                                        if(this.config.object) {
+                                            object = this.config.object
+                                        }
+                                        tmpDomain.parse(object, user);
+                                        contextDomain.merge(new Domain(tmpDomain.toArray()));
+                                    }
+                                    if(action.hasOwnProperty('view')) {
+                                        let parts = action.view.split('.');
+                                        if(parts.length) view_type = <string>parts.shift();
+                                        if(parts.length) view_name = <string>parts.shift();
+                                    }
+                                }
+                            }
+                        }
                         try {
                             await this.getLayout().openContext({
                                 entity: this.config.foreign_object,
-                                type: 'form',
+                                type: view_type,
                                 mode: 'edit',
                                 purpose: 'create',
                                 domain: contextDomain.toArray(),
-                                name: (this.config.hasOwnProperty('view_name'))?this.config.view_name:'default',
+                                name: view_name,
                                 callback: (data:any) => {
                                     if(data && data.selection && data.objects && data.selection.length) {
                                         $button_create.hide();
@@ -417,10 +451,12 @@ export default class WidgetMany2One extends Widget {
                             // open targeted object in new context
                             $button_open.on('click', async () => {
                                 if(this.config.hasOwnProperty('object_id') && this.config.object_id && this.config.object_id > 0) {
+                                    let view_type = 'form';
+                                    let view_name = (this.config.hasOwnProperty('view_name'))?this.config.view_name:'default';
                                     this.getLayout().openContext({
                                         entity: this.config.foreign_object,
-                                        type: 'form',
-                                        name: (this.config.hasOwnProperty('view_name'))?this.config.view_name:'default',
+                                        type: view_type,
+                                        name: view_name,
                                         domain: ['id', '=', this.config.object_id]
                                     });
                                 }
