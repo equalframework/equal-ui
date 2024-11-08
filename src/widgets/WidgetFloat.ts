@@ -49,6 +49,16 @@ export default class WidgetFloat extends WidgetString {
                 else if(usage.indexOf('amount/money') >= 0) {
                     value = EnvService.formatCurrency(value);
                 }
+                else if(usage.indexOf('number/real') >= 0) {
+                    const match = usage.match(/number\/real:(\d+(\.\d+)?)/);
+                    // by default use environment setting
+                    let precision = -1;
+                    if(match) {
+                        const number_parts = match[1].split('.');
+                        precision = number_parts.length >= 2 ? number_parts[1] : number_parts[0];
+                    }
+                    value = EnvService.formatNumber(value, precision);
+                }
                 else {
                     value = EnvService.formatNumber(value);
                 }
