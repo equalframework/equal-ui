@@ -507,7 +507,7 @@ export class LayoutForm extends Layout {
                             values[field] = widget.getValue();
                             let model_fields:any = {};
                             // if value is less than 1k, relay onchange to server
-                            // #todo - choose an objectivable limit
+                            // #todo - choose an proportionate limit
                             if(String(widget.getValue()).length < 1000) {
                                 // relay the change to back-end through onupdate
                                 try {
@@ -522,7 +522,11 @@ export class LayoutForm extends Layout {
                                                 if(result[field].hasOwnProperty('value')) {
                                                     values[field] = result[field].value;
                                                 }
+                                                else if(result[field].hasOwnProperty('selection')) {
+                                                    // special case of a descriptor providing a selection without value (nothing to assign)
+                                                }
                                                 else {
+                                                    // #memo - m2o widgets use an object as value
                                                     values[field] = result[field];
                                                 }
                                                 model_fields[field] = result[field];
