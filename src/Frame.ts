@@ -495,15 +495,33 @@ export class Frame {
             }, 1200);
         })
         .on('mouseout', function() {
-            let $popup = $crumb.find('.header-view-details-popup');
-            if(!$popup.hasClass('has-mouseover')) {
-                $crumb.removeClass('has-mouseover');
-                $crumb.find('.header-view-details-popup').hide();
-            }
+            setTimeout( () => {
+                let $popup = $crumb.find('.header-view-details-popup');
+                if(!$popup.hasClass('has-mouseover')) {
+                    $crumb.removeClass('has-mouseover');
+                    $crumb.find('.header-view-details-popup').hide();
+                }
+            }, 500);
         });
 
         $('<div />').addClass('header-view-details-popup').hide()
-            .append( $('<div />').addClass('header-view-details-title').text('View details') )
+            .append( $('<div />').addClass('header-view-details-title')
+                .text('View details')
+                .append(
+                    $('<span class="btn-copy material-icons">content_copy</span>')
+                    .on('click', () => {
+                        console.log('copying to clipboard');
+                        let tmp = document.createElement("textarea");
+                        tmp.style.position = 'absolute';
+                        tmp.style.left = '-9999px';
+                        document.body.appendChild(tmp);
+                        tmp.value = context.getEntity() + '.' + context.getType() + '.' + context.getName();
+                        tmp.select();
+                        document.execCommand("copy");
+                        document.body.removeChild(tmp);
+                    })
+                 )
+            )
             .append( $('<div />').addClass('header-view-details-body')
                 .append( $('<div />').attr('title', context.getEntity()).html('Entity: <b>'+context.getEntity()+'</b>') )
                 .append( $('<div />').attr('title', context.getType()+'.'+context.getName()).html('View: <b>'+context.getType()+'.'+context.getName()+'</b>') )
