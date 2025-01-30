@@ -333,11 +333,16 @@ export class LayoutList extends Layout {
                             let op_result: number = 0.0;
                             let i: number = 0;
                             for (let object of objects) {
-                                let val = object[item.value];
+                                let val: any = object[item.value];
                                 let usage: string = descriptor[item.value]?.usage ?? '';
                                 if( usage == 'time' || usage == 'time/plain' ) {
-                                    const [hours, minutes, seconds] = val.split(':').map(Number);
-                                    val = hours * 3600 + minutes * 60 + (seconds || 0);
+                                    if(!val) {
+                                        val = 0;
+                                    }
+                                    else {
+                                        const [hours, minutes, seconds] = val.split(':').map(Number);
+                                        val = hours * 3600 + minutes * 60 + (seconds || 0);
+                                    }
                                 }
                                 switch(op_type) {
                                     case 'DIFF':
@@ -704,7 +709,7 @@ export class LayoutList extends Layout {
             }
             // store widget: use id and field as keys for storing widgets (current layout is for a single entity)
             this.model_widgets[object.id][item.value] = widget;
-
+            // #memo - class is added by decorateTable() call in feed() method
             let $cell = $('<td/>').addClass('sb-widget-cell').attr('data-type', config.type).attr('data-field', item.value).append(widget.render());
 
             if(config.align == 'right' || config.align == 'center') {
