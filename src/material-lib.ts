@@ -877,7 +877,9 @@ class UIHelper {
     }
 
     public static decorateTableStatic($elem:any) {
-        if(!$elem.length) return;
+        if(!$elem.length) {
+            return;
+        }
         $elem.addClass('mdc-data-table').children().first().addClass('mdc-data-table__table-container');
 
         let $thead = $elem.find('thead');
@@ -889,7 +891,9 @@ class UIHelper {
     }
 
     public static decorateTable($elem:any) {
-        if(!$elem.length) return;
+        if(!$elem.length) {
+            return;
+        }
         $elem.addClass('mdc-data-table').children().first().addClass('mdc-data-table__table-container');
 
         let $thead = $elem.find('thead');
@@ -903,150 +907,150 @@ class UIHelper {
          handler for click on header checkbox
         */
         $thead.find('th:first-child')
-        .find('input[type="checkbox"]:not([data-decorated])')
-        .attr('data-decorated', '1')
-        .on('change', (event:any) => {
-            let $this = $(event.currentTarget);
-            // tbody might
-            let $tbody = $table.find('tbody');
-            if($this.prop('checked')) {
-                $tbody.find('td:first-child').find('input[type="checkbox"]').prop('checked', true).prop('indeterminate', false);
-                $tbody.find('tbody').find('tr').addClass('mdc-data-table__row--selected');
-            }
-            else {
-                $tbody.find('td:first-child').find('input[type="checkbox"]').prop('checked', false).prop('indeterminate', false);
-                $tbody.find('tr').removeClass('mdc-data-table__row--selected');
-            }
-        })
-        .on('refresh', (event:any) => {
-            let $tbody = $table.find('tbody');
+            .find('input[type="checkbox"]:not([data-decorated])')
+            .attr('data-decorated', '1')
+            .on('change', (event:any) => {
+                let $this = $(event.currentTarget);
+                // tbody might
+                let $tbody = $table.find('tbody');
+                if($this.prop('checked')) {
+                    $tbody.find('td:first-child').find('input[type="checkbox"]').prop('checked', true).prop('indeterminate', false);
+                    $tbody.find('tbody').find('tr').addClass('mdc-data-table__row--selected');
+                }
+                else {
+                    $tbody.find('td:first-child').find('input[type="checkbox"]').prop('checked', false).prop('indeterminate', false);
+                    $tbody.find('tr').removeClass('mdc-data-table__row--selected');
+                }
+            })
+            .on('refresh', (event:any) => {
+                let $tbody = $table.find('tbody');
 
-            let rows_count = $tbody.find('tr').length;
-            let selection_count = 0;
-            $('td:first-child', $tbody).each( (i:number, elem:any) => {
-                selection_count += +$('input[type="checkbox"]', elem).prop('checked');
+                let rows_count = $tbody.find('tr').length;
+                let selection_count = 0;
+                $('td:first-child', $tbody).each( (i:number, elem:any) => {
+                    selection_count += +$('input[type="checkbox"]', elem).prop('checked');
+                });
+                if(selection_count == rows_count && rows_count) {
+                    $thead.find('th:first-child').find('input').prop("indeterminate", false).prop("checked", true);
+                }
+                else if(selection_count) {
+                    $thead.find('th:first-child').find('input').prop("indeterminate", true).prop("checked", false);
+                }
+                else {
+                    $thead.find('th:first-child').find('input').prop("indeterminate", false).prop("checked", false);
+                }
             });
-            if(selection_count == rows_count && rows_count) {
-                $thead.find('th:first-child').find('input').prop("indeterminate", false).prop("checked", true);
-            }
-            else if(selection_count) {
-                $thead.find('th:first-child').find('input').prop("indeterminate", true).prop("checked", false);
-            }
-            else {
-                $thead.find('th:first-child').find('input').prop("indeterminate", false).prop("checked", false);
-            }
-        });
 
         /*
          handler for click on rows checkboxes
         */
         $tbody.find('td:first-child')
-        .find('input[type="checkbox"]:not([data-decorated]')
-        .attr('data-decorated', '1')
-        .on('change', (event:any) => {
-            let $this = $(event.currentTarget);
-            let $tbody = $table.find('tbody');
+            .find('input[type="checkbox"]:not([data-decorated]')
+            .attr('data-decorated', '1')
+            .on('change', (event:any) => {
+                let $this = $(event.currentTarget);
+                let $tbody = $table.find('tbody');
 
-            let rows_count = $tbody.find('tr').length;
-            let selection_count = 0;
-            $('td:first-child', $tbody).each( (i:number, elem:any) => {
-                selection_count += +$('input[type="checkbox"]', elem).prop('checked');
+                let rows_count = $tbody.find('tr').length;
+                let selection_count = 0;
+                $('td:first-child', $tbody).each( (i:number, elem:any) => {
+                    selection_count += +$('input[type="checkbox"]', elem).prop('checked');
+                });
+
+                if($this.prop('checked')) {
+                    $tbody.find('tbody').find('tr').addClass('mdc-data-table__row--selected');
+                    // all checkboxes checked ?
+                    if(selection_count == rows_count) {
+                        $thead.find('th:first-child').find('input').prop("indeterminate", false).prop("checked", true);
+                    }
+                    else {
+                        $thead.find('th:first-child').find('input').prop("indeterminate", true).prop("checked", false);
+                    }
+                }
+                else {
+                    $this.closest('tr').removeClass('mdc-data-table__row--selected');
+                    // none of the checkboxes checked ?
+                    if(selection_count == 0) {
+                        $thead.find('th:first-child').find('input').prop("indeterminate", false).prop("checked", false);
+                    }
+                    else {
+                        $thead.find('th:first-child').find('input').prop("indeterminate", true).prop("checked", false);
+                    }
+                }
+                return true;
             });
-
-            if($this.prop('checked')) {
-                $tbody.find('tbody').find('tr').addClass('mdc-data-table__row--selected');
-                // all checkboxes checked ?
-                if(selection_count == rows_count) {
-                    $thead.find('th:first-child').find('input').prop("indeterminate", false).prop("checked", true);
-                }
-                else {
-                    $thead.find('th:first-child').find('input').prop("indeterminate", true).prop("checked", false);
-                }
-            }
-            else {
-                $this.closest('tr').removeClass('mdc-data-table__row--selected');
-                // none of the checkboxes checked ?
-                if(selection_count == 0) {
-                    $thead.find('th:first-child').find('input').prop("indeterminate", false).prop("checked", false);
-                }
-                else {
-                    $thead.find('th:first-child').find('input').prop("indeterminate", true).prop("checked", false);
-                }
-            }
-            return true;
-        });
 
         /*
          handlers for column sorting
         */
         $thead.find('th:not([data-decorated]')
-        .attr('data-decorated', '1')
-        .hover(
-            (event:any) => {
-                // set hover and sort order indicator
-                let $this = $(event.currentTarget);
-                $this.addClass('hover');
-                if($this.hasClass('sortable')) {
-                    if($this.hasClass('sorted')) {
-                        if($this.hasClass('asc')) {
-                            $this.removeClass('asc').addClass('desc');
+            .attr('data-decorated', '1')
+            .hover(
+                (event:any) => {
+                    // set hover and sort order indicator
+                    let $this = $(event.currentTarget);
+                    $this.addClass('hover');
+                    if($this.hasClass('sortable')) {
+                        if($this.hasClass('sorted')) {
+                            if($this.hasClass('asc')) {
+                                $this.removeClass('asc').addClass('desc');
+                            }
+                            else {
+                                $this.removeClass('desc').addClass('asc');
+                            }
                         }
                         else {
-                            $this.removeClass('desc').addClass('asc');
+                            $this.addClass('asc');
                         }
                     }
-                    else {
-                        $this.addClass('asc');
-                    }
-                }
-            },
-            (event:any) => {
-                // unset hover and sort order indicator
-                let $this = $(event.currentTarget);
-                $this.removeClass('hover');
-                if($this.hasClass('sortable')) {
-                    if($this.hasClass('sorted')) {
-                        if($this.hasClass('asc')) {
-                            $this.removeClass('asc').addClass('desc');
-                        }
-                        else {
-                            $this.removeClass('desc').addClass('asc');
-                        }
-                    }
-                    else {
-                        $this.removeClass('asc');
-                    }
-                }
-            }
-        )
-        .on('click',
-            (event:any) => {
-                let $this = $(event.currentTarget);
-                // change sortname and/or sortorder
-                if($this.hasClass('sortable')) {
-                    // set order according to column field
-                    if(!$this.hasClass('sorted')) {
-                        let sort = ( (<string>$this.attr('data-sort')).length )?<string>$this.attr('data-sort'):'asc';
-                        $this.removeClass('sorted').removeClass('asc').removeClass('desc');
-                        $this.addClass('sorted').addClass(sort);
-                        $this.attr('data-sort', sort);
-                    }
-                    // toggle sorting order
-                    else {
-                        let sort:string = <string>$this.attr('data-sort');
-                        if(sort == 'asc') {
-                            $this.removeClass('asc').addClass('desc');
-                            sort = 'desc';
+                },
+                (event:any) => {
+                    // unset hover and sort order indicator
+                    let $this = $(event.currentTarget);
+                    $this.removeClass('hover');
+                    if($this.hasClass('sortable')) {
+                        if($this.hasClass('sorted')) {
+                            if($this.hasClass('asc')) {
+                                $this.removeClass('asc').addClass('desc');
+                            }
+                            else {
+                                $this.removeClass('desc').addClass('asc');
+                            }
                         }
                         else {
-                            $this.removeClass('desc').addClass('asc');
-                            sort = 'asc';
+                            $this.removeClass('asc');
                         }
-                        $this.attr('data-sort', sort);
                     }
                 }
-            }
-        );
+            )
+            .on('click',
+                (event:any) => {
+                    let $this = $(event.currentTarget);
+                    // change sortname and/or sortorder
+                    if($this.hasClass('sortable')) {
+                        // set order according to column field
+                        if(!$this.hasClass('sorted')) {
+                            let sort = ( (<string>$this.attr('data-sort')).length )?<string>$this.attr('data-sort'):'asc';
+                            $this.removeClass('sorted').removeClass('asc').removeClass('desc');
+                            $this.addClass('sorted').addClass(sort);
+                            $this.attr('data-sort', sort);
+                        }
+                        // toggle sorting order
+                        else {
+                            let sort:string = <string>$this.attr('data-sort');
+                            if(sort == 'asc') {
+                                $this.removeClass('asc').addClass('desc');
+                                sort = 'desc';
+                            }
+                            else {
+                                $this.removeClass('desc').addClass('asc');
+                                sort = 'asc';
+                            }
+                            $this.attr('data-sort', sort);
+                        }
+                    }
+                }
+            );
 
         // new MDCDataTable($elem);
     }
