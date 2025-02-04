@@ -7,7 +7,7 @@ import { Domain, Clause, Condition, Reference } from "../Domain";
 
 export class LayoutForm extends Layout {
 
-    // used for keeping track of the currently selected widget (assigned when event `_updatedWidget` is triggered),
+    // #memo - used for keeping track of the currently selected widget (assigned when events `_updatedWidget` or `click` are triggered),
     // and for giving back the focus after a refresh
     public focused_widget_id: number | undefined;
 
@@ -307,7 +307,7 @@ export class LayoutForm extends Layout {
                     // keep track of empty lists
                     for(let action of actions) {
                         let action_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, action.label);
-                        let item_id = this.uuid+'_action-'+(''+action.id).replace(/\./g,'_');
+                        let item_id = this.uuid+'_action-' + (''+action.id).replace(/\./g,'_');
                         let $item = UIHelper.createListItem(item_id, action_title);
                         $menu_list.append($item);
                         this.decorateActionButton($item, action, object);
@@ -357,7 +357,7 @@ export class LayoutForm extends Layout {
                 }
                 else {
                     $tab.hide();
-                    this.$layout.find('#'+ $tab.attr('data-section_id')).hide();
+                    this.$layout.find('#' + $tab.attr('data-section_id')).hide();
                     if($tab.hasClass('is-active')) {
                         auto_select = true;
                     }
@@ -386,7 +386,7 @@ export class LayoutForm extends Layout {
                             visible = <boolean>config.visible;
                         }
                     }
-                    let $parent = this.$layout.find('#'+widget.getId()).parent();
+                    let $parent = this.$layout.find('#' + widget.getId()).parent();
                     if(!visible) {
                         $parent.empty().append(widget.attach()).hide();
                     }
@@ -398,7 +398,7 @@ export class LayoutForm extends Layout {
 
                     let field = config.field;
 
-                    let $parent = this.$layout.find('#'+widget.getId()).parent();
+                    let $parent = this.$layout.find('#' + widget.getId()).parent();
 
                     let type = this.view.getModel().getFinalType(field);
 
@@ -487,7 +487,7 @@ export class LayoutForm extends Layout {
                             visible = domain.evaluate(object, user);
                         }
                         else {
-                            visible = <boolean>config.visible;
+                            visible = <boolean> config.visible;
                         }
                     }
 
@@ -498,6 +498,9 @@ export class LayoutForm extends Layout {
                     }
                     else {
                         let $widget = widget.render();
+                        $widget.on('click', () => {
+                            this.focused_widget_id = widget.getId();
+                        } );
                         // Handle Widget update handler
                         $widget.on('_updatedWidget', async (event:any, refresh: boolean = true) => {
                             console.debug("Layout::feedForm : received _updatedWidget", field, widget.getValue(), refresh);
@@ -511,7 +514,6 @@ export class LayoutForm extends Layout {
                             if(String(widget.getValue()).length < 1000) {
                                 // relay the change to back-end through onupdate
                                 try {
-                                    // #todo - add support for dynamic schema (ex. filter or update selection of selectable fields, based on value from other fields)
                                     const result = await ApiService.call("?do=model_onchange", {entity: this.view.getEntity(), changes: this.view.getModel().export(values), values: this.view.getModel().export(object), lang: this.view.getLang()} );
                                     if (typeof result === 'object' && result != null) {
                                         for(let field of Object.keys(result)) {
@@ -519,17 +521,26 @@ export class LayoutForm extends Layout {
                                             refresh = true;
                                             // if some changes are returned from the back-end, append them to the view model update
                                             if(typeof result[field] === 'object' && result[field] !== null) {
+                                                model_fields[field] = result[field];
+
                                                 if(result[field].hasOwnProperty('value')) {
                                                     values[field] = result[field].value;
                                                 }
-                                                else if(result[field].hasOwnProperty('selection')) {
-                                                    // special case of a descriptor providing a selection without value (nothing to assign)
-                                                }
-                                                else {
+                                                else if(type == 'many2one'){
                                                     // #memo - m2o widgets use an object as value
                                                     values[field] = result[field];
                                                 }
-                                                model_fields[field] = result[field];
+
+                                                if(result[field].hasOwnProperty('selection')) {
+                                                    // special case of a descriptor providing a selection
+                                                    // #memo - this is because a string with selection is handled in a distinct way (WidgetSelect)
+                                                    let normalize_selection = WidgetFactory.getNormalizedSelection(translation, field, result[field].selection);
+                                                    // 1) set virtual `values` property (used by WidgetSelect) to assign & refresh the widget accordingly
+                                                    model_fields[field].values = normalize_selection;
+                                                    // 2) update view model in case selection is added on another widget type (WidgetString, WidgetInteger, ...)
+                                                    this.view.updateModelField(field, 'selection', normalize_selection);
+                                                }
+
                                             }
                                             else {
                                                 values[field] = result[field];
@@ -544,7 +555,7 @@ export class LayoutForm extends Layout {
                             }
                             // update model schema of the view if necessary
                             if(Object.keys(model_fields).length > 0) {
-                                // we need to retrieve the widget based on the field name
+                                // retrieve the widget based on the field name
                                 for(let widget_index of Object.keys(this.model_widgets[0])) {
                                     let widget = this.model_widgets[0][widget_index];
                                     let field = widget.config.field;
@@ -578,6 +589,10 @@ export class LayoutForm extends Layout {
             else {
                 // by convention give the focus to the first input (widget) of the layout
                 setTimeout( () => {
+                    // unless focus has already been manually given by user
+                    if(this.focused_widget_id) {
+                        return;
+                    }
                     this.$layout.find('input').first().trigger('focus');
                 }, 500);
             }
