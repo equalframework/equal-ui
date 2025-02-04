@@ -9,6 +9,12 @@ import { Clause, Reference } from "./Domain";
 
 import { saveAs } from 'file-saver';
 export class View {
+    static readonly DEFAULT_CONTROLLER: string = 'model_collect';
+    static readonly DEFAULT_ORDER: string = 'id';
+    static readonly DEFAULT_SORT: string = 'asc';
+    static readonly DEFAULT_START: number = 0;
+    static readonly DEFAULT_LIMIT: number = 25;
+    static readonly DEFAULT_GROUP_BY: string[] = [];
 
     private uuid: string;
 
@@ -107,6 +113,7 @@ export class View {
 
         // default config
         this.config = {
+            header: {},
             show_actions: true,
             show_filter: true,
             show_pagination: true,
@@ -237,17 +244,20 @@ export class View {
 
         // override config options, if other are given
         if(config) {
-            // #todo - `show_...` attributes shouldn't be set directly in widgets nor provided config, and should rather be computed based on other values
-            this.config = {...this.config, ...config};
+            // #todo - attributes like `selection_actions` or `show_...`  shouldn't be set directly in widgets nor provided config, and should rather be computed here below based on other values
+            this.config = $.extend(true, {}, this.config, config);
+            if(this.config.header.hasOwnProperty('selection') && !this.config.header.selection) {
+                this.config.selection_actions = [];
+            }
         }
 
-        this.mode = (this.config.hasOwnProperty('mode'))?this.config.mode:this.mode;
-        this.controller = (this.config.hasOwnProperty('controller'))?this.config.controller:'model_collect';
-        this.order = (this.config.hasOwnProperty('order'))?this.config.order:'id';
-        this.sort = (this.config.hasOwnProperty('sort'))?this.config.sort:'asc';
-        this.start = (this.config.hasOwnProperty('start'))?this.config.start:0;
-        this.limit = (this.config.hasOwnProperty('limit'))?this.config.limit:25;
-        this.group_by = (this.config.hasOwnProperty('group_by'))?this.config.group_by:[];
+        this.mode = (this.config.hasOwnProperty('mode')) ? this.config.mode : this.mode;
+        this.controller = (this.config.hasOwnProperty('controller')) ? this.config.controller: View.DEFAULT_CONTROLLER;
+        this.order = (this.config.hasOwnProperty('order')) ? this.config.order : View.DEFAULT_ORDER;
+        this.sort = (this.config.hasOwnProperty('sort')) ? this.config.sort : View.DEFAULT_SORT;
+        this.start = (this.config.hasOwnProperty('start')) ? this.config.start : View.DEFAULT_START;
+        this.limit = (this.config.hasOwnProperty('limit')) ? this.config.limit : View.DEFAULT_LIMIT;
+        this.group_by = (this.config.hasOwnProperty('group_by')) ? this.config.group_by : View.DEFAULT_GROUP_BY;
 
         this.selected_ids = [];
 
@@ -330,23 +340,29 @@ export class View {
             this.loadViewFields(this.view_schema);
             this.loadModelFields(this.model_schema);
 
+            // #memo - received config takes precedence
+
             if(this.view_schema.hasOwnProperty("header")) {
-                this.config.header = this.view_schema.header;
+                this.config.header = {...this.view_schema.header, ...this.config.header};
             }
 
-            if(this.view_schema.hasOwnProperty("order")) {
+            if(this.view_schema.hasOwnProperty("order") && this.order == View.DEFAULT_ORDER) {
                 this.order = this.view_schema.order;
             }
 
-            if(this.view_schema.hasOwnProperty("sort")) {
+            if(this.view_schema.hasOwnProperty("sort") && this.sort == View.DEFAULT_SORT) {
                 this.sort = this.view_schema.sort;
             }
 
-            if(this.view_schema.hasOwnProperty("limit")) {
+            if(this.view_schema.hasOwnProperty("start") && this.start == View.DEFAULT_START) {
+                this.start = +this.view_schema.start;
+            }
+
+            if(this.view_schema.hasOwnProperty("limit") && this.limit == View.DEFAULT_LIMIT) {
                 this.limit = +this.view_schema.limit;
             }
 
-            if(this.view_schema.hasOwnProperty("group_by")) {
+            if(this.view_schema.hasOwnProperty("group_by") && this.group_by == View.DEFAULT_GROUP_BY) {
                 this.group_by = this.view_schema.group_by;
             }
 
@@ -386,7 +402,7 @@ export class View {
             }
 
             // some custom actions might have been defined in the parent view, if so, override the view schema
-            if(this.config.hasOwnProperty("header") && this.config.header.hasOwnProperty("actions")) {
+            if(this.config.header.hasOwnProperty("actions")) {
                 for (const [id, item] of Object.entries(this.config.header.actions)) {
                     this.custom_actions[id] = item;
                 }
@@ -397,19 +413,19 @@ export class View {
 
             // #memo - selection action must be present for widget view
             if(this.purpose == 'view' || this.purpose == 'widget') {
-                if(this.view_schema.hasOwnProperty('header') && this.view_schema.header.hasOwnProperty('selection')) {
-                    if(!this.view_schema.header.selection) {
+                if(this.config.header.hasOwnProperty('selection')) {
+                    if(!this.config.header.selection) {
                         // if selection is disabled, force mode to view (to prevent displaying checkboxes)
                         // #memo - for child views, mode can be switched through parent view
                         this.mode = 'view';
                     }
                     else {
-                        if(!this.view_schema.header.selection.hasOwnProperty('default') || this.view_schema.header.selection.default == true) {
+                        if(!this.config.header.selection.hasOwnProperty('default') || this.config.header.selection.default == true) {
                             // use default actions unless default explicitly set to false
                             this.config.selection_actions = this.config.selection_actions_default;
                         }
-                        if(this.view_schema.header.selection.hasOwnProperty('actions') && Array.isArray(this.view_schema.header.selection.actions)) {
-                            for(let action of this.view_schema.header.selection.actions) {
+                        if(this.config.header.selection.hasOwnProperty('actions') && Array.isArray(this.config.header.selection.actions)) {
+                            for(let action of this.config.header.selection.actions) {
                                 // enrich the item with an action handler based on given controller, if any
                                 action['handler'] = async (selection:any, item:any) => {
                                     if(item.hasOwnProperty('controller')) {
@@ -970,6 +986,14 @@ export class View {
     }
 
     /**
+     * Dynamically update a model definition.
+     * This is mostly used to update the model after an onchange event (ex. change in the selection)
+     */
+    public updateModelField(field: string, attribute: string, def: any) {
+        this.model_fields[field][attribute] = def;
+    }
+
+    /**
      * Generates a map holding all fields (as items objects) that are present in a given view
      * and stores them in the `view_fields` map (does not maintain the field order)
      */
@@ -1268,7 +1292,7 @@ export class View {
             });
 
             this.is_ready_promise.then( () => {
-                if(this.config.hasOwnProperty('header') && this.config.header.hasOwnProperty('advanced_search') && this.config.header.advanced_search) {
+                if(this.config.header.hasOwnProperty('advanced_search') && this.config.header.advanced_search) {
                     if(this.config.header.advanced_search.hasOwnProperty('open') && this.config.header.advanced_search.open) {
                         $advanced_filters_button.trigger('click');
                     }
@@ -1404,7 +1428,7 @@ export class View {
         if(this.config.show_filter) {
             $level2.append( $filters_button );
             // add quick search if not prevented by view schema
-            if(!this.view_schema.hasOwnProperty('header') || !this.view_schema.header.hasOwnProperty('filters') || !this.view_schema.header.filters.hasOwnProperty('quicksearch') || this.view_schema.header.filters.quicksearch) {
+            if(!this.config.header.hasOwnProperty('filters') || !this.config.header.filters.hasOwnProperty('quicksearch') || this.config.header.filters.quicksearch) {
                 $level2.append( $filters_search );
             }
             $level2.append( $filters_set );
@@ -1545,7 +1569,7 @@ export class View {
         });
 
         let modes = ['chart', 'grid'];
-        if(this.config.hasOwnProperty('header') && this.config.header.hasOwnProperty('modes')) {
+        if(this.config.header.hasOwnProperty('modes')) {
             modes = this.config.header.modes;
         }
         if(modes.includes('chart')) {
@@ -1796,7 +1820,7 @@ export class View {
         }
 
         let has_action_update = true;
-        if(this.config.hasOwnProperty('header') && this.config.header.hasOwnProperty('actions')) {
+        if(this.config.header.hasOwnProperty('actions')) {
             if(this.config.header.actions.hasOwnProperty('ACTION.EDIT')) {
                 has_action_update = (this.config.header.actions['ACTION.EDIT'])?true:false;
                 if(this.config.header.actions['ACTION.EDIT'].hasOwnProperty('visible')) {
@@ -2369,6 +2393,8 @@ export class View {
     public onchangeSelection(selection: Array<any>) {
         console.debug('View::onchangeSelection', selection);
         this.selected_ids = selection;
+        // if inline_edit, force a cancel
+        this.$container.find('.sb-view-header-actions-std').find('#action-selected-edit-cancel').trigger('click');
         this.layoutListRefresh();
     }
 
@@ -2698,7 +2724,7 @@ export class View {
      *
      * @returns
      */
-    public async displayErrorFeedback(translation: any, response:any, object:any = null, snack:boolean = true) {
+    public async displayErrorFeedback(translation: any, response: any, object: any = null, snack: boolean = true) {
         console.debug('View::displayErrorFeedback', translation, response, object, snack);
         let delay = 4000;
 
@@ -2820,8 +2846,12 @@ export class View {
                 }
                 // errors['NOT_ALLOWED'] is a string
                 else {
+                    let error_id: string = <string> String(errors['NOT_ALLOWED']);
+                    if(error_id == 'insufficient_auth_level') {
+                        // open escalation popop
+                        this.openAuthPopup("/auth/#/level/2", "Escalation Auth");
+                    }
                     if(snack) {
-                        let error_id:string = <string> String(errors['NOT_ALLOWED']);
                         let msg = TranslationService.instant('SB_ERROR_NOT_ALLOWED');
                         // try to resolve the error message
                         let translated_msg = TranslationService.resolve(translation, 'error', [], 'errors', error_id, error_id);
@@ -2910,6 +2940,35 @@ export class View {
         return false;
     }
 
+
+    private openAuthPopup(url: string, title = "Authentication", width = 400, height = 600) {
+        // Calculer la position pour centrer la popup
+        const screenWidth = window.screen.width;
+        const screenHeight = window.screen.height;
+        const left = (screenWidth - width) / 2;
+        const top = (screenHeight - height) / 2;
+
+        // Options pour la fenêtre
+        const options = `
+            width=${width},
+            height=${height},
+            top=${top},
+            left=${left},
+            resizable=yes,
+            scrollbars=yes,
+            status=no,
+            menubar=no,
+            toolbar=no
+        `;
+
+        const popup = window.open(url, title, options);
+
+        if (!popup || popup.closed || typeof popup.closed == 'undefined') {
+            alert("Please allow popups for this App.");
+        }
+
+        return popup;
+    }
 
     private async translateFilterClause(clause: Clause) {
         let result = '';
