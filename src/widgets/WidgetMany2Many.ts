@@ -27,8 +27,23 @@ export default class WidgetMany2Many extends Widget {
                 this.mode = this.config.mode;
             }
 
-            // if default is voided in the header, do not show the remove button
+            // if items are not selectable
             if (this.config.hasOwnProperty('header')
+                && this.config.header.hasOwnProperty('selection')
+                && !this.config.header.selection
+            ) {
+                view_config = {
+                    ...this.config,
+                    ...{
+                        header: {
+                            selection: false
+                        },
+                        selection_actions: []
+                    }
+                };
+            }
+            // if default is voided in the header, do not show the remove button
+            else if (this.config.hasOwnProperty('header')
                 && this.config.header.hasOwnProperty('selection')
                 && this.config.header.selection.hasOwnProperty('default')
                 && !this.config.header.selection.default
@@ -37,16 +52,18 @@ export default class WidgetMany2Many extends Widget {
                 if(this.config.header.selection.hasOwnProperty('actions')) {
                     // #memo - voiding defaults does not prevent custom actions
                     selection_actions = this.config.header.selection.actions;
+                    // if actions target known default actions, use them
                 }
                 view_config = {
                     ...this.config,
                     ...{
                         header: {
                             selection: {
-                                default: false
+                                default: false,
+                                actions: selection_actions
                             }
                         },
-                        selection_actions: selection_actions
+                        // selection_actions: selection_actions
                     }
                 };
             }
