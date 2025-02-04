@@ -486,20 +486,26 @@ export class Frame {
      * @param context
      */
     private decorateCrumb($crumb: JQuery, context: Context) {
-        $crumb.on('mouseover', function() {
+        $crumb.on('mouseenter', () => {
             $crumb.addClass('has-mouseover');
-            setTimeout(function() {
+            // hide any previously opened popup in the header
+            this.$headerContainer.find('.header-view-details-popup')
+                .not($crumb.find('.header-view-details-popup'))
+                .removeClass('has-mouseover').hide();
+            setTimeout( () => {
+                // show popup if crumb sill has mouseover after a delay
                 if($crumb.hasClass('has-mouseover')) {
                     $crumb.find('.header-view-details-popup').show();
                 }
             }, 1200);
         })
-        .on('mouseout', function() {
+        .on('mouseleave', () => {
+            $crumb.removeClass('has-mouseover');
             setTimeout( () => {
                 let $popup = $crumb.find('.header-view-details-popup');
-                if(!$popup.hasClass('has-mouseover')) {
-                    $crumb.removeClass('has-mouseover');
-                    $crumb.find('.header-view-details-popup').hide();
+                // hide popup if neither crumb nor popup has mouseover
+                if(!$crumb.hasClass('has-mouseover') && !$popup.hasClass('has-mouseover')) {
+                    $popup.hide();
                 }
             }, 500);
         });
@@ -528,11 +534,18 @@ export class Frame {
                 .append( $('<div />').attr('title', context.getPurpose()).html('Purpose: <b>'+context.getPurpose()+'</b>') )
                 .append( $('<div />').attr('title', context.getMode()).html('Mode: <b>'+context.getMode()+'</b>') )
             )
-            .on('mouseover', function() {
+            .on('mouseenter', function() {
                 $crumb.find('.header-view-details-popup').addClass('has-mouseover');
             })
-            .on('mouseout', function() {
-                $crumb.find('.header-view-details-popup').removeClass('has-mouseover');
+            .on('mouseleave', function() {
+                let $popup = $crumb.find('.header-view-details-popup');
+                $popup.removeClass('has-mouseover');
+                setTimeout( () => {
+                    // hide popup if neither crumb nor popup has mouseover
+                    if(!$crumb.hasClass('has-mouseover') && !$popup.hasClass('has-mouseover')) {
+                        $popup.hide();
+                    }
+                }, 500);
             })
             .appendTo($crumb);
     }
