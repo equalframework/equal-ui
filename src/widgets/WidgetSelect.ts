@@ -15,8 +15,8 @@ export default class WidgetSelect extends Widget {
     }
 
     public render():JQuery {
-        let value:string = this.value?this.value:'';
-        let usage = (this.config.hasOwnProperty('usage'))?this.config.usage:'';
+        let value:string = this.value ? this.value : '';
+        let usage = (this.config.hasOwnProperty('usage')) ? this.config.usage : '';
 
         switch(this.mode) {
             case 'edit':
@@ -89,7 +89,7 @@ export default class WidgetSelect extends Widget {
                 break;
             case 'view':
             default:
-                let val:string = Array.isArray(this.config.values)?value:(this.config.values.hasOwnProperty(value))?this.config.values[value]:'';
+                let val:string = Array.isArray(this.config.values) ? value : ( (this.config.values.hasOwnProperty(value)) ? this.config.values[value] : '' );
                 this.$elem = UIHelper.createInputView('', this.label, val, this.config.description);
 
                 if(usage.indexOf('color') >= 0) {
