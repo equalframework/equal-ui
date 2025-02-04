@@ -83,9 +83,10 @@ export default class WidgetString extends Widget {
                 }
                 else {
                     if(this.config.layout == 'list') {
-                        if(usage.indexOf('icon') >= 0) {
-		                    let map_icons:any = {
-                                	success:   {icon: "check_circle", color: "green"},
+                        // #todo - improve this support
+                        if(usage.indexOf('icon') >= 0 || usage.indexOf('symbol') >= 0) {
+                            let map_icons:any = {
+                                    success:   {icon: "check_circle", color: "green"},
                                     info:      {icon: "info", color: "blue"},
                                     warn:      {icon: "warning", color: "orange"},
                                     major:     {icon: "error", color: "orangered"},
