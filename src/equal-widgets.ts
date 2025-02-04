@@ -132,21 +132,24 @@ class WidgetFactory {
 
         let def = model_fields[field];
 
-        let label = (item.hasOwnProperty('label'))?item.label:field;
+        let label = (item.hasOwnProperty('label')) ? item.label : field;
         // #todo - handle help and relay to Context
-        let helper = (item.hasOwnProperty('help'))?item.help:(def.hasOwnProperty('help'))?def['help']:'';
-        let description = (item.hasOwnProperty('description'))?item.description:(def.hasOwnProperty('description'))?def['description']:'';
+        let helper = (item.hasOwnProperty('help')) ? item.help : ( (def.hasOwnProperty('help')) ? def['help'] : '' );
+        let description = (item.hasOwnProperty('description')) ? item.description : ( (def.hasOwnProperty('description')) ? def['description'] : '' );
 
         // #todo - this should be done for the whole config (@see notes below)
         if(def.hasOwnProperty('usage')) {
             config.usage = def.usage;
         }
         // #memo - Widget overloads the Model
-        if(item.hasOwnProperty('widget') && item.widget.hasOwnProperty('usage')) {
-            // overload config with widget config, if any
-            config.usage = item.widget.usage;
+        if(item.hasOwnProperty('widget')) {
+            if(item.widget.hasOwnProperty('usage')) {
+                // overload config with widget config, if any
+                config.usage = item.widget.usage;
+            }
         }
 
+        // #todo - checks def.type against allowed values ['boolean','integer','float','string','date','time','datetime','file','binary','many2one','one2many','many2many','computed']
         if(def.hasOwnProperty('type')) {
             let type = def['type'];
             if(def.hasOwnProperty('result_type')) {
@@ -154,7 +157,7 @@ class WidgetFactory {
             }
             if(config.hasOwnProperty('usage')) {
                 switch(config.usage) {
-                    // #todo - complete the list
+                    // #todo - complete the list + handle as Usage object
                     case 'date':
                     case 'date/medium':
                     case 'date/plain':
@@ -175,6 +178,7 @@ class WidgetFactory {
                     case 'time/plain.short':
                         type = 'time';
                         break;
+                    case 'text/plain:255':
                     case 'text/plain.short':
                         type = 'string';
                         break;
@@ -220,17 +224,7 @@ class WidgetFactory {
         if(def.hasOwnProperty('selection')) {
             config.selection = def.selection;
             config.type = 'select';
-            let translated = TranslationService.resolve(translation, 'model', [], field, config.selection, 'selection');
-            let values = translated;
-            // normalize translation map
-            if(Array.isArray(translated)) {
-                // convert array to a Map (original values as keys and translations as values)
-                values = {};
-                for(let i = 0, n = config.selection.length; i < n; ++i) {
-                    values[config.selection[i]] = translated[i];
-                }
-            }
-            config.values = values;
+            config.values = this.getNormalizedSelection(translation, field, config.selection);
         }
         config.field = field;
         config.visible = true;
@@ -254,6 +248,7 @@ class WidgetFactory {
         config.locale = view.getLocale();
 
         // #todo - this appears to be done too late and prevents forcing the usage in the views (see workaround above)
+        // (previsouly assigned type, based on usage is therefore subjet to change)
         if(item.hasOwnProperty('widget')) {
             // overload config with widget config, if any
             config = {...config, ...item.widget};
@@ -318,6 +313,19 @@ class WidgetFactory {
         return config;
     }
 
+    public static getNormalizedSelection(translation: any, field: string, selection: any) {
+        let translated = TranslationService.resolve(translation, 'model', [], field, selection, 'selection');
+        let values = translated;
+        // normalize translation map
+        if(Array.isArray(translated)) {
+            // convert array to a Map (original values as keys and translations as values)
+            values = {};
+            for(let i = 0, n = selection.length; i < n; ++i) {
+                values[selection[i]] = translated[i];
+            }
+        }
+        return values;
+    }
 }
 
 export { WidgetFactory, Widget }
