@@ -225,7 +225,7 @@ export class Domain {
                     operator = '!=';
                 }
 
-                if(typeof value == 'number') {
+                if(typeof operand == 'number') {
                     if(operator == 'is') {
                         operator = '==';
                     }
@@ -235,7 +235,7 @@ export class Domain {
                 }
 
                 if(operator == 'is') {
-                    if( value === true ) {
+                    if( [true, 'true'].includes(value) ) {
                         cc_res = operand;
                     }
                     else if( [false, null, 'false', 'null', 'empty'].includes(value) ) {
@@ -246,8 +246,8 @@ export class Domain {
                     }
                 }
                 else if(operator == 'is not') {
-                    if( value === false ) {
-                        cc_res = operand;
+                    if( [true, 'true'].includes(value) ) {
+                        cc_res = !operand;
                     }
                     else if( [false, null, 'false', 'null', 'empty'].includes(value) ) {
                         cc_res = !(['', false, undefined, null].includes(operand) || (Array.isArray(operand) && !operand.length));
@@ -269,9 +269,17 @@ export class Domain {
                     cc_res = (value.indexOf(operand) == -1);
                 }
                 else {
-                    let c_condition = "( '" + operand + "' "+operator+" '" + value + "')";
+                    let c_condition: string = '';
+                    if(['<', '>'].includes(operator)) {
+                        // we assume a comparision on numeric operands
+                        let numeric_value = Number.isNaN(+value) ? 0 : +value;
+                        c_condition = "( " + operand + " " + operator + " " + numeric_value + ")";
+                    }
+                    else {
+                        c_condition = "( '" + operand + "' " + operator + " '" + value + "')";
+                    }
 
-                    cc_res = <boolean>eval(c_condition);
+                    cc_res = <boolean> eval(c_condition);
                 }
                 c_res = c_res && cc_res;
             }
