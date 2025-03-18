@@ -223,7 +223,7 @@ export class View {
                                 try {
                                     await ApiService.delete(this.entity, selection, false);
                                     // refresh the model
-                                    await this.onchangeView();
+                                    this.onchangeView();
                                 }
                                 catch(response) {
                                     try {
@@ -270,7 +270,7 @@ export class View {
             "export.pdf": {
                 "id": "export.pdf",
                 "label": TranslationService.instant('SB_EXPORTS_AS_PDF'),
-                "icon": "print",
+                "icon": "picture_as_pdf",
                 "description": "Export as PDF",
                 "controller": "model_export-pdf",
                 "view": this.getId(),
@@ -279,7 +279,7 @@ export class View {
             "export.xls": {
                 "id": "export.xls",
                 "label": TranslationService.instant('SB_EXPORTS_AS_XLS'),
-                "icon": "print",
+                "icon": "description",
                 "description": "Export as XLS",
                 "controller": "model_export-xls",
                 "view": this.getId()
@@ -438,7 +438,7 @@ export class View {
                                                 lang: this.getLang()
                                             };
                                             // #todo - export to a dedicated class : from here code is very close to `decorateActionButton` in Layout class
-                                            let missing_params:any = {};
+                                            let missing_params: any = {};
                                             let user = this.getUser();
 
                                             // 1) pre-feed with params from the action, if any
@@ -475,10 +475,10 @@ export class View {
                                             }
 
                                             // 2) retrieve announcement from the target action controller
-                                            const result = await ApiService.fetch("/", {do: action.controller, announce: true});
+                                            const result = await ApiService.fetch("/", {do: action.controller, announce: true, ...resulting_params});
                                             let params: any = {};
-                                            let response_descr:any = {};
-                                            let description:string = '';
+                                            let response_descr: any = {};
+                                            let description: string = '';
 
                                             if(result.hasOwnProperty('announcement')) {
                                                 if(result.announcement.hasOwnProperty('params')) {
@@ -486,7 +486,12 @@ export class View {
                                                 }
                                                 for(let param of Object.keys(params)) {
                                                     if(Object.keys(resulting_params).indexOf(param) < 0) {
-                                                        missing_params[param] = params[param];
+                                                        if(params[param].hasOwnProperty('required') && params[param].required) {
+                                                            missing_params[param] = params[param];
+                                                        }
+                                                        else if(action.hasOwnProperty('confirm') && action.confirm) {
+                                                            missing_params[param] = params[param];
+                                                        }
                                                     }
                                                 }
                                                 if(result.announcement.hasOwnProperty('response')) {
@@ -537,8 +542,8 @@ export class View {
                                                     $dialog.find('.mdc-dialog__content').append($description);
                                                     $dialog.appendTo(this.getContainer());
                                                     $dialog
-                                                    .on('_accept', () => defer.resolve())
-                                                    .on('_reject', () => defer.reject() );
+                                                        .on('_accept', () => defer.resolve())
+                                                        .on('_reject', () => defer.reject() );
                                                     $dialog.trigger('Dialog:_open');
                                                 }
                                             }
@@ -629,6 +634,8 @@ export class View {
             // domain member is given by the context
             // if view is a non-widget list then context domain is visible and can be changed by user
             // (otherwise, context domain is merged to view domain and cannot be changed by user)
+            // #memo - this has been removed because it decreases ability to reuse views across distinct contexts (we don't want the user to change the domain since it is part of the context consistency)
+            /*
             if(this.type == 'list' && this.purpose == 'view' && this.domain && Array.isArray(this.domain)) {
                 let i = 0;
                 let tmpDomain = new Domain(this.domain);
@@ -648,24 +655,27 @@ export class View {
 
                 this.domain = [];
             }
+            */
 
-            // view schema specifies a domain
+            // view schema specifies a domain: merge it with the received context domain
             // domain from the view is fixed, not visible, and cannot be changed by user
             if(this.view_schema.hasOwnProperty("domain")) {
-                // domain attribute is either a string or an array
+                // convert domain attribute (either a string or an array)
                 let domain = eval(this.view_schema.domain);
 
                 let viewDomain = new Domain(domain);
 
                 // assign domain to the view
+                /*
                 if(this.purpose == 'view') {
                     this.domain = viewDomain.toArray();
                 }
                 else {
+                */
                     // merge domains
                     let tmpDomain = new Domain(this.domain);
                     this.domain = tmpDomain.merge(viewDomain).toArray();
-                }
+                //}
 
             }
 
@@ -1007,7 +1017,7 @@ export class View {
             var path = ['groups', 'sections', 'rows', 'columns'];
 
             while(stack.length) {
-                var elem = stack.pop();
+                var elem: any = stack.pop();
 
                 if(elem.hasOwnProperty('items')) {
                     for (let item of elem['items']) {
@@ -1070,10 +1080,10 @@ export class View {
         let has_action_select = true;
 
         if(this.custom_actions.hasOwnProperty('ACTION.SELECT')) {
-            has_action_select = (this.custom_actions['ACTION.SELECT'])?true:false;
+            has_action_select = (this.custom_actions['ACTION.SELECT']) ? true : false;
         }
         if(this.custom_actions.hasOwnProperty('ACTION.CREATE')) {
-            has_action_create = (this.custom_actions['ACTION.CREATE'])?true:false;
+            has_action_create = (this.custom_actions['ACTION.CREATE']) ? true : false;
         }
 
         // append view actions, if requested
@@ -1094,8 +1104,12 @@ export class View {
                                             let custom_action_create = this.custom_actions['ACTION.CREATE'][0];
                                             if(custom_action_create.hasOwnProperty('view')) {
                                                 let parts = custom_action_create.view.split('.');
-                                                if(parts.length) view_type = <string>parts.shift();
-                                                if(parts.length) view_name = <string>parts.shift();
+                                                if(parts.length) {
+                                                    view_type = <string> parts.shift();
+                                                }
+                                                if(parts.length) {
+                                                    view_name = <string> parts.shift();
+                                                }
                                             }
                                             if(custom_action_create.hasOwnProperty('domain')) {
                                                 let tmpDomain = new Domain(domain);
@@ -1340,7 +1354,7 @@ export class View {
 
         // fields toggle menu : button for displaying the fields menu
         let $fields_toggle_button = $('<div/>').addClass('sb-view-header-list-fields_toggle mdc-menu-surface--anchor')
-            .append( UIHelper.createButton('view-filters', 'fields', 'icon', 'more_vert') );
+            .append( UIHelper.createButton('view-fields', 'fields', 'icon', 'more_vert') );
 
         // create floating menu for fields selection
         let $fields_toggle_menu = UIHelper.createMenu('fields-menu').addClass('sb-view-header-list-fields_toggle-menu').appendTo($fields_toggle_button);
@@ -1348,25 +1362,45 @@ export class View {
 
         // #todo : translate fields names
         for(let item of this.getViewSchema().layout.items ) {
-            let label = (item.hasOwnProperty('label'))?item.label:item.value.charAt(0).toUpperCase() + item.value.slice(1);
-            let visible = (item.hasOwnProperty('visible'))?item.visible:true;
+            let label = (item.hasOwnProperty('label')) ? item.label : (item.value.charAt(0).toUpperCase() + item.value.slice(1));
+            let visible = (item.hasOwnProperty('visible')) ? item.visible : true;
 
             UIHelper.createListItemCheckbox('sb-fields-toggle-checkbox-'+item.value, label)
-            .appendTo($fields_toggle_list)
-            .find('input')
-            .on('change', (event) => {
-                let $this = $(event.currentTarget);
-                let def = this.getField(item.value);
-                def.visible = $this.prop('checked');
-                this.setField(item.value, def);
-                this.onchangeModel(true);
-            })
-            .prop('checked', visible);
+                .appendTo($fields_toggle_list)
+                .find('input')
+                .on('change', (event) => {
+                    let $this = $(event.currentTarget);
+                    let def = this.getField(item.value);
+                    def.visible = $this.prop('checked');
+                    this.setField(item.value, def);
+                    this.onchangeModel(true);
+                })
+                .prop('checked', visible);
         }
 
         UIHelper.decorateMenu($fields_toggle_menu);
         $fields_toggle_button.find('button').on('click', () => $fields_toggle_menu.trigger('_toggle') );
 
+        // export button
+        let $export_button = $('<div/>').addClass('sb-view-header-list-fields_toggle mdc-menu-surface--anchor')
+            .append( UIHelper.createButton('selection-action-' + 'SB_ACTIONS_BUTTON_EXPORT', 'export', 'icon', 'save_alt')
+                .attr('title', 'export current page')
+                .addClass('sb-view-header-list-export_button')
+                .on( 'click', (event:any) => {
+                    const params = new URLSearchParams({
+                        get:        'model_export-xls',
+                        view_id:    this.getId(),
+                        entity:     this.entity,
+                        domain:     JSON.stringify(this.getDomain()),
+                        id:         (this.selected_ids.length) ? this.selected_ids[0] : 0,
+                        ids:        JSON.stringify(this.selected_ids),
+                        lang:       this.lang,
+                        controller: this.controller,
+                        params:     JSON.stringify(this.getParams())
+                    }).toString();
+                    window.open(this.getEnv().backend_url + '?' + params, "_blank");
+                })
+            );
 
         // pagination controls
         let $pagination = UIHelper.createPagination().addClass('sb-view-header-list-pagination');
@@ -1392,23 +1426,21 @@ export class View {
             .append(
                 UIHelper.createButton('', '', 'icon', 'chevron_left').addClass('sb-view-header-list-pagination-prev_page')
                 .on('click', (event: any) => {
-                    this.setStart( Math.max(0, this.getStart() - this.getLimit()) );
+                    this.setStart(Math.max(0, this.getStart() - this.getLimit()));
                     this.onchangeView();
                 })
             )
             .append(
                 UIHelper.createButton('', '', 'icon', 'chevron_right').addClass('sb-view-header-list-pagination-next_page')
                 .on('click', (event: any) => {
-                    let new_start:number = Math.min( this.getTotal()-1, this.getStart() + this.getLimit() );
-                    this.setStart(new_start);
+                    this.setStart(Math.min( this.getTotal() - this.getLimit(), this.getStart() + this.getLimit() ));
                     this.onchangeView();
                 })
             )
             .append(
                 UIHelper.createButton('', '', 'icon', 'last_page').addClass('sb-view-header-list-pagination-last_page')
                 .on('click', (event: any) => {
-                    let new_start:number = this.getTotal()-1;
-                    this.setStart(new_start);
+                    this.setStart(this.getTotal() - this.getLimit());
                     this.onchangeView();
                 })
             );
@@ -1438,6 +1470,7 @@ export class View {
             }
         }
         $level2.append( $pagination );
+        $level2.append( $export_button );
         $level2.append( $fields_toggle_button );
 
         this.$headerContainer.append( $elem );
@@ -1609,6 +1642,8 @@ export class View {
         this.$headerContainer.find('.sb-view-header-list-pagination-next_page').prop('disabled', !(start <= total-limit));
         this.$headerContainer.find('.sb-view-header-list-pagination-last_page').prop('disabled', !(start <= total-limit));
 
+        this.$headerContainer.find('.sb-view-header-list-export_button').prop('disabled', !(total > 0));
+
 
         let $action_set = this.$headerContainer.find('.sb-view-header-actions');
         let $std_actions = $action_set.find('.sb-view-header-actions-std');
@@ -1628,7 +1663,7 @@ export class View {
             if(this.purpose == 'view') {
                 // create export menu (always visible: no selection means "export all")
                 let $export_actions_menu_button = $('<div/>').addClass('sb-view-header-list-actions-export mdc-menu-surface--anchor')
-                .append(UIHelper.createButton('selection-action-'+'SB_ACTIONS_BUTTON_EXPORT', 'export', 'icon', 'file_download'))
+                .append(UIHelper.createButton('selection-action-' + 'SB_ACTIONS_BUTTON_EXPORT', 'export', 'icon', 'file_download'))
                 .appendTo($std_actions);
 
                 let $export_actions_menu = UIHelper.createMenu('export-actions-menu').addClass('sb-view-header-list-export-menu').appendTo($export_actions_menu_button);
@@ -1639,20 +1674,20 @@ export class View {
                     let item = this.exports[export_id];
 
                     let export_title = TranslationService.resolve(this.translation, 'view', [this.getId(), 'exports'], item.id, item.label, 'label')
-                    UIHelper.createListItem('SB_ACTIONS_BUTTON_EXPORT-'+item.id, export_title, item.hasOwnProperty('icon')?item.icon:'')
+                    UIHelper.createListItem('SB_ACTIONS_BUTTON_EXPORT-' + item.id, export_title, item.hasOwnProperty('icon') ? item.icon : '')
                     .on( 'click', (event:any) => {
                         const params = new URLSearchParams({
                             get:        item.controller,
-                            view_id:    (item.view)?item.view: this.getId(),
+                            view_id:    (item.view) ? item.view : this.getId(),
                             entity:     this.entity,
-                            domain:     JSON.stringify(this.getDomain()),
-                            id:         (this.selected_ids.length)?this.selected_ids[0]:0,
-                            ids:        JSON.stringify(this.selected_ids),
+                            domain:     JSON.stringify(this.domain),
                             lang:       this.lang,
                             controller: this.controller,
+                            // enforce nolimit
+                            nolimit:    'true',
                             params:     JSON.stringify(this.getParams())
                         }).toString();
-                        window.open(this.getEnv().backend_url+'?'+params, "_blank");
+                        window.open(this.getEnv().backend_url + '?' + params, "_blank");
                     })
                     .appendTo($export_actions_list);
 
@@ -2245,7 +2280,7 @@ export class View {
                     config.has_action_open = false;
                     config.has_action_select = false;
                 }
-                let widget:Widget = WidgetFactory.getWidget(this, config.type, fields[selected_field], value, config);
+                let widget:Widget = WidgetFactory.getWidget(this.layout, config.type, fields[selected_field], value, config);
                 widget.setMode('edit');
                 widget.setReadonly(false);
 
@@ -2614,7 +2649,7 @@ export class View {
             // #memo - by default the layout is the one of the parent view
             config.layout = 'form';
 
-            let widget: Widget = WidgetFactory.getWidget(this, config.type, config.title, '', config);
+            let widget: Widget = WidgetFactory.getWidget(this.layout, config.type, config.title, '', config);
             widget.setMode('edit');
             widget.setReadonly(config.readonly);
 
@@ -2932,6 +2967,22 @@ export class View {
                     let title = TranslationService.instant('SB_ERROR_UNKNOWN_OBJECT');
                     // try to resolve the error message
                     let msg = TranslationService.resolve(translation, 'error', [], 'errors', errors['UNKNOWN_OBJECT'], errors['UNKNOWN_OBJECT']);
+                    let $snack = UIHelper.createSnackbar(title+' '+msg, TranslationService.instant('SB_ERROR_ERROR'), '', 4000);
+                    this.$container.append($snack);
+                }
+            }
+            else if(errors.hasOwnProperty('UNKNOWN_ERROR')) {
+                if(snack) {
+                    let title = TranslationService.instant('SB_ERROR_UNKNOWN');
+                    let msg = TranslationService.resolve(translation, 'error', [], 'errors', errors['UNKNOWN_ERROR'], errors['UNKNOWN_ERROR']);
+                    let $snack = UIHelper.createSnackbar(title+' '+msg, TranslationService.instant('SB_ERROR_ERROR'), '', 4000);
+                    this.$container.append($snack);
+                }
+            }
+            else if(errors.hasOwnProperty('INVALID_CONFIG')) {
+                if(snack) {
+                    let title = TranslationService.instant('SB_ERROR_CONFIG_MISSING_PARAM');
+                    let msg = TranslationService.resolve(translation, 'error', [], 'errors', errors['INVALID_CONFIG'], errors['INVALID_CONFIG']);
                     let $snack = UIHelper.createSnackbar(title+' '+msg, TranslationService.instant('SB_ERROR_ERROR'), '', 4000);
                     this.$container.append($snack);
                 }
