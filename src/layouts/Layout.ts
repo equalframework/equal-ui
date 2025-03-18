@@ -96,7 +96,7 @@ export class Layout implements LayoutInterface{
      *
      * @returns boolean
      */
-    public checkRequiredFields() : boolean {
+    public checkRequiredFields(): boolean {
         if(this.view.getMode() == 'edit') {
             let msg = TranslationService.instant('SB_ERROR_MISSING_MANDATORY');
             for(let object_id in this.model_widgets) {
@@ -247,10 +247,10 @@ export class Layout implements LayoutInterface{
         $button.on('click', async () => {
             let $disable_overlay = this.view.getContainer().find('.sb-view-header-actions .disable-overlay');
             try {
-                let resulting_params:any = {};
-                let missing_params:any = {};
+                let resulting_params: any = {};
+                let missing_params: any = {};
                 let user = this.view.getUser();
-                let parent:any = {};
+                let parent: any = {};
 
                 // 1) pre-feed with params from the action, if any
 
@@ -283,7 +283,7 @@ export class Layout implements LayoutInterface{
                 }
 
                 // 2) retrieve announcement from the target action controller
-                const result = await ApiService.fetch("/", {do: action.controller, announce: true});
+                const result = await ApiService.fetch("/", {do: action.controller, announce: true, ...resulting_params});
                 let params: any = {};
                 let response_descr:any = {};
                 let description:string = '';
@@ -294,7 +294,12 @@ export class Layout implements LayoutInterface{
                     }
                     for(let param of Object.keys(params)) {
                         if(Object.keys(resulting_params).indexOf(param) < 0) {
-                            missing_params[param] = params[param];
+                            if(params[param].hasOwnProperty('required') && params[param].required) {
+                                missing_params[param] = params[param];
+                            }
+                            else if(action.hasOwnProperty('confirm') && action.confirm) {
+                                missing_params[param] = params[param];
+                            }
                         }
                     }
                     if(result.announcement.hasOwnProperty('response')) {
