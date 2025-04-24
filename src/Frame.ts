@@ -185,15 +185,26 @@ export class Frame {
         }
     }
 
-    private getTextWidth(text:string, font:string) {
-        var result = 0;
-        // re-use canvas object for better performance
-        let canvas = this.$canvas || (this.$canvas = document.createElement("canvas"));
-        let context:any = canvas.getContext("2d");
-        context.font = font;
-        let metrics = context.measureText(text);
-        result = metrics.width;
-        return result;
+    private getTextWidth(text: string, $elem: JQuery) {
+        console.debug('getTextWidth::computing width', text, $elem);
+        if (!$elem || !$elem.length) {
+            return 0;
+        }
+
+        $elem.empty()
+            .css({
+                position: 'absolute',
+                visibility: 'hidden',
+                whiteSpace: 'nowrap',
+                display: 'inline-block',
+                width: 'auto'
+            })
+            .html(text);
+
+        const width = $elem[0].clientWidth || $elem[0].offsetWidth;
+
+        console.debug('resulting width', width);
+        return width;
     }
 
     private async getPurposeString(context:Context) {
@@ -305,7 +316,7 @@ export class Frame {
      * @returns
      */
     private async updateHeader(config:any={}) {
-        console.debug('Frame::update header');
+        console.debug('Frame::updateHeader()');
 
         let $domContainer = $(this.domContainerSelector);
 
@@ -328,17 +339,16 @@ export class Frame {
         // make sure header is visible
         this.$headerContainer.show();
 
-        let $elem = $('<h3 />').css({display: 'flex'});
+        let $elem = $('<h3 />');
 
         // add temporary, invisible header for font size computations
         let $temp = $('<h3 />').css({visibility: 'hidden'}).appendTo(this.$headerContainer);
 
         let current_purpose_string = await this.getPurposeString(this.context);
 
-        let available_width = (this.$headerContainer.length && this.$headerContainer[0])?this.$headerContainer[0].clientWidth * 0.9:300;
+        let available_width = (this.$headerContainer.length && this.$headerContainer[0]) ? (this.$headerContainer[0].clientWidth - 150) : 300;
 
-        let font = $temp.css( "font-weight" ) + ' ' +$temp.css( "font-size" ) + ' ' + $temp.css( "font-family");
-        let total_text_width = this.getTextWidth(current_purpose_string, font);
+        let total_text_width = this.getTextWidth(current_purpose_string, $temp);
 
         let prepend_contexts_count = 0;
 
@@ -354,12 +364,12 @@ export class Frame {
                 if(context.hasOwnProperty('$container')) {
                     let context_purpose_string = await this.getPurposeString(context);
 
-                    let text_width = this.getTextWidth(context_purpose_string + ' > ', font);
+                    let text_width = this.getTextWidth(context_purpose_string + ' > ', $temp) + 20;
                     let overflow = false;
-                    if(text_width+total_text_width >= available_width) {
+                    if( (text_width+total_text_width) >= available_width) {
                         overflow = true;
                         context_purpose_string = '...';
-                        text_width = this.getTextWidth(context_purpose_string + ' > ', font);
+                        text_width = this.getTextWidth(context_purpose_string + ' > ', $temp) + 20;
                         if(text_width+total_text_width >= available_width) {
                             break;
                         }
@@ -429,19 +439,18 @@ export class Frame {
         if(this.stack.length > 1 || this.display_mode == 'popup' || this.close_button) {
             // #memo - for integration, we need to let user close any context
             UIHelper.createButton('context-close', '', 'mini-fab', 'close')
-            .css({'transform': 'scale(0.5)', 'margin-top': '3px', 'background': '#bababa', 'box-shadow': 'none'})
-            .appendTo($elem)
-            .addClass('context-close')
-            .on('click', () => {
-                let validation = true;
-                if(Object.keys(this.context).length && this.context.getView().hasChanged()) {
-                    validation = confirm(TranslationService.instant('SB_ACTIONS_MESSAGE_ABANDON_CHANGE'));
-                }
-                if(!validation) {
-                    return;
-                }
-                this.closeContext();
-            });
+                .addClass('context-close')
+                .appendTo($elem)
+                .on('click', () => {
+                    let validation = true;
+                    if(Object.keys(this.context).length && this.context.getView().hasChanged()) {
+                        validation = confirm(TranslationService.instant('SB_ACTIONS_MESSAGE_ABANDON_CHANGE'));
+                    }
+                    if(!validation) {
+                        return;
+                    }
+                    this.closeContext();
+                });
         }
 
         // lang selector controls the current context and is used for opening subsequent contexts
