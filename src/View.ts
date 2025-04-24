@@ -326,7 +326,7 @@ export class View {
             const translation = await ApiService.getTranslation(this.entity);
             this.translation = this.deepCopy(translation);
 
-            const model = await ApiService.getSchema(this.entity);
+            const model = await ApiService.getSchema(this.entity, this.getDomain());
             this.model_schema = this.deepCopy(model);
 
             let view = await ApiService.getView(this.entity, this.type + '.' + this.name);
@@ -395,14 +395,14 @@ export class View {
             }
 
             // #memo - actions handling differs from one view type to another (list, form, ...)
-            if(this.view_schema.hasOwnProperty("header") && this.view_schema.header.hasOwnProperty("actions")) {
+            if(this.view_schema.hasOwnProperty('header') && this.view_schema.header.hasOwnProperty('actions')) {
                 for (const [id, item] of Object.entries(this.view_schema.header.actions)) {
                     this.custom_actions[id] = item;
                 }
             }
 
             // some custom actions might have been defined in the parent view, if so, override the view schema
-            if(this.config.header.hasOwnProperty("actions")) {
+            if(this.config.header.hasOwnProperty('actions')) {
                 for (const [id, item] of Object.entries(this.config.header.actions)) {
                     this.custom_actions[id] = item;
                 }
@@ -475,6 +475,7 @@ export class View {
                                             }
 
                                             // 2) retrieve announcement from the target action controller
+
                                             const result = await ApiService.fetch("/", {do: action.controller, announce: true, ...resulting_params});
                                             let params: any = {};
                                             let response_descr: any = {};
@@ -661,7 +662,18 @@ export class View {
             // domain from the view is fixed, not visible, and cannot be changed by user
             if(this.view_schema.hasOwnProperty("domain")) {
                 // convert domain attribute (either a string or an array)
-                let domain = eval(this.view_schema.domain);
+                let domain = [];
+                if(Array.isArray(this.view_schema.domain)) {
+                    domain = this.view_schema.domain;
+                }
+                else {
+                    try {
+                        domain = JSON.parse(this.view_schema.domain);
+                    }
+                    catch(error) {
+                        console.error('View::init - Invalid JSON in view_schema.domain', error);
+                    }
+                }
 
                 let viewDomain = new Domain(domain);
 
@@ -900,7 +912,7 @@ export class View {
     /**
      * Applicable domain for the View corresponds to initial domain (from parent Context) with additional filters currently applied on the View
      */
-    public getDomain() {
+    public getDomain(): any[] {
         console.debug('View::getDomain', this.domain, this.applied_filters_ids);
 
         let filters_domain = new Domain([]);
@@ -1218,7 +1230,7 @@ export class View {
             $elem.addClass('has-advanced-filters');
             let $layout = $('<div class="sb-view-header-advanced-layout" />').appendTo($level1);
 
-            let view = new View(this.getContext(), this.controller.replace(/_/g, '\\'), 'search', 'default', [], 'edit', 'widget', this.lang, {});
+            let view = new View(this.getContext(), this.controller.replace(/_/g, '\\'), 'search', 'default', this.getDomain(), 'edit', 'widget', this.lang, {});
             view.isReady().then( () => {
                 let updateParams = async () => {
                     // retrieve model of the view
@@ -1504,7 +1516,7 @@ export class View {
             $elem.addClass('has-advanced-filters');
             let $layout = $('<div class="sb-view-header-advanced-layout" />').appendTo($level1);
 
-            let view = new View(this.getContext(), this.controller.replace(/_/g, '\\'), 'search', 'default', [], 'edit', 'widget', this.lang, {});
+            let view = new View(this.getContext(), this.controller.replace(/_/g, '\\'), 'search', 'default', this.getDomain(), 'edit', 'widget', this.lang, {});
             view.isReady().then( () => {
                 let $container = view.getContainer();
                 $layout.append($container);
@@ -1663,8 +1675,8 @@ export class View {
             if(this.purpose == 'view') {
                 // create export menu (always visible: no selection means "export all")
                 let $export_actions_menu_button = $('<div/>').addClass('sb-view-header-list-actions-export mdc-menu-surface--anchor')
-                .append(UIHelper.createButton('selection-action-' + 'SB_ACTIONS_BUTTON_EXPORT', 'export', 'icon', 'file_download'))
-                .appendTo($std_actions);
+                    .append(UIHelper.createButton('selection-action-' + 'SB_ACTIONS_BUTTON_EXPORT', 'export', 'icon', 'file_download'))
+                    .appendTo($std_actions);
 
                 let $export_actions_menu = UIHelper.createMenu('export-actions-menu').addClass('sb-view-header-list-export-menu').appendTo($export_actions_menu_button);
                 let $export_actions_list = UIHelper.createList('export-actions-list').appendTo($export_actions_menu);
@@ -1680,7 +1692,7 @@ export class View {
                             get:        item.controller,
                             view_id:    (item.view) ? item.view : this.getId(),
                             entity:     this.entity,
-                            domain:     JSON.stringify(this.domain),
+                            domain:     JSON.stringify(this.getDomain()),
                             lang:       this.lang,
                             controller: this.controller,
                             // enforce nolimit
@@ -1775,17 +1787,17 @@ export class View {
                     let item = this.exports[export_id];
 
                     let export_title = TranslationService.resolve(this.translation, 'view', [this.getId(), 'exports'], item.id, item.label, 'label')
-                    UIHelper.createListItem('SB_ACTIONS_BUTTON_EXPORT-'+item.id, export_title, item.hasOwnProperty('icon')?item.icon:'')
-                    .on( 'click', (event:any) => {
+                    UIHelper.createListItem('SB_ACTIONS_BUTTON_EXPORT-' + item.id, export_title, item.hasOwnProperty('icon') ? item.icon : '')
+                    .on( 'click', (event: any) => {
                         const params = new URLSearchParams({
                                 get:        item.controller,
                                 entity:     this.entity,
-                                view_id:    (item.view)?item.view: this.getId(),
+                                view_id:    (item.view) ? item.view : this.getId(),
                                 domain:     JSON.stringify(this.getDomain()),
                                 lang:       this.lang,
                                 params:     JSON.stringify(this.getParams())
                         }).toString();
-                        window.open(this.getEnv().backend_url+'?'+params, "_blank");
+                        window.open(this.getEnv().backend_url + '?' + params, "_blank");
                     })
                     .appendTo($export_actions_list);
                 }
@@ -1862,7 +1874,7 @@ export class View {
                     // visible attribute is a Domain
                     if(Array.isArray(this.config.header.actions['ACTION.EDIT'].visible)) {
                         let domain = new Domain(this.config.header.actions['ACTION.EDIT'].visible);
-                        has_action_update = domain.parse({}, this.getUser()).test();
+                        has_action_update = domain.parse({}, this.getUser(), {}, this.getEnv()).test();
                     }
                     else {
                         has_action_update = <boolean>this.config.header.actions['ACTION.EDIT'].visible;
@@ -1914,10 +1926,10 @@ export class View {
                     else {
                         // we're in edit mode for single object (form)
                         let object = objects[0];
-                        let controller = (action && action.hasOwnProperty('controller'))?action.controller:'model_update';
+                        let controller = (action && action.hasOwnProperty('controller')) ? action.controller : 'model_update';
                         try {
                             // update new object using the resulting controller
-                            const response = await ApiService.call("?do="+controller, {
+                            const response = await ApiService.call("?do=" + controller, {
                                     entity: this.getEntity(),
                                     ids: [object['id']],
                                     fields: this.model.export(object),
@@ -2232,8 +2244,8 @@ export class View {
 
         for(let item of this.view_schema.layout.items ) {
             let field = item.value;
-            let field_type = this.model.getFinalType(field);
-            if(this.model_schema.fields.hasOwnProperty(field) && filterable_types.indexOf(field_type) >= 0) {
+            let field_type: string | null = this.model.getFinalType(field);
+            if(field_type && this.model_schema.fields.hasOwnProperty(field) && filterable_types.indexOf(field_type) >= 0) {
                 let label = (item.hasOwnProperty('label'))?item.label:field;
                 fields[field] = TranslationService.resolve(this.translation, 'model', [], field, label, 'label');
             }
@@ -2251,8 +2263,8 @@ export class View {
                 $elem.find('#'+this.uuid+'_custom-filter-select-operator').remove();
                 $elem.find('.sb-widget').remove();
 
-                let field_type = this.model.getFinalType(selected_field);
-                let operators: any[] = this.model.getOperators(field_type);
+                let field_type: string | null = this.model.getFinalType(selected_field);
+                let operators: any[] = this.model.getOperators(field_type ?? 'string');
                 selected_operator = operators[0];
                 $select_operator = UIHelper.createSelect(this.uuid+'_custom-filter-select-operator', TranslationService.instant('SB_FILTERS_DIALOG_OPERATOR'), operators, operators[0]);
                 // setup handler for relaying value update to parent layout
@@ -2660,15 +2672,17 @@ export class View {
             // if widget has a domain, parse it using current object and user
             if(config.hasOwnProperty('original_domain')) {
                 let tmpDomain = new Domain(config.original_domain);
-                config.domain = tmpDomain.parse(object, user, parent).toArray();
+                config.domain = tmpDomain.parse(object, user, parent, this.getEnv()).toArray();
             }
             else {
                 config.domain = [];
             }
 
+            console.debug('View::decorateActionDialog: requestiing widget rendering', widget);
             let $node = widget.render();
             $node.css({'margin-bottom': '24px'});
             $elem.append($node);
+
             widgets[field] = widget;
         }
 
@@ -3070,11 +3084,11 @@ export class View {
                 */
                 if(model_fields.hasOwnProperty(field)) {
                     // get field type
-                    let type = this.model.getFinalType(field);
+                    let type: string | null = this.model.getFinalType(field);
 
                     // handle translation by type
 
-                    if(type == 'string' && model_fields[field].selection) {
+                    if(type === 'string' && model_fields[field].selection) {
                         let translated = TranslationService.resolve(translation, 'model', [], field, model_fields[field].selection, 'selection');
                         // assign translation map
                         let values = translated;
@@ -3090,7 +3104,7 @@ export class View {
                             res_value = values[value];
                         }
                     }
-                    else if(['date', 'datetime'].indexOf(type) >= 0) {
+                    else if(type && ['date', 'datetime'].indexOf(type) >= 0) {
                         if(value instanceof Date) {
                             res_value = value.toISOString();
                         }
