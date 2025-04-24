@@ -14,7 +14,7 @@ export default class WidgetBoolean extends Widget {
         this.$elem.find('input').val(value).trigger('change');
     }
 
-    public render():JQuery {
+    public render(): JQuery {
 
         switch(this.mode) {
             case 'edit':
@@ -37,6 +37,13 @@ export default class WidgetBoolean extends Widget {
                 this.$elem = UIHelper.createSwitch('', this.label, this.value, this.config.description, '', true);
                 break;
         }
-        return this.$elem.addClass('sb-widget').addClass('sb-widget-type-boolean').addClass('sb-widget-mode-'+this.mode).attr('id', this.getId()).attr('data-type', this.config.type).attr('data-usage', this.config.usage||'');
+        return this.$elem
+            .addClass('sb-widget')
+            .addClass('sb-widget-type-boolean')
+            .addClass('sb-widget-mode-'+this.mode)
+            .attr('id', this.getId())
+            .attr('data-type', this.config.type)
+            .attr('data-field', this.config.field)
+            .attr('data-usage', this.config.usage||'');
     }
 }
