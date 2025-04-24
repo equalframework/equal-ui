@@ -1,3 +1,4 @@
+import { EnvService } from "./equal-services";
 import { DateReference } from "./DateReference";
 
 /**
@@ -111,9 +112,11 @@ export class Domain {
      * @param object    Object to parse the conditions with.
      * @param user      Current User instance.
      * @param parent    An entity object given as the parent of the referenced object, if any.
+     *
      * @returns Domain  Returns current instance with updated values.
      */
-    public parse(object: any = {}, user: any = {}, parent: any = {}) {
+    public parse(object: any = {}, user: any = {}, parent: any = {}, env: any = {}) {
+        console.debug('Domain::parse', object, user, parent);
         for(let clause of this.clauses) {
             for(let condition of clause.conditions) {
                 // adapt value according to its syntax ('user.' or 'object.')
@@ -134,6 +137,7 @@ export class Domain {
                     // target points to an object with subfields
                     if(typeof target === 'object' && !Array.isArray(target)) {
                         if(target === null) {
+                            value = 'null';
                             continue;
                         }
                         else if(target.hasOwnProperty('id')) {
@@ -180,6 +184,14 @@ export class Domain {
                 else if(typeof value === 'string' && value.indexOf('date.') == 0) {
                     value = (new DateReference(value)).getDate().toISOString();
                 }
+                else if(typeof value === 'string' && value.indexOf('env.') == 0) {
+                    let target = value.substring('env.'.length);
+                    if(!env || !env.hasOwnProperty(target)) {
+                        value = false;
+                        // continue;
+                    }
+                    value = env[target];
+                }
 
                 condition.value = value;
             }
@@ -194,14 +206,14 @@ export class Domain {
      * @param object
      * @returns boolean Return true if the object matches the domain, false otherwise.
      */
-    public evaluate(object: any, user: any = {}) : boolean {
-        console.log('Domain::evaluate() - evaluating object', object, this);
+    public evaluate(object: any, user: any = {}, parent: any = {}, env: any = {}) : boolean {
+        console.debug('Domain::evaluate() - evaluating object', object, this);
         let res = false;
         if(this.clauses.length == 0) {
             return true;
         }
         // parse any reference to object in conditions
-        this.parse(object, user);
+        this.parse(object, user, parent, env);
         // evaluate clauses (OR) and conditions (AND)
         for(let clause of this.clauses) {
             let c_res = true;
@@ -211,8 +223,20 @@ export class Domain {
                 let operator = condition.operator;
                 let value = condition.value;
 
-                if(object.hasOwnProperty(condition.operand)) {
-                   operand = object[condition.operand];
+                if(typeof operand == 'string' && object.hasOwnProperty(operand)) {
+                    operand = object[operand];
+                    // handle many2one operands
+                    if(typeof operand === 'object' && operand !== null) {
+                        if(operand.hasOwnProperty('id')) {
+                            operand = operand.id;
+                        }
+                        else {
+                            operand = null;
+                        }
+                    }
+                }
+                else {
+                    // #memo - in all other situations operand is a value that we use as-is for the comparison (integer, string, boolean)
                 }
 
                 let cc_res: boolean;
@@ -279,13 +303,19 @@ export class Domain {
                         c_condition = "( '" + operand + "' " + operator + " '" + value + "')";
                     }
 
-                    cc_res = <boolean> eval(c_condition);
+                    cc_res = false;
+                    try {
+                        cc_res = Boolean(eval(c_condition));
+                    }
+                    catch(error) {
+                        console.warn('Domain::evaluate() - Error evaluating condition', c_condition, error);
+                    }
                 }
                 c_res = c_res && cc_res;
             }
             res = res || c_res;
         }
-        console.log('Domain::evaluate() - result', res);
+        console.debug('Domain::evaluate() - result', res);
         return res;
     }
 
@@ -362,9 +392,15 @@ export class Domain {
                     cc_res = (value.indexOf(operand) == -1);
                 }
                 else {
-                    let c_condition = "( '" + operand + "' "+operator+" '" + value + "')";
+                    let c_condition = "( '" + operand + "' " + operator + " '" + value + "')";
 
-                    cc_res = <boolean>eval(c_condition);
+                    cc_res = false;
+                    try {
+                        cc_res = Boolean(eval(c_condition));
+                    }
+                    catch(error) {
+                        console.warn('Domain::evaluate() - Error evaluating condition', c_condition, error);
+                    }
                 }
                 c_res = c_res && cc_res;
             }
@@ -418,7 +454,7 @@ export class Condition {
         let condition = new Array();
         condition.push(this.operand);
         condition.push(this.operator);
-        condition.push(this.value);
+        condition.push(this.value ?? 'null');
         return condition;
     }
 
