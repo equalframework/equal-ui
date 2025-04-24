@@ -33,7 +33,7 @@ export class _EnvService {
         if(!this.promise) {
             this.promise = new Promise( async (resolve, reject) => {
                 try {
-                    const response:Response = await fetch('/envinfo');
+                    const response: Response = await fetch('/envinfo');
                     const env = await response.json();
                     this.assignEnv({...this.default, ...env});
                     resolve(this.environment);
@@ -66,7 +66,16 @@ export class _EnvService {
         }
     }
 
-    public formatNumber(value: number, precision: number = -1, thousand_sep: string = '', decimal_sep: string = '') {
+    /**
+     * #memo precision, thousand_sep and decimal_sep must be left empty by default : if not provided values are assigned from envinfo
+     *
+     * @param value
+     * @param precision
+     * @param thousand_sep
+     * @param decimal_sep
+     * @returns
+     */
+    public formatNumber(value: number, precision: number = -1, thousand_sep: string = '', decimal_sep: string = ''): string {
         if(precision == -1) {
             precision = 0;
             if(this.environment && this.environment.hasOwnProperty('core.locale.numbers.decimal_precision')) {
@@ -90,7 +99,7 @@ export class _EnvService {
         if(isNaN(n)) {
             n = 0;
         }
-        let parts:any = n.toFixed(precision).split(".");
+        let parts: any = n.toFixed(precision).split(".");
         parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, thousand_sep);
         if(precision > 0 && parts.length == 1) {
             parts[1] = ''.padStart(precision, '0');
@@ -98,21 +107,39 @@ export class _EnvService {
         return parts.join(decimal_sep);
     }
 
-    public formatFinancialNumber(value:number, precision:number = 2, thousand_sep:string=',', decimal_sep:string='.') {
+    /**
+     *
+     * #memo thousand_sep and decimal_sp must be left empty by default : subsequent format...() call will assign values according to envinfo
+     * @param value
+     * @param precision
+     * @param thousand_sep
+     * @param decimal_sep
+     * @returns
+     */
+    public formatFinancialNumber(value: number, precision: number = 2, thousand_sep: string = '', decimal_sep: string = ''): string {
         if(this.environment && this.environment.hasOwnProperty('core.locale.currency.decimal_precision')) {
             precision = this.environment['core.locale.currency.decimal_precision'];
         }
         return this.formatNumber(value, precision, thousand_sep, decimal_sep);
     }
 
-    public formatCurrency(value:number, precision:number = 2, thousand_sep:string=',', decimal_sep:string='.') {
+    /**
+     *
+     * #memo thousand_sep and decimal_sp must be left empty by default : subsequent format...() call will assign values according to envinfo
+     * @param value
+     * @param precision
+     * @param thousand_sep
+     * @param decimal_sep
+     * @returns
+     */
+    public formatCurrency(value: number, precision: number = 2, thousand_sep: string = '', decimal_sep: string = ''): string {
         let result = this.formatFinancialNumber(value, precision, thousand_sep, decimal_sep);
-        if(this.environment.hasOwnProperty('core.units.currency')) {
+        if(this.environment.hasOwnProperty('core.locale.currency')) {
             if(this.environment.hasOwnProperty('core.locale.currency.symbol_position') && this.environment['core.locale.currency.symbol_position'] == 'before') {
-                result = this.environment['core.units.currency'] + ' ' + result;
+                result = this.environment['core.locale.currency'] + ' ' + result;
             }
             else {
-                result = result + ' ' + this.environment['core.units.currency'];
+                result = result + ' ' + this.environment['core.locale.currency'];
             }
         }
         else {
