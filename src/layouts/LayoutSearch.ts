@@ -5,6 +5,9 @@ import { Layout } from './Layout';
 import { TranslationService, ApiService, EnvService } from "../equal-services";
 import { Domain, Clause, Condition, Reference } from "../Domain";
 
+/**
+ * Special layout for advanced search input forms.
+ */
 export class LayoutSearch extends Layout {
 
     public async init() {
@@ -223,7 +226,7 @@ export class LayoutSearch extends Layout {
                             visible = <boolean>config.visible;
                         }
                     }
-                    let $parent = this.$layout.find('#'+widget.getId()).parent();
+                    let $parent = this.$layout.find('#' + widget.getId()).parent();
                     if(!visible) {
                         $parent.empty().append(widget.attach()).hide();
                     }
@@ -241,7 +244,7 @@ export class LayoutSearch extends Layout {
 
                     let $parent = this.$layout.find('#'+widget.getId()).parent();
 
-                    let type = this.view.getModel().getFinalType(field);
+                    let type = this.view.getModel().getFinalType(field) || 'string';
 
                     let has_changed = false;
                     let value = (object.hasOwnProperty(field))?object[field]:undefined;
@@ -252,7 +255,7 @@ export class LayoutSearch extends Layout {
                         // if widget has a domain, parse it using current object and user
                         if(config.hasOwnProperty('original_domain')) {
                             let tmpDomain = new Domain(config.original_domain);
-                            config.domain = tmpDomain.parse(object, user).toArray();
+                            config.domain = tmpDomain.parse(object, user, {}, this.getEnv()).toArray();
                         }
                         else {
                             config.domain = [];
@@ -265,7 +268,7 @@ export class LayoutSearch extends Layout {
                                     let item = (<Array<any>>items)[<any>index];
                                     if(item.hasOwnProperty('domain')) {
                                         let tmpDomain = new Domain(item.domain);
-                                        config.header.actions[id][index].domain = tmpDomain.parse(object, user).toArray();
+                                        config.header.actions[id][index].domain = tmpDomain.parse(object, user, {}, this.getEnv()).toArray();
                                     }
                                 }
                             }
@@ -306,8 +309,8 @@ export class LayoutSearch extends Layout {
                     has_changed = (!value || $parent.data('value') != JSON.stringify(value));
 
                     widget.setConfig({...config, ready: true})
-                    .setMode(this.view.getMode())
-                    .setValue(value);
+                        .setMode(this.view.getMode())
+                        .setValue(value);
 
                     // store data to parent, for tracking changes at next refresh (prevent storing references)
                     $parent.data('value', JSON.stringify(value) || null);
@@ -315,14 +318,7 @@ export class LayoutSearch extends Layout {
                     let visible = true;
                     // handle visibility tests (domain)
                     if(config.hasOwnProperty('visible')) {
-                        // visible attribute is a Domain
-                        if(Array.isArray(config.visible)) {
-                            let domain = new Domain(config.visible);
-                            visible = domain.evaluate(object, user);
-                        }
-                        else {
-                            visible = <boolean>config.visible;
-                        }
+                        visible = this.isVisible(config.visible, object, user, {}, this.getEnv());
                     }
 
                     if(!visible) {
@@ -350,7 +346,8 @@ export class LayoutSearch extends Layout {
                 }
             }
             // try to give the focus back to the previously focused widget
-            $('#'+focused_widget_id).find('input').trigger('focus');
+            // #memo - this is not relevant here and leads to datepicker popup re-opening
+            // $('#'+focused_widget_id).find('input').trigger('focus');
         }
 
     }

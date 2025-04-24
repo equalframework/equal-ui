@@ -84,7 +84,7 @@ export class LayoutChart extends Layout {
             if(a.hasOwnProperty('domain')) {
                 let tmpDomain = new Domain(a.domain);
                 let user = this.view.getUser();
-                dataset.domain = tmpDomain.parse({}, user).toArray();
+                dataset.domain = tmpDomain.parse({}, user, {}, this.getEnv()).toArray();
             }
             return dataset;
         });
