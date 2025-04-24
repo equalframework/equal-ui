@@ -67,7 +67,7 @@ export class _ApiService {
     /**
      * schemas methods
      */
-    private loadSchema(entity:string) {
+    private loadSchema(entity: string, domain: any[]) {
         var package_name = this.getPackageName(entity);
         var class_name = this.getClassName(entity);
 
@@ -80,7 +80,7 @@ export class _ApiService {
 
             EnvService.getEnv().then( (environment:any) => {
                 $.get({
-                    url: environment.backend_url+'?get=model_schema&entity='+entity
+                    url: environment.backend_url+'?get=model_schema&entity=' + entity + '&domain=' + JSON.stringify(domain)
                 })
                 .then( (json_data) => {
                     this.schemas[package_name][class_name].resolve(json_data);
@@ -196,12 +196,12 @@ export class _ApiService {
 
     public async getTranslation(entity:string, locale:string = '') {
         const environment = await EnvService.getEnv();
-        const translation = await this.loadTranslation(entity, (locale.length)?locale:environment.locale);
+        const translation = await this.loadTranslation(entity, (locale.length) ? locale : environment.locale);
         return translation;
     }
 
-    public async getSchema(entity:string) {
-        const schema = await this.loadSchema(entity);
+    public async getSchema(entity: string, domain: any[] = []) {
+        const schema = await this.loadSchema(entity, domain);
         return schema;
     }
 
@@ -215,7 +215,7 @@ export class _ApiService {
         try {
             const environment = await EnvService.getEnv();
             const response = await $.get({
-                url: environment.rest_api_url+'userinfo'
+                url: environment.rest_api_url + 'userinfo'
             });
             result = response;
         }
@@ -242,14 +242,14 @@ export class _ApiService {
         return result;
     }
 
-    public fetch(route:string, body:any = {}, content_type:string = 'application/json') {
+    public fetch(route: string, body: any = {}, content_type: string = 'application/json') {
         return new Promise<any>( async (resolve, reject) => {
             try {
                 const environment = await EnvService.getEnv();
                 // make sure not to double the trailing slash
-                let url = environment.backend_url+route.replace(/^\//g, '');
+                let url = environment.backend_url + route.replace(/^\//g, '');
                 let xhr = new XMLHttpRequest();
-                xhr.open('GET', url+'?'+jQuery.param(body), true);
+                xhr.open('GET', url + '?' + jQuery.param(body), true);
 
                 // default to JSON
                 if(content_type == 'application/json') {
@@ -293,7 +293,7 @@ export class _ApiService {
             try {
                 const environment = await EnvService.getEnv();
                 // make sure not to double the trailing slash
-                let url = environment.backend_url+route.replace(/^\//g, '');
+                let url = environment.backend_url + route.replace(/^\//g, '');
                 let xhr = new XMLHttpRequest();
                 xhr.open('POST', url, true);
                 xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -352,8 +352,14 @@ export class _ApiService {
             });
             result = response;
         }
-        catch(response:any) {
-            throw response.responseJSON;
+        catch(error: any) {
+            this.setLastStatus(error.status);
+            if(error.status >= 200 && error.status <= 299) {
+                result = error.responseJSON;
+            }
+            else {
+                throw error.responseJSON;
+            }
         }
         return result;
     }
@@ -387,20 +393,26 @@ export class _ApiService {
         try {
             const environment = await EnvService.getEnv();
             let params = {
-                entity: entity,
-                ids: ids,
-                permanent: permanent
-            };
+                    entity: entity,
+                    ids: ids,
+                    permanent: permanent
+                };
             const response = await $.get({
-                url: environment.backend_url+'?do=model_delete',
-                dataType: 'json',
-                data: params,
-                contentType: 'application/x-www-form-urlencoded; charset=utf-8'
-            });
+                    url: environment.backend_url+'?do=model_delete',
+                    dataType: 'json',
+                    data: params,
+                    contentType: 'application/x-www-form-urlencoded; charset=utf-8'
+                });
             result = response;
         }
-        catch(response:any) {
-            throw response.responseJSON;
+        catch(error: any) {
+            this.setLastStatus(error.status);
+            if(error.status >= 200 && error.status <= 299) {
+                result = error.responseJSON;
+            }
+            else {
+                throw error.responseJSON;
+            }
         }
         return result;
     }
@@ -421,8 +433,14 @@ export class _ApiService {
             });
             result = response;
         }
-        catch(response:any) {
-            throw response.responseJSON;
+        catch(error: any) {
+            this.setLastStatus(error.status);
+            if(error.status >= 200 && error.status <= 299) {
+                result = error.responseJSON;
+            }
+            else {
+                throw error.responseJSON;
+            }
         }
         return result;
     }
@@ -455,8 +473,14 @@ export class _ApiService {
             });
             result = response;
         }
-        catch(response:any) {
-            throw response.responseJSON;
+        catch(error: any) {
+            this.setLastStatus(error.status);
+            if(error.status >= 200 && error.status <= 299) {
+                result = error.responseJSON;
+            }
+            else {
+                throw error.responseJSON;
+            }
         }
         return result;
     }
@@ -478,8 +502,14 @@ export class _ApiService {
             });
             result = response;
         }
-        catch(response:any) {
-            throw response.responseJSON;
+        catch(error: any) {
+            this.setLastStatus(error.status);
+            if(error.status >= 200 && error.status <= 299) {
+                result = error.responseJSON;
+            }
+            else {
+                throw error.responseJSON;
+            }
         }
         return result;
     }
@@ -513,13 +543,14 @@ export class _ApiService {
                 limit: limit
             };
             const response = await $.get({
-                url: environment.backend_url+'?get=model_collect',
-                dataType: 'json',
-                data: params,
-                contentType: 'application/x-www-form-urlencoded; charset=utf-8'
-            }).done((event, textStatus, jqXHR) => {
-                this.last_count = parseInt( <any>jqXHR.getResponseHeader('X-Total-Count') );
-            } );
+                    url: environment.backend_url+'?get=model_collect',
+                    dataType: 'json',
+                    data: params,
+                    contentType: 'application/x-www-form-urlencoded; charset=utf-8'
+                })
+                .done((event, textStatus, jqXHR) => {
+                    this.last_count = parseInt( <any>jqXHR.getResponseHeader('X-Total-Count') );
+                });
             result = response;
         }
         catch(response:any) {
