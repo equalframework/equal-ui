@@ -168,7 +168,7 @@ class UIHelper {
                     <div class="mdc-switch__track"></div> \
                     <div class="mdc-switch__thumb-underlay"> \
                         <div class="mdc-switch__thumb"></div> \
-                        <input type="checkbox" class="mdc-switch__native-control" role="switch" '+ ((value)?'checked':'') + ' ' + ((disabled)?'disabled':'') +'> \
+                        <input type="checkbox" id="' + id + '_checkbox" class="mdc-switch__native-control" role="switch" '+ ((value)?'checked':'') + ' ' + ((disabled)?'disabled':'') +'> \
                     </div> \
                 </div> \
                 <span>'+label+'</span> \
@@ -200,7 +200,7 @@ class UIHelper {
      *
      * @param type  'filled' (default) or 'outlined'
      */
-    public static createInput(id:string, label:string, value:string, helper:string = '', icon: string = '', disabled: boolean = false, type: string = 'filled', trailing_icon: string ='') {
+    public static createInput(id: string, label: string, value: string, helper: string = '', icon: string = '', disabled: boolean = false, type: string = 'filled', trailing_icon: string = '') {
         let $elem = $('\
         <div id="'+id+'"> \
             <label class="mdc-text-field mdc-text-field--'+type+' mdc-text-field--with-trailing-icon"> \
@@ -217,9 +217,10 @@ class UIHelper {
         </div>');
 
         let text = new MDCTextField($elem[0]);
-        $elem.find('input').on('change', () => {
+        $elem.find('input').on('change input', () => {
             // sync MDC object and input
             text.value = <string> $elem.find('input').val();
+            text.layout();
         });
         return $elem;
     }
@@ -266,7 +267,7 @@ class UIHelper {
         let $elem = $('\
         <div class="mdc-form-field"> \
             <div class="mdc-checkbox"> \
-                <input type="checkbox" class="mdc-checkbox__native-control" id="'+id+'"/> \
+                <input type="checkbox" class="mdc-checkbox__native-control" id="' + id + '_checkbox"/> \
                 <div class="mdc-checkbox__background"> \
                     <svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24"> \
                         <path class="mdc-checkbox__checkmark-path" fill="none" d="M1.73,12.91 8.1,19.28 22.79,4.59"/> \
@@ -306,7 +307,7 @@ class UIHelper {
         <li class="mdc-list-item"> \
             <div class="mdc-touch-target-wrapper"> \
                 <div class="mdc-checkbox mdc-checkbox--touch"> \
-                    <input type="checkbox" class="mdc-checkbox__native-control" id="'+id+'"/> \
+                    <input type="checkbox" class="mdc-checkbox__native-control" id="' + id + '_checkbox"/> \
                     <div class="mdc-checkbox__background"> \
                         <svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24"> \
                             <path class="mdc-checkbox__checkmark-path" fill="none" d="M1.73,12.91 8.1,19.28 22.79,4.59"/> \
@@ -324,13 +325,13 @@ class UIHelper {
         return $elem;
     }
 
-    public static createTableCellCheckbox(is_header:boolean = false) {
+    public static createTableCellCheckbox(id: string, is_header:boolean = false) {
         let elem = (is_header)?'th':'td';
         let suffix = (is_header)?'header-':'';
         let $elem = $('\
         <'+elem+' class="mdc-data-table__'+suffix+'cell mdc-data-table__'+suffix+'cell--checkbox"> \
             <div class="sb-ui-checkbox mdc-checkbox mdc-data-table__'+suffix+'row-checkbox"> \
-                <input type="checkbox" class ="mdc-checkbox__native-control" /> \
+                <input type="checkbox" class ="mdc-checkbox__native-control" id="' + id + '_checkbox-table" /> \
                 <div class="mdc-checkbox__background"> \
                     <svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24"><path class="mdc-checkbox__checkmark-path" fill="none" d="M1.73,12.91 8.1,19.28 22.79,4.59" /></svg> \
                 <div class="mdc-checkbox__mixedmark"></div> \
