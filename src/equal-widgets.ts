@@ -52,17 +52,7 @@ class WidgetFactory {
      * @param type
      * @param value
      */
-    public static getWidget(parent:Layout | View, type: string, label: string, value: any = null, config:any = {}): Widget {
-        let view_type, layout;
-
-        if(parent instanceof Layout) {
-            layout = parent;
-            view_type = layout.getView().getType();
-        }
-        else {
-            layout = new Layout(parent);
-            view_type = parent.getType();
-        }
+    public static getWidget(layout: Layout, type: string, label: string, value: any = null, config:any = {}): Widget {
 
         switch(type) {
             case 'boolean':
@@ -106,6 +96,69 @@ class WidgetFactory {
         }
     }
 
+    /**
+     * #todo - complete the list + handle as Usage object
+     *
+     * @param usage_str
+     * @param default_type
+     */
+    public static getTypeFromUsage(usage_str: string, default_type: string) {
+        let result = default_type;
+        let [usage, length] = usage_str.split(":");
+        if(usage == 'text/plain' && length && parseInt(length) <= 255) {
+            usage = 'text/plain.short';
+        }
+        switch(usage) {
+            case 'date':
+            case 'date/short':
+            case 'date/medium':
+            case 'date/plain':
+            case 'date/plain.short':
+            case 'date/plain.short.day':
+            case 'date/plain.medium':
+                result = 'date';
+                break;
+            case 'datetime':
+            case 'datetime/short':
+            case 'datetime/full':
+            case 'date/time.short':
+            case 'date/time.medium':
+            case 'date/time.full':
+                result = 'datetime';
+                break;
+            case 'time/plain':
+            case 'time/plain.short':
+                result = 'time';
+                break;
+            case 'text/plain.short':
+                result = 'string';
+                break;
+            // #deprecated - string/text should not be used
+            case 'string/text':
+            case 'text/plain':
+            case 'text/plain.medium':
+            case 'text/plain.long':
+            case 'text/html':
+            case 'markup/html':
+                result = 'text';
+                break;
+            case 'url':
+            case 'uri/url':
+            case 'uri/url.relative':
+            case 'uri/url:http':
+            case 'uri/url:https':
+                result = 'link';
+                break;
+            case 'image':
+            case 'image/gif':
+            case 'image/png':
+            case 'image/jpeg':
+                // binary alt
+                result = 'file';
+                break;
+        }
+        return result;
+    }
 
     /**
      * Generates a widget config based on a layout item (from View schema).
@@ -117,8 +170,8 @@ class WidgetFactory {
      * @param {string}  view_fields     Associative array mapping fields with their view definition.
      * @return {}                       Returns a widget configuration object.
      */
-    public static getWidgetConfig(view: View, field: string, translation: any, model_fields: any, view_fields: any) :any {
-        console.debug('Widget::getWidgetConfig ', view.name, field, model_fields, view_fields);
+    public static getWidgetConfig(view: View, field: string, translation: any, model_fields: any, view_fields: any): any {
+        console.debug('Widget::getWidgetConfig for field ' + field, view.getName(), model_fields, view_fields);
 
         let config:any = {
             widget_type: 'field'
@@ -142,76 +195,24 @@ class WidgetFactory {
             config.usage = def.usage;
         }
         // #memo - Widget overloads the Model
-        if(item.hasOwnProperty('widget')) {
-            if(item.widget.hasOwnProperty('usage')) {
-                // overload config with widget config, if any
-                config.usage = item.widget.usage;
-            }
+        if(item.widget?.usage ?? null) {
+            // overload config with widget config, if any
+            config.usage = item.widget.usage;
         }
 
         // #todo - checks def.type against allowed values ['boolean','integer','float','string','date','time','datetime','file','binary','many2one','one2many','many2many','computed']
-        if(def.hasOwnProperty('type')) {
-            let type = def['type'];
-            if(def.hasOwnProperty('result_type')) {
-                type = def['result_type'];
-            }
-            if(config.hasOwnProperty('usage')) {
-                switch(config.usage) {
-                    // #todo - complete the list + handle as Usage object
-                    case 'date':
-                    case 'date/medium':
-                    case 'date/plain':
-                    case 'date/plain.short':
-                    case 'date/plain.short.day':
-                    case 'date/plain.medium':
-                        type = 'date';
-                        break;
-                    case 'datetime':
-                    case 'datetime/short':
-                    case 'datetime/full':
-                    case 'date/time.short':
-                    case 'date/time.medium':
-                    case 'date/time.full':
-                        type = 'datetime';
-                        break;
-                    case 'time/plain':
-                    case 'time/plain.short':
-                        type = 'time';
-                        break;
-                    case 'text/plain:255':
-                    case 'text/plain.short':
-                        type = 'string';
-                        break;
-                    // #deprecated - string/text should not be used
-                    case 'string/text':
-                    case 'text/plain':
-                    case 'text/html':
-                    case 'markup/html':
-                        type = 'text';
-                        break;
-                    case 'url':
-                    case 'uri/url':
-                    case 'uri/url.relative':
-                    case 'uri/url:http':
-                    case 'uri/url:https':
-                        type = 'link';
-                        break;
-                    case 'image':
-                    case 'image/gif':
-                    case 'image/png':
-                    case 'image/jpeg':
-                        // binary alt
-                        type = 'file';
-                        break;
-                }
-            }
-            config.type = type;
-        }
-        else {
+        if(!def.hasOwnProperty('type')) {
             // we shouldn't end up here : malformed schema
             console.warn('ERROR - malformed schema for field ' + field);
             return config;
         }
+
+        let type = view.getModel().getFinalType(field) ?? def.type;
+        if(config.hasOwnProperty('usage')) {
+            type = this.getTypeFromUsage(config.usage, type);
+            console.debug('retrieved type from usage: ' + type);
+        }
+        config.type = type;
 
         if(def.hasOwnProperty('foreign_object')) {
             config.foreign_object = def.foreign_object;
@@ -232,12 +233,12 @@ class WidgetFactory {
         config.ready = false;
         config.title = TranslationService.resolve(translation, 'model', [], field, label, 'label');
         config.description = TranslationService.resolve(translation, 'model', [], field, description, 'description');
-        config.readonly = (def.hasOwnProperty('readonly'))?def.readonly:(item.hasOwnProperty('readonly')) ? item['readonly'] : false;
-        config.required = (def.hasOwnProperty('required'))?def.readonly:(item.hasOwnProperty('required')) ? item['required'] : false;
+        config.readonly = (def.hasOwnProperty('readonly')) ? def.readonly : ((item.hasOwnProperty('readonly')) ? item['readonly'] : false);
+        config.required = (def.hasOwnProperty('required')) ? def.required : ((item.hasOwnProperty('required')) ? item['required'] : false);
         let default_align: string = (item.field != 'id' && (config.type == 'integer' || config.type == 'float' || config.type == 'time')) ? 'right' : 'left';
         // default align is left, unless for integer fields (with an exception for 'id' field - which, by convention, should be first column)
         config.align = item.hasOwnProperty('align') ? item.align : default_align;
-        if(config.hasOwnProperty('usage') && config.usage == 'icon') {
+        if((config.usage ?? '') == 'icon') {
             config.align = 'center';
         }
         config.sortable = (item.hasOwnProperty('sortable') && item.sortable);
@@ -262,17 +263,18 @@ class WidgetFactory {
             config.visible = item.visible;
         }
 
-        // convert visible property to JSON
-        config.visible = eval(config.visible);
+        // convert visible property to string
+        config.visible = JSON.stringify(config.visible);
 
         // for relational fields, we need some additional values
         if(['one2many', 'many2one', 'many2many'].indexOf(config.type) > -1) {
-            // defined config for Widget's view with a custom domain according to object values
-            let view_id = (config.hasOwnProperty('view') && config.view.length > 0) ? config.view : 'list.default';
+            // handle view based on type, parent view, or custom 'view' attribute (overriding)
+            let view_id = (config.hasOwnProperty('view') && config.view.length > 0) ? config.view : ('list.' + view.getName());
             let parts = view_id.split(".", 2);
-            let view_type = (parts.length > 1)?parts[0]:'list';
-            let view_name = (parts.length > 1)?parts[1]:parts[0];
+            let view_type = (parts.length > 1) ? parts[0] : 'list';
+            let view_name = (parts.length > 1) ? parts[1] : parts[0];
 
+            // handle custom domain according to object schema and view schema (overriding), if any
             let def_domain = (def.hasOwnProperty('domain')) ? def['domain'] : [];
             let view_domain = (config.hasOwnProperty('domain')) ? config['domain'] : [];
 
