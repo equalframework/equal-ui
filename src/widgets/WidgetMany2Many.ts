@@ -135,7 +135,7 @@ export default class WidgetMany2Many extends Widget {
                 // override with view schema
                 if(this.config.header?.hasOwnProperty('actions')) {
                     // #memo - adding `select` for a one2many is generally meaningless, since a child can only be linked to a single parent
-                    if((this.rel_type == 'many2many') && this.config.header.actions?.hasOwnProperty('ACTION.SELECT')) {
+                    if(this.config.header.actions?.hasOwnProperty('ACTION.SELECT')) {
                         has_action_select = (this.config.header.actions['ACTION.SELECT']) ? true : false;
                     }
                     if(this.config.header.actions?.hasOwnProperty('ACTION.CREATE')) {
