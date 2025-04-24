@@ -12,15 +12,11 @@ export default class WidgetMany2One extends Widget {
         super(layout, 'many2one', label, value, config);
     }
 
-    public render():JQuery {
+    public render(): JQuery {
         console.debug('WidgetMany2One::render', this.config, this.value);
         // in view mode, we should have received a string
         // in edit mode (or after a view refresh), a map `{id: , name: }` or NULL
-        let value:any = (!this.value)?'':((typeof this.value == 'object' && this.value.hasOwnProperty('name'))?this.value.name:this.value.toString());
-        let domain:any = [];
-        if(this.config.hasOwnProperty('domain')) {
-            domain = this.config.domain;
-        }
+        let value: any = (!this.value) ? '' : ((typeof this.value == 'object' && this.value.hasOwnProperty('name')) ? this.value.name : this.value.toString());
 
         // remember original value
         this.config.original_value = value;
@@ -34,7 +30,7 @@ export default class WidgetMany2One extends Widget {
         switch(this.mode) {
 
             case 'edit':
-                let objects:Array<any> = [];
+                let objects: Array<any> = [];
                 this.$elem = $('<div />');
 
                 let $button_reset = UIHelper.createButton('m2o-actions-reset-'+this.id, '', 'icon', 'close').css({"position": "absolute", "right": "45px", "top": "5px", "z-index": "1"}).hide();
@@ -124,7 +120,11 @@ export default class WidgetMany2One extends Widget {
                     $button_create.on('click', async () => {
                         console.debug('WidgetMany2one:: received click on button create', this.config);
                         let view_type = 'form';
-                        let view_name = (this.config.hasOwnProperty('view_name'))?this.config.view_name:'default';
+                        let view_name = (this.config.hasOwnProperty('view_name')) ? this.config.view_name : 'default';
+                        let domain:any = [];
+                        if(this.config.hasOwnProperty('domain')) {
+                            domain = this.config.domain;
+                        }
                         let contextDomain = new Domain(domain);
                         let value:string = <string> $select.find('input').val();
                         if(value.length > 0) {
@@ -141,7 +141,7 @@ export default class WidgetMany2One extends Widget {
                                         if(this.config.object) {
                                             object = this.config.object
                                         }
-                                        tmpDomain.parse(object, user);
+                                        tmpDomain.parse(object, user, {}, this.getLayout().getEnv());
                                         contextDomain.merge(new Domain(tmpDomain.toArray()));
                                     }
                                     if(action.hasOwnProperty('view')) {
@@ -202,6 +202,11 @@ export default class WidgetMany2One extends Widget {
                 };
 
                 let openSelectContext = () => {
+                    let domain:any = [];
+                    if(this.config.hasOwnProperty('domain')) {
+                        domain = this.config.domain;
+                    }
+
                     this.getLayout().openContext({...this.config,
                         entity: this.config.foreign_object,
                         /*
@@ -247,11 +252,15 @@ export default class WidgetMany2One extends Widget {
                             domainArray.push(cond);
                         }
                         let tmpDomain = new Domain(domainArray);
+                        let domain:any = [];
+                        if(this.config.hasOwnProperty('domain')) {
+                            domain = this.config.domain;
+                        }
                         tmpDomain.merge(new Domain(domain));
                         // fetch first objects from config.foreign_object (use config.domain) + add an extra line ("advanced search...")
-                        let limit = (this.config.hasOwnProperty('limit') && this.config.limit)?this.config.limit:5;
-                        let order = (this.config.hasOwnProperty('order') && this.config.order)?this.config.order:'id';
-                        let sort  = (this.config.hasOwnProperty('sort') && this.config.sort)?this.config.sort:'asc';
+                        let limit = (this.config.hasOwnProperty('limit') && this.config.limit) ? this.config.limit : 5;
+                        let order = (this.config.hasOwnProperty('order') && this.config.order) ? this.config.order : 'id';
+                        let sort  = (this.config.hasOwnProperty('sort') && this.config.sort) ? this.config.sort : 'asc';
 
                         try {
                             let response = await ApiService.collect(this.config.foreign_object, tmpDomain.toArray(), ['id', 'name'], order, sort, 0, limit, this.config.lang);
@@ -490,6 +499,13 @@ export default class WidgetMany2One extends Widget {
         }
 
 
-        return this.$elem.addClass('sb-widget').addClass('sb-widget-type-many2one').addClass('sb-widget-mode-'+this.mode).attr('id', this.getId()).attr('data-type', this.config.type).attr('data-usage', this.config.usage||'');
+        return this.$elem
+            .addClass('sb-widget')
+            .addClass('sb-widget-type-many2one')
+            .addClass('sb-widget-mode-' + this.mode)
+            .attr('id', this.getId())
+            .attr('data-type', this.config.type)
+            .attr('data-field', this.config.field)
+            .attr('data-usage', this.config.usage || '');
     }
 }

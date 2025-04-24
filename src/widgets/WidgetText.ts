@@ -50,12 +50,26 @@ export default class WidgetText extends Widget {
 
                     this.getLayout().getView().isReady().then( () => {
                         // init inline styling
-                        var ColorClass = Quill.import('attributors/class/color');
-                        var SizeStyle  = Quill.import('attributors/style/size');
-                        var AlignStyle = Quill.import('attributors/style/align');
+                        const ColorClass = Quill.import('attributors/class/color');
+                        const SizeStyle  = Quill.import('attributors/style/size');
+                        const AlignStyle = Quill.import('attributors/style/align');
+
                         Quill.register(ColorClass, true);
                         Quill.register(SizeStyle, true);
-                        Quill.register(AlignStyle,true);
+                        Quill.register(AlignStyle, true);
+
+                        const Inline = Quill.import('blots/inline');
+                        class SmallBlot extends Inline {
+                            static blotName = 'small';
+                            static tagName = 'small';
+                        }
+                        class BigBlot extends Inline {
+                            static blotName = 'big';
+                            static tagName = 'big';
+                        }
+
+                        Quill.register(SmallBlot);
+                        Quill.register(BigBlot);
 
                         const editor = new Quill($editor[0], {
                             placeholder: this.config.description,
@@ -67,11 +81,24 @@ export default class WidgetText extends Widget {
                                     // [{ 'header': [1, 2, 3, 4, 5, 6, false]}],
                                     [{ 'list': 'ordered'}, { 'list': 'bullet' }],
                                     [{ "align": '' }, { "align": 'center' }, { 'align': 'right' }],
-                                    [{ 'size': ['small', false, 'large', 'huge'] }],
+//                                    [{ 'size': ['small', false, 'large', 'huge'] }],
+                                    ['small', 'big', { 'background': ['#fff59d', '#fd4444', '#a5d6a7', '#81d4fa', '#ffccbc', false] }],
                                     ['fullscreen']
                                 ]
                             }
                         });
+
+                        this.$elem.find('.ql-small').html(`
+                                <svg viewBox="0 0 18 18" width="18" height="18">
+                                <text x="2" y="14" font-size="10" font-family="sans-serif">A</text>
+                                </svg>
+                            `);
+
+                        this.$elem.find('.ql-big').html(`
+                                <svg viewBox="0 0 18 18" width="18" height="18">
+                                <text x="1" y="15" font-size="16" font-family="sans-serif">A</text>
+                                </svg>
+                            `);
 
                         this.$elem.find('.ql-fullscreen').on('click', () => {
                             let elem: any = this.$elem[0];
@@ -83,14 +110,14 @@ export default class WidgetText extends Widget {
                             }
                         });
 
-                        this.$elem.find('.ql-formats *').attr('tabindex',-1);
+                        this.$elem.find('.ql-formats *').attr('tabindex', -1);
 
                         this.$elem.data('quill', editor);
 
                         editor.root.innerHTML = value;
 
                         let timeout: any;
-
+                        let initial_change = true;
                         editor.on('text-change', (delta, source) => {
                             this.value = editor.root.innerHTML;
                             // update value without refreshing the layout
@@ -99,10 +126,13 @@ export default class WidgetText extends Widget {
                                 if(timeout) {
                                     clearTimeout(timeout);
                                 }
-                                timeout = setTimeout( () => {
-                                    this.$elem.trigger('_updatedWidget', [false]);
-                                    // we set timeout to 1s because there is no hurry here and we want to minimize requests
-                                }, 1000);
+                                if(!initial_change) {
+                                    timeout = setTimeout( () => {
+                                        this.$elem.trigger('_updatedWidget', [false]);
+                                        // we set timeout to 1s because there is no hurry here and we want to minimize requests
+                                    }, 1000);
+                                }
+                                initial_change = false;
                             }
                         })
 
@@ -130,7 +160,13 @@ export default class WidgetText extends Widget {
             this.$elem.append( $('<div class="textarea-title" />').text(this.label) );
         }
 
-        return this.$elem.addClass('sb-widget').addClass('sb-widget-mode-'+this.mode).attr('id', this.getId()).attr('data-type', this.config.type).attr('data-usage', this.config.usage||'');
+        return this.$elem
+            .addClass('sb-widget')
+            .addClass('sb-widget-mode-' + this.mode)
+            .attr('id', this.getId())
+            .attr('data-type', this.config.type)
+            .attr('data-field', this.config.field)
+            .attr('data-usage', this.config.usage || '');
     }
 
 }

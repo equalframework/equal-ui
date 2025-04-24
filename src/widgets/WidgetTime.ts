@@ -44,6 +44,7 @@ export default class WidgetTime extends Widget {
                 break;
             case 'view':
             default:
+                value = this.toString();
                 if(this.config.layout == 'list') {
                     this.$elem = $('<div />').html(value);
                     // time fields are aligned right
@@ -66,7 +67,13 @@ export default class WidgetTime extends Widget {
             this.$elem.addClass('title');
         }
 
-        return this.$elem.addClass('sb-widget').addClass('sb-widget-mode-'+this.mode).attr('id', this.getId()).attr('data-type', this.config.type).attr('data-usage', this.config.usage||'');
+        return this.$elem
+            .addClass('sb-widget')
+            .addClass('sb-widget-mode-' + this.mode)
+            .attr('id', this.getId())
+            .attr('data-type', this.config.type)
+            .attr('data-field', this.config.field)
+            .attr('data-usage', this.config.usage || '');
     }
 
 }

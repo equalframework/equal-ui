@@ -1,4 +1,5 @@
 import { View, Layout } from "../equal-lib";
+import moment from 'moment/moment.js';
 import { EnvService } from "../equal-services";
 import _EnvService from "../EnvService";
 
@@ -132,7 +133,8 @@ export default class Widget {
         return this;
     }
 
-    public setConfig(config:any) {
+    public setConfig(config: any) {
+        console.debug('Widget::setConfig', this.type, config);
         this.config = config;
         return this;
     }
@@ -147,16 +149,160 @@ export default class Widget {
     }
 
     /**
-     * This method is meant to be overloaded by children classes (which might optionally call this parent method).
-     * @return always returns a JQuery object
+     * Return the text representation of the value based on Widget type.
+     *
+     * @return string
+     */
+    public toString(): string {
+        return Widget.toString(this.config.type, this.value, this.config?.usage ?? null);
+    }
+
+    /**
+     * This method is meant to be enriched by children classes (which might optionally call this parent method).
+     *
+     * @returns {JQuery}    Returns a JQuery object.
      */
     public render(): JQuery {
-        return this.$elem.addClass('sb-widget').attr('data-type', this.config.type).attr('data-usage', this.config.usage||'');
+        return this.$elem
+            .addClass('sb-widget')
+            .attr('data-field', this.config.field)
+            .attr('data-type', this.config.type)
+            .attr('data-usage', this.config.usage || '');
     }
 
     public attach(): JQuery {
-        this.$elem = $('<div/>').addClass('sb-widget').attr('data-type', this.config.type).attr('data-usage', this.config.usage||'').addClass('sb-widget-mode-'+this.mode).attr('id', this.getId());
+        this.$elem = $('<div/>')
+            .addClass('sb-widget')
+            .addClass('sb-widget-mode-' + this.mode)
+            .attr('data-field', this.config.field)
+            .attr('data-type', this.config.type)
+            .attr('data-usage', this.config.usage || '')
+            .attr('id', this.getId());
         return this.$elem;
     }
 
+    public static toString(type: string, value: any, usage?: string | null): string {
+        console.debug("Widget::toString - parsing value", type, value, usage);
+        switch(type) {
+            case 'time':
+                return Widget.formatTime(value, usage);
+            case 'date':
+                return Widget.formatDate(value, usage);
+            case 'datetime':
+                return Widget.formatDateTime(value, usage);
+            case 'integer':
+                return Widget.formatInteger(value, usage);
+            case 'float':
+                return Widget.formatFloat(value, usage);
+        }
+        return String(value);
+    }
+
+    private static formatFloat(value: any, usage?: string | null): string {
+        let result: string = '';
+        let parsedValue = Number(value);
+        if(value !== null && value !== undefined && !Number.isNaN(parsedValue)) {
+            result = EnvService.formatNumber(parsedValue);
+            if(usage) {
+                if(usage.indexOf('amount/percent') >= 0 || usage.indexOf('amount/rate') >= 0) {
+                    result = (parsedValue * 100).toFixed(0) + '%';
+                }
+                else if(usage.indexOf('amount/money') >= 0) {
+                    result = EnvService.formatCurrency(parsedValue);
+                }
+                else if(usage.indexOf('number/real') >= 0) {
+                    const match = usage.match(/number\/real:(\d+(\.\d+)?)/);
+                    // by default use environment setting
+                    let precision: number = -1;
+                    if(match) {
+                        const number_parts = match[1].split('.');
+                        precision = parseInt(number_parts.length >= 2 ? number_parts[1] : number_parts[0], 10);
+                    }
+                    result = EnvService.formatNumber(parsedValue, precision);
+                }
+            }
+        }
+        return result;
+    }
+
+    private static formatInteger(value: any, usage?: string | null): string {
+        let result: string = '';
+        if(value) {
+            let parsedValue = Number(value);
+            result = parsedValue.toFixed(0);
+        }
+        return result;
+    }
+
+    private static formatDateTime(value: string | null, usage?: string | null): string {
+        let result: string = '';
+        if(value && value.length) {
+            let date = new Date(value);
+            let format = 'LLL';
+            if(usage) {
+                if(usage == 'datetime/short' || usage == 'date/time.short') {
+                    // 06/08/23
+                    format = (moment.localeData().longDateFormat('L') + ' ' + moment.localeData().longDateFormat('LT')).replace(/YYYY/g,'YY');
+                }
+                else if(usage == 'datetime/full' || usage == 'date/time.full') {
+                    format = 'LLLL';
+                }
+                else if(usage == 'datetime/plain.medium' || usage == 'date/time.medium') {
+                    // 06/08/2023
+                    format = 'L';
+                }
+                else if(usage == 'time' || usage == 'time/plain') {
+                    format = 'HH:mm';
+                }
+            }
+            // convert datetime to string, according to locale and usage
+            result = moment(date).format(format);
+        }
+        return result;
+    }
+
+    private static formatDate(value: string | null, usage?: string | null): string {
+        let result: string = '';
+        if(value && value.length) {
+            let date = new Date(value);
+            // moment 'll': en = "Jul 8, 2023"; fr = "8 juil. 2023"
+            let format = 'll';
+            // #todo - complete based on retrieved locale from equal (@see packages/core/i18n/.../locale.json)
+            if(usage) {
+                if(usage == 'date' || usage == 'date/medium' || usage == 'date/plain.medium') {
+                    // 06/08/2023
+                    format = 'L';
+                }
+                else if(usage == 'date/short' || usage == 'date/plain.short') {
+                    // 06/08/23
+                    format = (moment.localeData().longDateFormat('L')).replace(/YYYY/g, 'YY');
+                }
+                else if(usage == 'date/plain.short.day') {
+                    format = 'dd ' + (moment.localeData().longDateFormat('L')).replace(/YYYY/g, 'YY');
+                }
+                else if(usage == 'month' || usage.indexOf('date/month') == 0) {
+                    format = 'MMM YYYY';
+                }
+            }
+            // convert datetime to string, according to locale and usage
+            result = moment(date).format(format);
+        }
+        return result;
+    }
+
+    private static formatTime(value: any, usage?: string |null): string {
+        let result = value ?? '';
+        if(value) {
+            if(typeof value === 'number' && Number.isFinite(value)) {
+                result = String(Math.floor(value / 3600)).padStart(2, '0') + ':' +
+                    String(Math.floor((value % 3600) / 60)).padStart(2, '0') + ':' +
+                    String(value % 60).padStart(2, '0');
+            }
+            else if(value instanceof Date && !isNaN(value.getTime())) {
+                // if we received a date, convert it to a string
+                result = (<Date> value).toTimeString().substring(0, 5);
+            }
+        }
+        return <string> result;
+    }
 }

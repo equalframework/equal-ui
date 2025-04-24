@@ -10,7 +10,7 @@ export default class WidgetInteger extends WidgetString {
         super(layout, label, value, config);
     }
 
-    public render():JQuery {
+    public render(): JQuery {
         this.$elem = super.render();
         let $input = this.$elem.find('input');
 

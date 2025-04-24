@@ -28,10 +28,7 @@ export default class WidgetMany2Many extends Widget {
             }
 
             // if items are not selectable
-            if (this.config.hasOwnProperty('header')
-                && this.config.header.hasOwnProperty('selection')
-                && !this.config.header.selection
-            ) {
+            if (this.config.header?.hasOwnProperty('selection') && !this.config.header.selection) {
                 view_config = {
                     ...this.config,
                     ...{
@@ -132,17 +129,23 @@ export default class WidgetMany2Many extends Widget {
                 let $container = view.getContainer();
 
                 // default values
-                let has_action_select = (this.rel_type == 'many2many');
-                let has_action_create = true;
+                let has_action_select: boolean = (this.rel_type == 'many2many');
+                let has_action_create: boolean = true;
 
                 // override with view schema
-                if(this.config.hasOwnProperty('header') && this.config.header.hasOwnProperty('actions')) {
+                if(this.config.header?.hasOwnProperty('actions')) {
                     // #memo - adding `select` for a one2many is generally meaningless, since a child can only be linked to a single parent
-                    if((this.rel_type == 'many2many') && this.config.header.actions.hasOwnProperty('ACTION.SELECT')) {
-                        has_action_select = (this.config.header.actions['ACTION.SELECT'])?true:false;
+                    if((this.rel_type == 'many2many') && this.config.header.actions?.hasOwnProperty('ACTION.SELECT')) {
+                        has_action_select = (this.config.header.actions['ACTION.SELECT']) ? true : false;
                     }
-                    if(this.config.header.actions.hasOwnProperty('ACTION.CREATE')) {
-                        has_action_create = (this.config.header.actions['ACTION.CREATE'])?true:false;
+                    if(this.config.header.actions?.hasOwnProperty('ACTION.CREATE')) {
+                        const actionCreate = this.config.header.actions['ACTION.CREATE'];
+                        if (Array.isArray(actionCreate)) {
+                            has_action_create = actionCreate.length > 0;
+                        }
+                        else {
+                            has_action_create = Boolean(actionCreate);
+                        }
                     }
                 }
 
@@ -151,9 +154,9 @@ export default class WidgetMany2Many extends Widget {
                 if(this.mode == 'edit') {
                     // #todo - selection/update only available in edit mode ?
                     if(has_action_select) {
-                        let domain: any[] = this.config.domain;
+                        let domain: any[] = (new Domain(this.config.domain)).toArray();
 
-                        if(this.config.hasOwnProperty('header') && this.config.header.hasOwnProperty('actions') && this.config.header.actions.hasOwnProperty('ACTION.SELECT')) {
+                        if(this.config.header?.actions?.hasOwnProperty('ACTION.SELECT')) {
                             if( Array.isArray(this.config.header.actions['ACTION.SELECT']) ) {
                                 let item = this.config.header.actions['ACTION.SELECT'][0];
                                 if(item.hasOwnProperty('domain')) {
@@ -164,41 +167,40 @@ export default class WidgetMany2Many extends Widget {
                             }
                         }
 
-                        let button_label = TranslationService.instant((this.rel_type == 'many2many')?'SB_ACTIONS_BUTTON_ADD':'SB_ACTIONS_BUTTON_SELECT');
-                        $actions_set
-                        .append(
-                            UIHelper.createButton(this.getId()+'_action-edit', button_label, 'raised')
-                            .on('click', async () => {
-                                let purpose = (this.rel_type == 'many2many')?'add':'select';
+                        let button_label = TranslationService.instant((this.rel_type == 'many2many') ? 'SB_ACTIONS_BUTTON_ADD' : 'SB_ACTIONS_BUTTON_SELECT');
+                        $actions_set.append(
+                                UIHelper.createButton(this.getId()+'_action-edit', button_label, 'raised')
+                                .on('click', async () => {
+                                    let purpose = (this.rel_type == 'many2many') ? 'add' : 'select';
 
-                                // request a new Context for selecting an existing object to add to current selection
-                                this.getLayout().openContext({
-                                    entity: this.config.entity,
-                                    type: 'list',
-                                    name: 'default',
-                                    domain: domain,
-                                    mode: 'view',
-                                    purpose: purpose,
-                                    callback: (data:any) => {
-                                        if(data && data.selection) {
-                                            // add ids that are not yet in the Object value
-                                            for(let id of data.selection) {
-                                                let index = this.value.indexOf(id);
-                                                if( index > -1 ) {
-                                                    this.value.splice(index, 1);
+                                    // request a new Context for selecting an existing object to add to current selection
+                                    this.getLayout().openContext({
+                                        entity: this.config.entity,
+                                        type: 'list',
+                                        name: 'default',
+                                        domain: domain,
+                                        mode: 'view',
+                                        purpose: purpose,
+                                        callback: (data:any) => {
+                                            if(data && data.selection) {
+                                                // add ids that are not yet in the Object value
+                                                for(let id of data.selection) {
+                                                    let index = this.value.indexOf(id);
+                                                    if( index > -1 ) {
+                                                        this.value.splice(index, 1);
+                                                    }
+                                                    index = this.value.indexOf(-id);
+                                                    if( index > -1 ) {
+                                                        this.value.splice(index, 1);
+                                                    }
+                                                    this.value.push(id);
                                                 }
-                                                index = this.value.indexOf(-id);
-                                                if( index > -1 ) {
-                                                    this.value.splice(index, 1);
-                                                }
-                                                this.value.push(id);
+                                                this.$elem.trigger('_updatedWidget');
                                             }
-                                            this.$elem.trigger('_updatedWidget');
                                         }
-                                    }
-                                });
-                            })
-                        );
+                                    });
+                                })
+                            );
                     }
 
                 }
@@ -206,8 +208,8 @@ export default class WidgetMany2Many extends Widget {
                 // #memo - creation can be performed in view mode as well as in edit mode
                 if(has_action_create) {
                     // generate domain for object creation
-                    let domain: any[] = this.config.domain;
-                    let tmpDomain = new Domain(domain);
+                    let domain: any[];
+                    let tmpDomain = new Domain(this.config.domain);
                     tmpDomain.merge(new Domain([this.config.foreign_field, '=', this.config.object_id]));
                     domain = tmpDomain.toArray();
 
@@ -216,14 +218,26 @@ export default class WidgetMany2Many extends Widget {
                             .on('click', async () => {
                                 let view_type = 'form';
                                 let view_name = view.getName();
-                                let custom_actions = view.getCustomActions();
+                                let custom_actions: any;
+
+                                if(this.config.header?.actions?.hasOwnProperty('ACTION.CREATE') && Array.isArray(this.config.header.actions['ACTION.CREATE'])) {
+                                    custom_actions = this.config.header.actions
+                                }
+                                else {
+                                    custom_actions = view.getCustomActions();
+                                }
+
                                 if(custom_actions.hasOwnProperty('ACTION.CREATE')) {
                                     if(Array.isArray(custom_actions['ACTION.CREATE']) && custom_actions['ACTION.CREATE'].length) {
                                         let custom_action_create = custom_actions['ACTION.CREATE'][0];
                                         if(custom_action_create.hasOwnProperty('view')) {
                                             let parts = custom_action_create.view.split('.');
-                                            if(parts.length) view_type = <string>parts.shift();
-                                            if(parts.length) view_name = <string>parts.shift();
+                                            if(parts.length) {
+                                                view_type = <string> parts.shift();
+                                            }
+                                            if(parts.length) {
+                                                view_name = <string> parts.shift();
+                                            }
                                         }
                                         if(custom_action_create.hasOwnProperty('domain')) {
                                             let tmpDomain = new Domain(domain);

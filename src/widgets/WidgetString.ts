@@ -16,9 +16,9 @@ export default class WidgetString extends Widget {
         this.$elem.find('input').val(value).trigger('change');
     }
 
-    public render():JQuery {
-        let value:any = (typeof this.value != undefined && this.value != undefined)?this.value:'';
-        let usage = (this.config.hasOwnProperty('usage'))?this.config.usage:'';
+    public render(): JQuery {
+        let value:any = (typeof this.value != undefined && this.value != undefined) ? this.value : '';
+        let usage = (this.config.hasOwnProperty('usage')) ? this.config.usage : '';
 
         if(typeof value == 'string') {
             value = value.replace(/"/g, "&quot;");
@@ -42,7 +42,7 @@ export default class WidgetString extends Widget {
                 let $input = this.$elem.find('input');
 
                 // #memo - not dealing with keydown is preferred in order to avoid confusion with special keys
-                // #memo - we use 'change' event to cover float and integers changes with up and down buttons (same timeout)
+                // #memo - use of 'change' event to cover float and integers changes with up and down buttons (same timeout)
                 $input.on('change', (event:any) => {
                     let $this = $(event.currentTarget);
 
@@ -122,7 +122,13 @@ export default class WidgetString extends Widget {
             this.$elem.addClass('title');
         }
 
-        return this.$elem.addClass('sb-widget').addClass('sb-widget-mode-'+this.mode).attr('id', this.getId()).attr('data-type', this.config.type).attr('data-usage', this.config.usage||'');
+        return this.$elem
+            .addClass('sb-widget')
+            .addClass('sb-widget-mode-' + this.mode)
+            .attr('id', this.getId())
+            .attr('data-type', this.config.type)
+            .attr('data-field', this.config.field)
+            .attr('data-usage', this.config.usage || '');
     }
 
 }
