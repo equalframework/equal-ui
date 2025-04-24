@@ -17,7 +17,9 @@ export default class WidgetDate extends Widget {
         const formatAdapter : any = {
             'dd': 'DD',
             'mm': 'MM',
-            'yy': 'YYYY'
+            'yy': 'YYYY',
+            'hh': 'HH',
+            'ii': 'mm'
         };
         for(const key in formatAdapter) {
             let re = new RegExp(key, 'g');
@@ -27,111 +29,163 @@ export default class WidgetDate extends Widget {
     }
 
     /**
-     * Converts a date from jquery-ui format (dateFormat) to ISO string according to provided format.
+     * Converts a date object to a string according to provided format.
      * Uses moment.js for the formatting.
      *
      * @param date
      * @param format
      */
-    private adaptFromDateFormat(date: any, format: string): string {
-        return moment(date).format(this.jqueryToMomentFormat(format));
+    private dateToString(date: Date, moment_format: string): string {
+        return moment(date).format(moment_format);
     }
 
-    public change(value: any) {
+    private stringToDate(date_str: string, moment_format: string): Date | null {
+        let mdate = moment(date_str, moment_format, true);
+        if(mdate.isValid()) {
+            return mdate.toDate();
+        }
+        return null;
+    }
+    private isValidIsoStringDate(date_str: string): boolean {
+        return moment(date_str, moment.ISO_8601, true).isValid();
+    }
+
+    private isValidStringDate(date_str: string, moment_format: string): boolean {
+        let mdate = moment(date_str, moment_format, true);
+        return mdate.isValid();
+    }
+
+    private formatIsoStringDate(date_str: string, moment_format: string): string {
+        return moment(date_str).format(moment_format);
+    }
+
+    public change(value: string | null) {
         // #memo - this is used by inline edit for list views : we cannot trigger a change since it would result in infinite loop (triggering _updatedWidget)
         console.debug('WidgetDate::change', value);
         let $datepicker = this.$elem.find('.datepicker');
-        let format = $datepicker.datepicker('option', 'dateFormat');
-        let date = new Date();
-        if(value && value.length) {
-            date = new Date(value);
+        let $input = this.$elem.find('input').first();
+        if($datepicker.length > 0) {
+            if(!this.isValidIsoStringDate(value || '')) {
+                $input.val('');
+            }
+            else {
+                let moment_format = this.jqueryToMomentFormat($datepicker.datepicker('option', 'dateFormat'));
+                let date = new Date(<string> value);
+                $datepicker.datepicker('setDate', date);
+                $input.val(this.dateToString(date, moment_format));
+            }
         }
-        let str_date = this.adaptFromDateFormat(date, format);
-        this.$elem.find('.datepicker').datepicker('setDate', date);
-        this.$elem.find('input').first().val((value && value.length)?str_date:'');
     }
 
     public render(): JQuery {
-        let date = new Date(this.value);
-        if(this.value && this.value.length) {
-            date = new Date(this.value);
-        }
-        let value: any;
-        let format: any;
+        console.debug('WidgetDate::render', this);
+        // #memo - this.value is expected to be either null or a valid ISO date string at all times
+        let value_str: string = '';
+        let moment_format: string = '';
+        const locale = this.getLayout().getEnv().locale;
+
         switch(this.mode) {
             case 'edit':
+                console.debug('WidgetDate:: rendering edit mode');
                 let $datetimepicker = $('<input type="text" />').addClass('datepicker sb-widget-datetime-datepicker');
 
                 let datepickerConfig = {
+                        ...jqlocale[locale],
                         autoOpen: false,
-                        ...jqlocale[this.getLayout().getEnv().locale],
                         onClose: () => {
-                            // relay only in case of change, and if string value is not empty
-                            let newDate = $datetimepicker.datepicker('getDate');
-                            let str_date: string = <string> this.$elem.find('input').first().val();
-                            if(date.getTime() != newDate.getTime() && str_date.length > 0) {
-                                console.debug('onclose', date.getTime(), newDate.getTime(), str_date.length);
-                                // make the date UTC @ 00:00:00
-                                let timestamp = newDate.getTime();
-                                let offset_tz = newDate.getTimezoneOffset()*60*1000;
-                                this.value = (new Date(timestamp-offset_tz)).toISOString().substring(0, 10)+'T00:00:00Z';
-                                this.$elem.trigger('_updatedWidget');
+                            // disable events on closing datepicker popup
+                            // this will result in datepicker setDate, this.value assignment and trigger _updatedWidget
+                            this.$elem.find('input').first().trigger('change');
+                        },
+                        onSelect: (date_str: string) => {
+                            console.log('WidgetDate::datepicker:onSelect', date_str);
+                            if(this.isValidStringDate(date_str, this.jqueryToMomentFormat(datepickerConfig.dateFormat))) {
+                                console.debug('WidgetDate::datepicker:onSelect valid date received', date_str);
+                                // assign input but do not relay change event (done only in `onClose`)
+                                this.$elem.find('input').first().val(date_str).trigger('input');
+                            }
+                            else {
+                                console.debug('WidgetDate::datepicker:onSelect invalid date received, fallback to current', date_str);
                             }
                         }
                     };
 
-                // #memo - in some cases datepicker fails to parse the date with applied format, and falls back to defaultDate
-                datepickerConfig.defaultDate = date;
-
                 if(this.config.hasOwnProperty('usage')) {
                     if(this.config.usage && (this.config.usage == 'month' || this.config.usage.indexOf('date/month') == 0)) {
                         if(datepickerConfig.hasOwnProperty('dateFormat_month')) {
+                            console.debug('WidgetDate::init setting date format for month', datepickerConfig.dateFormat_month);
                             datepickerConfig.dateFormat = datepickerConfig.dateFormat_month;
                         }
                     }
                 }
 
                 // convert jquery format to moment format
-                format = datepickerConfig.dateFormat;
-                value = (this.value)?this.adaptFromDateFormat(date, format):'';
+                moment_format = this.jqueryToMomentFormat(datepickerConfig.dateFormat);
+                console.debug('WidgetDate::init retrieved moment format', moment_format);
 
-                this.$elem = UIHelper.createInput('date_'+this.id, this.label, value, this.config.description, '', this.readonly);
+                if(this.isValidIsoStringDate(this.value || '')) {
+                    console.debug('WidgetDate::init valid value', this.value);
+                    value_str = this.formatIsoStringDate(this.value, moment_format);
+                    datepickerConfig.defaultDate = new Date(this.value);
+                }
+                else {
+                    console.debug('WidgetDate::init invalid value', this.value);
+                }
+
+                this.$elem = UIHelper.createInput('date_' + this.id, this.label, value_str, this.config.description, '', this.readonly);
 
                 let $input = this.$elem.find('input').first()
                     .on('keydown', (event:any) => {
+                        // prevent relaying tab keydown
                         if(event.which == 9) {
                             event.stopImmediatePropagation();
                         }
                     })
                     .on('change', (event) => {
-                        console.debug('WidgetDate:: input change', event);
                         let $this = $(event.currentTarget);
-                        let date = new Date();
-                        let mdate = moment($this.val(), this.jqueryToMomentFormat(format), true);
-                        if(mdate.isValid()) {
-                            date = mdate.toDate();
-                            console.debug('WidgetDate::valid date received', date);
+                        let date_str: string = <string> $this.val();
+                        let moment_format = this.jqueryToMomentFormat(datepickerConfig.dateFormat);
+                        console.debug('WidgetDate::input:change', event, date_str);
+
+                        if(this.isValidStringDate(date_str, moment_format)) {
+                            console.debug('WidgetDate::input:change valid date received', date_str);
+                            let date: Date = <Date> this.stringToDate(date_str, moment_format);
+                            // make the date UTC @ 00:00:00
+                            let timestamp = date.getTime();
+                            let offset_tz = date.getTimezoneOffset()*60*1000;
+                            this.value = (new Date(timestamp-offset_tz)).toISOString().substring(0, 10) + 'T00:00:00Z';
+                            if($datetimepicker.data('datepicker')) {
+                                $datetimepicker.datepicker('setDate', date);
+                            }
+                            this.$elem.trigger('_updatedWidget');
                         }
                         else {
-                            console.debug('WidgetDate::invalid date received, fallback to current', date);
+                            // handle field reset
+                            if(date_str === '') {
+                                this.value = null;
+                                this.$elem.trigger('_updatedWidget');
+                            }
+                            else {
+                                console.debug('WidgetDate::input:change invalid date received, ignoring', date_str);
+                            }
                         }
-                        // make the date UTC @ 00:00:00
-                        let timestamp = date.getTime();
-                        let offset_tz = date.getTimezoneOffset()*60*1000;
-                        this.value = (new Date(timestamp-offset_tz)).toISOString().substring(0, 10)+'T00:00:00Z';
-                        $datetimepicker.datepicker('setDate', date);
-                        this.$elem.trigger('_updatedWidget');
                     });
 
-                let $button_open = UIHelper.createButton('date-actions-open_'+this.id, '', 'icon', 'calendar_today')
+                let $button_open = UIHelper.createButton('date-actions-open_' + this.id, '', 'icon', 'calendar_today')
                     .css({"position": "absolute", "right": "5px", "top": "5px", "z-index": "1"})
-                    .on('focus', () => $datetimepicker.datepicker('show') )
-                    .on('click', () => {
-                        $datetimepicker.datepicker('show');
-                        let val = <string> $input.val();
+                    .on('focus click', () => {
+                        let $input = this.$elem.find('input').first();
+                        let val: string = <string> $input.val();
+                        let moment_format = this.jqueryToMomentFormat(datepickerConfig.dateFormat);
+                        // upon opening of the date picker, if input is empty, assign current date
                         if(!val.length) {
-                            $input.val(this.adaptFromDateFormat(new Date(), format)).trigger('change');
+                            let date = new Date();
+                            // #memo - do not trigger change here, since it would result in layout refresh and loss of datepicker instance data
+                            $input.val(this.dateToString(date, moment_format));
+                            // force MDC refresh (text.layout())
+                            $input.trigger('input');
                         }
+                        $datetimepicker.datepicker('show');
                     });
 
                 if(this.config.layout == 'list') {
@@ -146,15 +200,18 @@ export default class WidgetDate extends Widget {
                         // prevent relaying key events to datepicker
                         event.stopImmediatePropagation();
                     })
-                    .on('change', (event:any) => {
-                        // update widget value using jQuery `getDate`
-                        let $this = $(event.currentTarget);
-                        let newDate = $this.datepicker('getDate');
-                        console.debug('WidgetDate::datepicker native change', newDate);
-                        this.$elem.find('input').first().val(this.adaptFromDateFormat(newDate, format));
+                    .on('change', (event: any) => {
+                        // prevent relaying change event on datepicker input (we use either datepicker:onSelect or input:change)
+                        event.stopImmediatePropagation();
                     });
 
-                $datetimepicker.datepicker('setDateTime', date);
+                // #memo - initial setDate is mandatory for further interactions with datepicker popup
+                if(this.isValidIsoStringDate(this.value || '')) {
+                    $datetimepicker.datepicker('setDate', new Date(this.value));
+                }
+                else {
+                    $datetimepicker.datepicker('setDate', new Date());
+                }
 
                 this.$elem.append($datetimepicker);
 
@@ -162,34 +219,36 @@ export default class WidgetDate extends Widget {
             case 'view':
             default:
                 // moment 'll': en = "Jul 8, 2023"; fr = "8 juil. 2023"
-                format = 'll';
+                moment_format = 'll';
                 // #todo - adapt and complete based on retrieved locale from equal (@see packages/core/i18n/.../locale.json)
                 if(this.config.hasOwnProperty('usage')) {
                     if(this.config.usage == 'date' || this.config.usage == 'date/medium' || this.config.usage == 'date/plain.medium') {
                         // 06/08/2023
-                        format = 'L';
+                        moment_format = 'L';
                     }
                     else if(this.config.usage == 'date/short' || this.config.usage == 'date/plain.short') {
                         // 06/08/23
-                        format = (moment.localeData().longDateFormat('L')).replace(/YYYY/g,'YY');
+                        moment_format = (moment.localeData().longDateFormat('L')).replace(/YYYY/g,'YY');
                     }
                     else if(this.config.usage == 'date/plain.short.day') {
-                        format = 'dd ' + (moment.localeData().longDateFormat('L')).replace(/YYYY/g,'YY');
+                        moment_format = 'dd ' + (moment.localeData().longDateFormat('L')).replace(/YYYY/g,'YY');
                     }
                     else if(this.config.usage == 'month' || this.config.usage.indexOf('date/month') == 0) {
-                        format = 'MMM YYYY';
+                        moment_format = 'MMM YYYY';
                     }
                 }
 
                 // convert date to string, according to locale and usage
-                value = (this.value) ? moment(date).format(format) : '';
+                if(this.isValidIsoStringDate(this.value || '')) {
+                    value_str = this.formatIsoStringDate(this.value, moment_format);
+                }
 
                 // by convention, first column of each row opens the object no matter the type of the field
                 if(this.is_first) {
-                    this.$elem = $('<div />').addClass('is-first').text(value);
+                    this.$elem = $('<div />').addClass('is-first').text(value_str);
                 }
                 else {
-                    this.$elem = UIHelper.createInputView('', this.label, value, this.config.description);
+                    this.$elem = UIHelper.createInputView('', this.label, value_str, this.config.description);
                 }
                 break;
         }
@@ -198,7 +257,13 @@ export default class WidgetDate extends Widget {
             this.$elem.addClass('title');
         }
 
-        return this.$elem.addClass('sb-widget').addClass('sb-widget-mode-'+this.mode).attr('id', this.getId()).attr('data-type', this.config.type).attr('data-usage', this.config.usage||'');
+        return this.$elem
+            .addClass('sb-widget')
+            .addClass('sb-widget-mode-' + this.mode)
+            .attr('id', this.getId())
+            .attr('data-type', this.config.type)
+            .attr('data-field', this.config.field)
+            .attr('data-usage', this.config.usage||'');
     }
 
 }
