@@ -7,9 +7,9 @@ import { Domain, Clause, Condition, Reference } from "../Domain";
 
 export class LayoutForm extends Layout {
 
-    // #memo - used for keeping track of the currently selected widget (assigned when events `_updatedWidget` or `click` are triggered),
+    // #memo - used for keeping track of the currently selected widget (assigned when `focusin` or `click` events are triggered),
     // and for giving back the focus after a refresh
-    public focused_widget_id: number | undefined;
+    public focused_widget_id: string | undefined;
 
     public async init() {
         console.debug('LayoutForm::init');
@@ -124,13 +124,13 @@ export class LayoutForm extends Layout {
                         }
 
                         let $tab = UIHelper.createTabButton(section_id+'-tab', section_title, (j == selected_section))
-                            .addClass((j == selected_section)?'is-active':'')
+                            .addClass((j == selected_section) ? 'is-active' : '')
                             .addClass('sb-view-form-section-tab')
                             .attr('data-section_id', section_id)
                             .on('click', () => {
                                 $group.find('.sb-view-form-section').hide();
                                 $group.find('.sb-view-form-section-tab').removeClass('is-active');
-                                $group.find('#'+section_id).show();
+                                $group.find('#' + section_id).show();
                                 $tab.addClass('is-active');
                             });
 
@@ -144,8 +144,17 @@ export class LayoutForm extends Layout {
 
                     $.each(section.rows, (k:number, row) => {
                         let $row = $('<div />').addClass('sb-view-form-row mdc-layout-grid__inner').appendTo($section);
+
+                        if(row.hasOwnProperty('visible')) {
+                            $row.attr('data-visible', JSON.stringify(row.visible));
+                        }
+
                         $.each(row.columns, (l:number, column) => {
-                            let $column = $('<div />').addClass('mdc-layout-grid__cell').appendTo($row);
+                            let $column = $('<div />').addClass('sb-view-form-column mdc-layout-grid__cell').appendTo($row);
+
+                            if(column.hasOwnProperty('visible')) {
+                                $column.attr('data-visible', JSON.stringify(column.visible));
+                            }
 
                             if(column.hasOwnProperty('width')) {
                                 $column.addClass('mdc-layout-grid__cell--span-' + Math.round((parseInt(column.width, 10) / 100) * 12));
@@ -166,7 +175,7 @@ export class LayoutForm extends Layout {
                                 // or it does but only if subitems are flex: 1
                                 let $cell = $('<div />')/*.css({'display': 'flex', 'align-items': 'center'})*/.addClass('mdc-layout-grid__cell').appendTo($column);
                                 // compute the width (on a 12 columns grid basis), from 1 to 12
-                                let width = (item.hasOwnProperty('width'))?Math.round((parseInt(item.width, 10) / 100) * 12): 12;
+                                let width = (item.hasOwnProperty('width')) ? Math.round((parseInt(item.width, 10) / 100) * 12) : 12;
                                 $cell.addClass('mdc-layout-grid__cell--span-' + width);
 
                                 if(item.hasOwnProperty('align') && item.align == 'right') {
@@ -223,7 +232,8 @@ export class LayoutForm extends Layout {
         const user = this.view.getUser();
 
         // remember which element has focus (DOM is going to be modified)
-        // let focused_widget_id = this.$layout.find("input:focus").closest('.sb-widget').attr('id');
+        // #memo - at this stage the focus might already be lost (see below)
+        // this.focused_widget_id = this.$layout.find("input:focus").closest('.sb-widget').attr('id');
 
         if(objects.length > 0) {
             // #todo - keep internal index of the object to display (with a prev/next navigation in the header)
@@ -231,7 +241,7 @@ export class LayoutForm extends Layout {
 
             // update actions in view header
             let view_schema = this.view.getViewSchema();
-            let $view_actions = this.view.getContainer().find('.sb-view-header-actions-view').first();
+            let $view_actions = this.view.getContainer().find('.sb-view-header-actions-view').first().empty();
 
             // show object status, if defined and present
             if(model_fields.hasOwnProperty('status')) {
@@ -259,17 +269,7 @@ export class LayoutForm extends Layout {
                 // filter actions and keep only visible ones (based on 'visible' and 'access' properties)
                 let actions = [];
                 for(let action of view_schema.actions) {
-                    let visible = true;
-                    if(action.hasOwnProperty('visible')) {
-                        // visible attribute is a Domain
-                        if(Array.isArray(action.visible)) {
-                            let domain = new Domain(action.visible);
-                            visible = domain.evaluate(object, user);
-                        }
-                        else {
-                            visible = <boolean> action.visible;
-                        }
-                    }
+                    let visible = this.isVisible(action?.visible || '', object, user, {}, this.getEnv());
                     if(visible && action.hasOwnProperty('access') && action.access.hasOwnProperty('groups') && Array.isArray(action.access.groups)) {
                         visible = false;
                         if(user.hasOwnProperty('groups') && Array.isArray(user.groups)) {
@@ -287,8 +287,9 @@ export class LayoutForm extends Layout {
                 }
 
                 // retrieve previously created elements, if any
-                $view_actions.find('#'+this.uuid+'_actions-button').remove();
-                $view_actions.find('#'+this.uuid+'_actions-dropdown').remove();
+                // #memo - we already emptyied sb-view-header-actions-view when retrieving $view_actions
+                // $view_actions.find('#'+this.uuid+'_actions-button').remove();
+                // $view_actions.find('#'+this.uuid+'_actions-dropdown').remove();
 
                 // there is a single action: show it as a button
                 if(actions.length == 1) {
@@ -317,20 +318,53 @@ export class LayoutForm extends Layout {
 
             // update groups visibility, if any
             let $groups = this.$layout.find('.sb-view-form-group');
-            $groups.each( (i:number, elem:any) => {
+            $groups.each( (i: number, elem: any) => {
                 let $group = $(elem);
-                let visible = this.isVisible(<string> $group.attr('data-visible'), object, user);
-                if(visible) {
-                    $group.show();
-                }
-                else {
+                let visible = this.isVisible($group.attr('data-visible') || '', object, user, {}, this.getEnv());
+                if(!visible) {
                     $group.hide();
                 }
+                else {
+                    $group.show();
+                    // pass-1 - handle visibility of sub-elements
+                    $group.find('.sb-view-form-section, .sb-view-form-row, .sb-view-form-column').each((index: number, elem: any) => {
+                        const $elem = $(elem);
+                        const visible = this.isVisible($elem.attr('data-visible') || '', object, user, {}, this.getEnv());
+                        if(visible) {
+                            $elem.show();
+                        }
+                        else {
+                            $elem.hide();
+                        }
+                    });
+
+                    // pass-2 - update tabs visibility, if any
+                    let $tabs = $group.find('.sb-view-form-section-tab');
+                    // when active tab is hidden, the next visible one must be auto selected (always enabled for single tab)
+                    let auto_select: boolean = ($tabs.length == 1);
+                    $tabs.each( (i: number, elem: any) => {
+                        let $tab = $(elem);
+                        const visible = this.isVisible($tab.attr('data-visible') || '', object, user, {}, this.getEnv());
+                        if(visible) {
+                            $tab.show();
+                            if(auto_select || $tab.hasClass('is-active')) {
+                                $tab.trigger('click');
+                                auto_select = false;
+                            }
+                        }
+                        else {
+                            $tab.hide();
+                            $group.find('#' + $tab.attr('data-section_id')).hide();
+                        }
+                    });
+                }
                 // handle group with a single section
+                /*
+                // #memo -added below with support for all sub elements
                 if(parseInt(<string> $group.attr('data-sections_count')) <= 1) {
                     // update section visibility
                     let $section = $group.find('.sb-view-form-section').first();
-                    let visible = this.isVisible(<string> $section.attr('data-visible'), object, user);
+                    let visible = this.isVisible($section.attr('data-visible') ||'', object, user, {}, this.getEnv());
                     if(visible) {
                         $section.show();
                     }
@@ -338,30 +372,7 @@ export class LayoutForm extends Layout {
                         $section.hide();
                     }
                 }
-            });
-
-
-            // update tabs visibility, if any
-            let $tabs = this.$layout.find('.mdc-tab.sb-view-form-section-tab');
-            // when active tab is hidden, the next visible one must be auto selected
-            let auto_select:boolean = false;
-            $tabs.each( (i:number, elem:any) => {
-                let $tab = $(elem);
-                let visible = this.isVisible(<string> $tab.attr('data-visible'), object, user);
-                if(visible) {
-                    $tab.show();
-                    if(auto_select) {
-                        $tab.trigger('click');
-                        auto_select = false;
-                    }
-                }
-                else {
-                    $tab.hide();
-                    this.$layout.find('#' + $tab.attr('data-section_id')).hide();
-                    if($tab.hasClass('is-active')) {
-                        auto_select = true;
-                    }
-                }
+                */
             });
 
             for(let widget_index of Object.keys(this.model_widgets[0])) {
@@ -377,14 +388,7 @@ export class LayoutForm extends Layout {
                     let visible = true;
                     // handle visibility tests (domain)
                     if(config.hasOwnProperty('visible')) {
-                        // visible attribute is a Domain
-                        if(Array.isArray(config.visible)) {
-                            let domain = new Domain(config.visible);
-                            visible = domain.evaluate(object, user);
-                        }
-                        else {
-                            visible = <boolean>config.visible;
-                        }
+                        visible = this.isVisible(config.visible, object, user, {}, this.getEnv());
                     }
                     let $parent = this.$layout.find('#' + widget.getId()).parent();
                     if(!visible) {
@@ -397,21 +401,20 @@ export class LayoutForm extends Layout {
                 else {
 
                     let field = config.field;
-
                     let $parent = this.$layout.find('#' + widget.getId()).parent();
-
-                    let type = this.view.getModel().getFinalType(field);
+                    let type: string | null = this.view.getModel().getFinalType(field);
 
                     let has_changed = false;
-                    let value = (object.hasOwnProperty(field))?object[field]:undefined;
+                    let value = (object.hasOwnProperty(field)) ? object[field] : undefined;
 
 
                     // for relational fields, we need to check if the Model has been fetched
-                    if(['one2many', 'many2one', 'many2many'].indexOf(type) > -1) {
+                    if(type && ['one2many', 'many2one', 'many2many'].indexOf(type) > -1) {
                         // if widget has a domain, parse it using current object and user
                         if(config.hasOwnProperty('original_domain')) {
+                            console.debug('LayouForm::feed - parsing domain for widget', field, config);
                             let tmpDomain = new Domain(config.original_domain);
-                            config.domain = tmpDomain.parse(object, user).toArray();
+                            config.domain = tmpDomain.parse(object, user, {}, this.getEnv()).toArray();
                         }
                         else {
                             config.domain = [];
@@ -420,11 +423,11 @@ export class LayoutForm extends Layout {
                         // if widget has a custom header definition, parse subsequent domains, if any
                         if(config.hasOwnProperty('header') && config.header.hasOwnProperty('actions') ) {
                             for (const [id, items] of Object.entries(config.header.actions)) {
-                                for(let index in (<Array<any>>items)) {
-                                    let item = (<Array<any>>items)[<any>index];
+                                for(let index in (<Array<any>> items)) {
+                                    let item = (<Array<any>> items)[<any> index];
                                     if(item.hasOwnProperty('domain')) {
                                         let tmpDomain = new Domain(item.domain);
-                                        config.header.actions[id][index].domain = tmpDomain.parse(object, user).toArray();
+                                        config.header.actions[id][index].domain = tmpDomain.parse(object, user, {}, this.getEnv()).toArray();
                                     }
                                 }
                             }
@@ -434,6 +437,10 @@ export class LayoutForm extends Layout {
                             if(object[field]) {
                                 // by convention, `name` subfield is always loaded for relational fields
                                 value = object[field]['name'];
+                                // special case where a valid object is given, but with empty name
+                                if(typeof value === 'string' && value.trim() === '') {
+                                    value = String(object[field]['id']);
+                                }
                                 config.object_id = object[field]['id'];
                                 // in some cases, we need the reference to the current object (refs in header domain)
                                 config.object = object;
@@ -472,8 +479,8 @@ export class LayoutForm extends Layout {
                     }
 
                     widget.setConfig({...config, ready: true})
-                    .setMode(this.view.getMode())
-                    .setValue(value);
+                        .setMode(this.view.getMode())
+                        .setValue(value);
 
                     // store data to parent, for tracking changes at next refresh (prevent storing references)
                     $parent.data('value', JSON.stringify(value) || null);
@@ -481,14 +488,7 @@ export class LayoutForm extends Layout {
                     let visible = true;
                     // handle visibility tests (domain)
                     if(config.hasOwnProperty('visible')) {
-                        // visible attribute is a Domain
-                        if(Array.isArray(config.visible)) {
-                            let domain = new Domain(config.visible);
-                            visible = domain.evaluate(object, user);
-                        }
-                        else {
-                            visible = <boolean> config.visible;
-                        }
+                        visible = this.isVisible(config.visible, object, user, {}, this.getEnv());
                     }
 
                     if(!visible) {
@@ -498,52 +498,67 @@ export class LayoutForm extends Layout {
                     }
                     else {
                         let $widget = widget.render();
+                        /*
+                        // #memo - is this necessary ?
                         $widget.on('click', () => {
                             this.focused_widget_id = widget.getId();
                         } );
+                        */
                         // Handle Widget update handler
                         $widget.on('_updatedWidget', async (event:any, refresh: boolean = true) => {
                             console.debug("Layout::feedForm : received _updatedWidget", field, widget.getValue(), refresh);
-                            this.focused_widget_id = widget.getId();
+                            // #memo - the focus must be given back to currently focused item, regardless of the updated widget
+                            // this.focused_widget_id = widget.getId();
                             // update object with new value
-                            let values:any = {};
+                            let values: any = {};
                             values[field] = widget.getValue();
-                            let model_fields:any = {};
+                            let model_fields: any = {};
                             // if value is less than 1k, relay onchange to server
                             // #todo - choose an proportionate limit
                             if(String(widget.getValue()).length < 1000) {
                                 // relay the change to back-end through onupdate
                                 try {
                                     const result = await ApiService.call("?do=model_onchange", {entity: this.view.getEntity(), changes: this.view.getModel().export(values), values: this.view.getModel().export(object), lang: this.view.getLang()} );
+
                                     if (typeof result === 'object' && result != null) {
-                                        for(let field of Object.keys(result)) {
+
+                                        for(let changed_field of Object.keys(result)) {
                                             // there are changes to apply on the schema: we must force a re-feed on the Form
                                             refresh = true;
+
+                                            let changed_field_type: string | null = this.view.getModel().getFinalType(changed_field);
                                             // if some changes are returned from the back-end, append them to the view model update
-                                            if(typeof result[field] === 'object' && result[field] !== null) {
-                                                model_fields[field] = result[field];
+                                            if(typeof result[changed_field] === 'object' && result[changed_field] !== null) {
 
-                                                if(result[field].hasOwnProperty('value')) {
-                                                    values[field] = result[field].value;
+                                                model_fields[changed_field] = result[changed_field];
+
+                                                if(result[changed_field].hasOwnProperty('value')) {
+                                                    values[changed_field] = result[changed_field].value;
                                                 }
-                                                else if(type == 'many2one'){
+                                                else if(changed_field_type == 'many2one') {
+                                                    console.debug('assigning value for ', changed_field);
                                                     // #memo - m2o widgets use an object as value
-                                                    values[field] = result[field];
+                                                    values[changed_field] = result[changed_field];
+                                                    if(result[changed_field].hasOwnProperty('domain')) {
+                                                        // #todo - using original_domain is probabily no longer necessary (see above)
+                                                        // force changing original_domain
+                                                        model_fields[changed_field].original_domain = result[changed_field].domain;
+                                                        this.view.updateModelField(changed_field, 'domain', result[changed_field].domain);
+                                                    }
                                                 }
 
-                                                if(result[field].hasOwnProperty('selection')) {
+                                                if(result[changed_field].hasOwnProperty('selection')) {
                                                     // special case of a descriptor providing a selection
                                                     // #memo - this is because a string with selection is handled in a distinct way (WidgetSelect)
-                                                    let normalize_selection = WidgetFactory.getNormalizedSelection(translation, field, result[field].selection);
+                                                    let normalize_selection = WidgetFactory.getNormalizedSelection(translation, changed_field, result[changed_field].selection);
                                                     // 1) set virtual `values` property (used by WidgetSelect) to assign & refresh the widget accordingly
-                                                    model_fields[field].values = normalize_selection;
+                                                    model_fields[changed_field].values = normalize_selection;
                                                     // 2) update view model in case selection is added on another widget type (WidgetString, WidgetInteger, ...)
-                                                    this.view.updateModelField(field, 'selection', normalize_selection);
+                                                    this.view.updateModelField(changed_field, 'selection', normalize_selection);
                                                 }
-
                                             }
                                             else {
-                                                values[field] = result[field];
+                                                values[changed_field] = result[changed_field];
                                             }
                                         }
                                     }
@@ -555,6 +570,7 @@ export class LayoutForm extends Layout {
                             }
                             // update model schema of the view if necessary
                             if(Object.keys(model_fields).length > 0) {
+                                console.debug('LayoutForm::feed - updating model', model_fields);
                                 // retrieve the widget based on the field name
                                 for(let widget_index of Object.keys(this.model_widgets[0])) {
                                     let widget = this.model_widgets[0][widget_index];
@@ -564,6 +580,7 @@ export class LayoutForm extends Layout {
                                             widget.config[property] = model_fields[field][property];
                                             widget.config.changed = true;
                                         }
+                                        console.debug('LayoutForm::feed - updated widget', widget);
                                     }
                                 }
                             }
@@ -578,13 +595,21 @@ export class LayoutForm extends Layout {
                     }
                 }
             }
+
             // attempt to give the focus back to the previously focused widget
             if(this.focused_widget_id) {
-                let $focusCandidate:any = $('#'+this.focused_widget_id).find('input').first();
+                console.debug('LayoutForm:FOCUS Attempting to give (back) focus to ', this.focused_widget_id);
+                let $focusCandidate: any = $('#' + this.focused_widget_id).find('input').first();
                 if($focusCandidate.length == 0 || !$focusCandidate.is(":visible")) {
-                    $focusCandidate = $('#'+this.focused_widget_id).find('[tabindex]').first();
+                    $focusCandidate = $('#' + this.focused_widget_id).find('[tabindex]').first();
                 }
-                $focusCandidate.trigger('focus');
+                if($focusCandidate.length > 0 && $focusCandidate.is(":visible") && !$focusCandidate.is(":disabled")) {
+                    console.debug('LayoutForm:: give (back) focus to ', $focusCandidate, this.focused_widget_id);
+                    $focusCandidate.trigger('focus');
+                }
+                else {
+                    console.warn("LayoutForm:FOCUS No valid focusable element found in widget", this.focused_widget_id);
+                }
             }
             else {
                 // by convention give the focus to the first input (widget) of the layout
@@ -593,31 +618,22 @@ export class LayoutForm extends Layout {
                     if(this.focused_widget_id) {
                         return;
                     }
+                    console.debug('LayoutForm:FOCUS Giving focus to first input');
                     this.$layout.find('input').first().trigger('focus');
-                }, 500);
+                // delay to allow considering user manual selection
+                }, 1000);
             }
         }
 
-    }
-
-    private isVisible(visible: string, object: any, user: any) {
-        let result = true;
-        if(visible != undefined) {
-            if(visible == 'false') {
-                result = false;
+        // listen to all focus changes to capture the active widget
+        this.$layout.on('focusin click', 'input, [tabindex]', (event:any) => {
+            const $changed_widget = $(event.target).closest('.sb-widget');
+            if($changed_widget.length) {
+                this.focused_widget_id = $changed_widget.attr('id') || '';
+                console.debug('LayoutForm:FOCUS Observing focus change to ', this.focused_widget_id);
             }
-            else {
-                let domain = new Domain(JSON.parse(visible));
-                if(domain.evaluate(object, user)) {
-                    result = true;
-                }
-                else {
-                    result = false;
-                }
-            }
-        }
-        return result;
-    }
+        });
 
+    }
 
 }

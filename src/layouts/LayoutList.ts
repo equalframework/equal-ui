@@ -70,7 +70,7 @@ export class LayoutList extends Layout {
         let $hrow = $('<tr/>');
 
         if(this.view.getPurpose() != 'widget' || this.view.getMode() == 'edit') {
-            UIHelper.createTableCellCheckbox(true)
+            UIHelper.createTableCellCheckbox(this.uuid + 'table-cell', true)
             .appendTo($hrow)
             .find('input')
             .on('click', () => setTimeout( () => this.view.onchangeSelection(this.getSelected()) ) );
@@ -91,7 +91,7 @@ export class LayoutList extends Layout {
                     $fold_toggle.addClass('folded');
                 }
                 folded = !folded;
-                $tbody.find('.sb-group-row').each( (index:number, elem:any) => {
+                $tbody.find('.sb-group-row').each( (index: number, elem: any) => {
                     let $this = $(elem);
                     let subfolded = $this.hasClass('folded');
                     if(subfolded != folded) {
@@ -112,14 +112,21 @@ export class LayoutList extends Layout {
         let translation = this.view.getTranslation();
 
         let model_fields = this.view.getModelFields();
-        let view_fields = this.view.getViewFields();
+        let view_fields  = this.view.getViewFields();
 
         // pre-processing: check columns width consistency
         let item_width_total = 0;
 
         // 1) sum total width and items with null width
         for(let item of view_schema.layout.items) {
-            if(!item.hasOwnProperty('visible') || item.visible == true) {
+            if(!item.hasOwnProperty('value')) {
+                continue;
+            }
+            let field = item.value;
+            if(!(model_fields[field] ?? false)) {
+                continue;
+            }
+            if(!item.hasOwnProperty('visible') || item.visible) {
                 // set minimum width to 10%
                 let width = 10;
                 if(item.hasOwnProperty('width')) {
@@ -136,7 +143,7 @@ export class LayoutList extends Layout {
         if(item_width_total != 100) {
             let ratio = 100.0 / item_width_total;
             for(let item of view_schema.layout.items) {
-                if( (!item.hasOwnProperty('visible') || item.visible == true) && item.hasOwnProperty('width')) {
+                if( (!item.hasOwnProperty('visible') || item.visible) && item.hasOwnProperty('width')) {
                     item.width *= ratio;
                 }
             }
@@ -144,44 +151,57 @@ export class LayoutList extends Layout {
 
         let first_column: boolean = true;
         for(let item of view_schema.layout.items) {
-            let field = item.value;
-            let config = WidgetFactory.getWidgetConfig(this.view, field, translation, model_fields, view_fields);
-            // append only visible columns
-            if(config && (!config.hasOwnProperty('visible') || config.visible)) {
-                let width = Math.floor(10 * item.width) / 10;
-                let $cell = $('<th/>').attr('name', field)
-                    // .attr('width', width+'%')
-                    .css({width: width+'%'})
-                    .append(config.title)
-                    .on('click', (event:any) => {
-                        let $this = $(event.currentTarget);
-                        if($this.hasClass('sortable')) {
-                            // unselect all lines
-                            $('td:first-child', this.$layout.find('tbody')).each( (i:number, elem:any) => {
-                                $('input[type="checkbox"]', elem).prop('checked', false).prop('indeterminate', false);
-                            });
-                            $thead.find('th:first-child').find('input').trigger('refresh');
-
-                            // wait for handling of sort toggle (table decorator)
-                            setTimeout( () => {
-                                // change sortname and/or sortorder
-                                this.view.setOrder(<string> $this.attr('name'));
-                                this.view.setSort(<string> $this.attr('data-sort'));
-                                this.view.onchangeView();
-                            });
-                        }
-                    });
-                $cell.css({'text-align': config.align});
-                if(config.align == 'right' || config.align == 'center') {
-                    $cell.css({'padding-right': '16px'});
-                }
-                if(config.sortable) {
-                    $cell.addClass('sortable').attr('data-sort', '');
-                }
-                $hrow.append($cell);
-                first_column = false;
+            if(!item.hasOwnProperty('value')) {
+                continue;
             }
+            let field = item.value;
+            if(!(model_fields[field] ?? false)) {
+                continue;
+            }
+            let config = WidgetFactory.getWidgetConfig(this.view, field, translation, model_fields, view_fields);
+            if(!config) {
+                continue;
+            }
+            // ignore non-visible columns
+            if(config.hasOwnProperty('visible') && config.visible === 'false') {
+                continue;
+            }
+            let width = Math.floor(10 * item.width) / 10;
+            let $cell = $('<th/>').attr('name', field)
+                // #memo - by using css, columns are adpated according to additional columns with fixed width, if any (checkbox & actions)
+                .css({width: width + '%'})
+                .append(config.title)
+                .on('click', (event:any) => {
+                    let $this = $(event.currentTarget);
+                    if($this.hasClass('sortable')) {
+                        // unselect all lines
+                        $('td:first-child', this.$layout.find('tbody')).each( (i:number, elem:any) => {
+                            $('input[type="checkbox"]', elem).prop('checked', false).prop('indeterminate', false);
+                        });
+                        $thead.find('th:first-child').find('input').trigger('refresh');
+
+                        // wait for handling of sort toggle (table decorator)
+                        setTimeout( () => {
+                            // change sortname and/or sortorder
+                            this.view.setOrder(<string> $this.attr('name'));
+                            this.view.setSort(<string> $this.attr('data-sort'));
+                            this.view.onchangeView();
+                        });
+                    }
+                });
+            $cell.css({'text-align': config.align});
+            if(config.align == 'right' || config.align == 'center') {
+                $cell.css({'padding-right': '16px'});
+            }
+            if(config.sortable) {
+                $cell.addClass('sortable').attr('data-sort', '');
+            }
+            $hrow.append($cell);
+            first_column = false;
+
         }
+        // #memo - action columns is not displayed if its width is null (manually set below according to number of actions)
+        let $actions_column = $('<th/>').attr('name', 'actions').css({'text-align': 'right'}).appendTo($hrow);
 
         $thead.append($hrow);
 
@@ -216,8 +236,8 @@ export class LayoutList extends Layout {
                         let field = item.value;
                         if(op_descriptor.hasOwnProperty(field)) {
                             $cell.attr('data-id', 'operation-'+operation+'-'+field);
-                            let type = this.view.getModel().getFinalType(field);
-                            if(['float', 'integer', 'time'].indexOf(type) >= 0 && field != 'id') {
+                            let type: string | null = this.view.getModel().getFinalType(field);
+                            if(type && ['float', 'integer', 'time'].indexOf(type) >= 0 && field != 'id') {
                                 $cell.css({'text-align': 'right'});
                             }
                         }
@@ -236,15 +256,30 @@ export class LayoutList extends Layout {
 
         UIHelper.decorateTable($elem);
 
-        if(view_schema.hasOwnProperty('actions') && this.view.getPurpose() != 'widget') {
-            let $view_actions = this.view.getContainer().find('.sb-view-header-actions-view').first();
-
-            for(let action of view_schema.actions) {
-                let action_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, action.label);
-                let $action_button = UIHelper.createButton(this.uuid+'_action-view-'+action.id, action_title, 'outlined')
-                $view_actions.append($action_button);
-                this.decorateActionButton($action_button, action);
+        if(view_schema.hasOwnProperty('actions')) {
+            if(view_schema.actions.length) {
+                // set action column width according to number of actions
+                $actions_column.css({width: ((view_schema.actions.length * 44) + 10) + 'px'});
             }
+
+            // #memo actions from view_schema.actions that are relative to a single object can be marked with the "inline" property, in such case they are rendered as buttons on each line (see below)
+            // otherwise actions are considered global to the view and are displayed in the top right corner (similar to forms)
+            // for actions depending on current selection, use  {view_schema}.header.actions
+            if(this.view.getPurpose() != 'widget') {
+                let $view_actions = this.view.getContainer().find('.sb-view-header-actions-view').first().empty();
+
+                for(let action of view_schema.actions) {
+                    if(action.hasOwnProperty('inline') && action.inline) {
+                        continue;
+                    }
+                    let action_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, action.label);
+                    let $action_button = UIHelper.createButton(this.uuid + '_action-view-' + action.id, action_title, 'outlined')
+                    $view_actions.append($action_button);
+                    this.decorateActionButton($action_button, action);
+                }
+
+            }
+
         }
     }
 
@@ -261,7 +296,7 @@ export class LayoutList extends Layout {
             groups = this.feedListGroupObjects(objects, group_by);
         }
 
-        let schema = this.view.getViewSchema();
+        let view_schema = this.view.getViewSchema();
 
         let $elem = this.$layout.find('.table-wrapper');
         let $table = $elem.find('table');
@@ -281,22 +316,44 @@ export class LayoutList extends Layout {
                 break;
             }
 
-            // group is an array of objects: render a row for each object
+            // 'group' is an array of objects: render a row for each object
             if( Array.isArray(group) ) {
                 let parent_group_id = '';
                 let $previous = $tbody.children().last();
                 if($previous && $previous.hasClass('sb-group-row')) {
                     parent_group_id = <string> $previous.attr('data-id');
                 }
-                for (let object of group) {
+                for(let object of group) {
                     let $row = this.feedListCreateObjectRow(object, parent_group_id);
+                    let $actions_cell = $('<td/>').css({'text-overflow': 'unset'});
+                    // #todo #inline #action #inline_actions - add actions for single line here
+                    // #todo - add a disable-overlay on the whole column (to prevent multiple clicks when action is running)
+
+                    if(view_schema.hasOwnProperty('actions')) {
+                        for(let action of view_schema.actions) {
+                            if(!action.hasOwnProperty('inline') || !action.inline) {
+                                continue;
+                            }
+                            let action_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, action.label);
+                            let $action_button = UIHelper.createButton(this.uuid + '_action-view-' + action.id + '-' + object.id, action_title, 'icon', action.icon ?? 'done');
+                            $action_button.attr('title', action_title);
+                            this.decorateActionButton($action_button, action, object);
+                            $actions_cell.append($action_button);
+                        }
+                    }
+
+                    $row.append($actions_cell);
                     $tbody.append($row);
                 }
             }
+            // 'group' is a header line
             else if(group.hasOwnProperty('_is_group')) {
                 let $row = this.feedListCreateGroupRow(group, $tbody);
+                $row.append($('<td/>'));
                 $tbody.append($row);
             }
+
+            // 'group' is a descriptor and needs to be pushed on the stack
             else {
                 // #memo - keys must be strings
                 let keys = Object.keys(group).sort().reverse();
@@ -320,93 +377,66 @@ export class LayoutList extends Layout {
         $table.find('tbody').remove();
         $table.append($tbody);
 
-        if(schema.hasOwnProperty('operations')) {
+        if(view_schema.hasOwnProperty('operations')) {
 
-            for(let operation in schema.operations) {
-                let descriptor = schema.operations[operation];
+            for(let operation in view_schema.operations) {
+                let descriptor = view_schema.operations[operation];
 
-                for(let item of schema.layout.items) {
-                    if(!item.hasOwnProperty('visible') || item.visible == true) {
+                for(let item of view_schema.layout.items) {
 
-                        if(descriptor.hasOwnProperty(item.value)) {
-                            let op_type = descriptor[item.value]['operation'];
-                            let op_result: number = 0.0;
-                            let i: number = 0;
-                            for (let object of objects) {
-                                let val: any = object[item.value];
-                                let usage: string = descriptor[item.value]?.usage ?? '';
-                                if( usage == 'time' || usage == 'time/plain' ) {
-                                    if(!val) {
-                                        val = 0;
-                                    }
-                                    else {
-                                        const [hours, minutes, seconds] = val.split(':').map(Number);
-                                        val = hours * 3600 + minutes * 60 + (seconds || 0);
-                                    }
-                                }
-                                switch(op_type) {
-                                    case 'DIFF':
-                                        op_result = (i == 0) ? val : (op_result - val);
-                                        break;
-                                    case 'SUM':
-                                        op_result += val;
-                                        break;
-                                    case 'COUNT':
-                                        op_result += 1;
-                                        break;
-                                    case 'MIN':
-                                        if(i == 0 || op_result > val) {
-                                            op_result = val;
-                                        }
-                                        break;
-                                    case 'MAX':
-                                        if(i == 0 || op_result < val) {
-                                            op_result = val;
-                                        }
-                                        break;
-                                    case 'AVG':
-                                        op_result += (val - op_result) / (i+1);
-                                        break;
-                                }
-                                ++i;
-                            }
-                            let value:any = op_result.toString();
-                            let prefix = '';
-                            let suffix = '';
-                            let usage: string = descriptor[item.value]?.usage ?? '';
-
-                            if(usage == 'time' || usage == 'time/plain') {
-                                value = String(Math.floor(op_result / 3600)).padStart(2, '0') + ':' +
-                                    String(Math.floor((op_result % 3600) / 60)).padStart(2, '0') + ':' +
-                                    String(op_result % 60).padStart(2, '0');
-                            }
-                            else if(usage.indexOf('amount/percent') >= 0 || usage.indexOf('amount/rate') >= 0) {
-                                suffix = '%';
-                                value = (op_result * 100).toFixed(0);
-                            }
-                            else if(usage.indexOf('amount/money') >= 0) {
-                                value = EnvService.formatCurrency(op_result);
-                            }
-                            else if(usage.indexOf('number/integer') >= 0 || usage.indexOf('numeric/integer') >= 0) {
-                                value = op_result.toFixed(0);
-                            }
-                            else if(usage.indexOf('number/real') >= 0) {
-                                value = EnvService.formatNumber(op_result);
-                            }
-                            else {
-                                value = EnvService.formatNumber(value);
-                            }
-
-                            if(descriptor[item.value].hasOwnProperty('prefix')) {
-                                prefix = descriptor[item.value]['prefix'];
-                            }
-                            if(descriptor[item.value].hasOwnProperty('suffix')) {
-                                suffix = descriptor[item.value]['suffix'];
-                            }
-
-                            this.$layout.find('[data-id="'+'operation-'+operation+'-'+item.value+'"]').text(prefix+value+suffix);
-                        }
+                    if(item.hasOwnProperty('visible') && item.visible == false) {
+                        continue;
                     }
+                    let op_field = item.value;
+                    if(!descriptor.hasOwnProperty(op_field)) {
+                        continue;
+                    }
+                    let op_type = descriptor[op_field]['operation'];
+                    let op_result: number = 0.0;
+                    let usage: string = descriptor[op_field]?.usage ?? null;
+                    // #todo - use computeOperation()
+                    let i: number = 0;
+                    for (let object of objects) {
+                        let val: any = object[op_field];
+                        if( usage == 'time' || usage == 'time/plain' ) {
+                            const time_str = typeof val === 'string' ? val : '';
+                            const [hours, minutes, seconds] = time_str.split(':').map(Number);
+                            val = (hours || 0) * 3600 + (minutes || 0) * 60 + (seconds || 0);
+                        }
+                        switch(op_type) {
+                            case 'DIFF':
+                                op_result = (i == 0) ? val : (op_result - val);
+                                break;
+                            case 'SUM':
+                                op_result += val;
+                                break;
+                            case 'COUNT':
+                                op_result += 1;
+                                break;
+                            case 'MIN':
+                                if(i == 0 || op_result > val) {
+                                    op_result = val;
+                                }
+                                break;
+                            case 'MAX':
+                                if(i == 0 || op_result < val) {
+                                    op_result = val;
+                                }
+                                break;
+                            case 'AVG':
+                                op_result += (val - op_result) / (i+1);
+                                break;
+                        }
+                        ++i;
+                    }
+
+                    let prefix = descriptor[item.value]?.prefix ?? '';
+                    let suffix = descriptor[item.value]?.suffix ?? '';
+
+                    let type: string | null = this.view.getModel().getFinalType(op_field);
+                    let value: string = Widget.toString(type ?? 'string', op_result, usage);
+
+                    this.$layout.find('[data-id="' + 'operation-' + operation + '-' + op_field + '"]').addClass('computed-operation').text(prefix + value + suffix);
                 }
             }
         }
@@ -414,7 +444,7 @@ export class LayoutList extends Layout {
         UIHelper.decorateTable($elem);
     }
 
-    private feedListGroupObjects(objects:any[], group_by:string[]) {
+    private feedListGroupObjects(objects: any[], group_by: string[]) {
         let groups: any = {};
         let model_fields = this.view.getModelFields();
 
@@ -427,7 +457,7 @@ export class LayoutList extends Layout {
             let level = 0;
 
             for(let i = 0; i < n; ++i) {
-                let field, group:any = group_by[i];
+                let field, group: any = group_by[i];
 
                 if(typeof group == 'object') {
                     if(!group.hasOwnProperty('field')) {
@@ -439,12 +469,12 @@ export class LayoutList extends Layout {
                     field = group;
                 }
 
-                let model_def = model_fields[field];
-                let key = object[field];
+                let model_def = model_fields[field] ?? null;
+                let key = object[field] ?? null;
 
-                if(!key) {
-                    console.warn('invalid value while grouping object on field '+field, group, object);
-                    key = '(null)';
+                if(!model_def || !key) {
+                    console.warn('invalid field or value while grouping object on field ' + field, group, object);
+                    continue;
                 }
 
                 let label = key;
@@ -463,31 +493,41 @@ export class LayoutList extends Layout {
                     label = moment(key).format(moment.localeData().longDateFormat('L'));
                     key = moment(key).format('YYYY-MM-DD');
                 }
-                else if(model_def.hasOwnProperty('usage')) {
-                    if(model_def.usage == 'date/month') {
-                        // convert ISO8601 month (1-12) to js month  (0-11)
-                        key = parseInt(key) - 1;
-                        label = moment().month(key).format('MMMM');
-                        key = String(key).padStart(2, '0');
-                    }
+                else if(model_def.hasOwnProperty('usage') && model_def.usage == 'date/month') {
+                    // convert ISO8601 month (1-12) to js month  (0-11)
+                    key = parseInt(key) - 1;
+                    label = moment().month(key).format('MMMM');
+                    key = String(key).padStart(2, '0');
+
+                }
+                else if(typeof key === 'string') {
+                    // remove special chars (to prevent issue when injecting to [data-id])
+                    key = key.replace(/[^a-zA-Z0-9]/g, "_");
                 }
 
                 if(!parent.hasOwnProperty(key)) {
                     if(i < n-1) {
                         //  no data (data are stored in children)
-                        parent[key] = {'_id': parent_id+key, '_parent_id': parent_id, '_key': key, '_label': label, '_level': level};
-                        if(typeof group == 'object' && group.hasOwnProperty('operation')) {
-                            parent[key]['_operation'] = group.operation;
-                        }
+                        parent[key] = {'_id': parent_id + key, '_parent_id': parent_id, '_key': key, '_label': label, '_level': level};
+
                     }
                     else {
-                        parent[key] = {'_id': parent_id+key, '_parent_id': parent_id, '_key': key, '_label': label, '_level': level, '_data': []};
-                        if(typeof group == 'object' && group.hasOwnProperty('operation')) {
+                        parent[key] = {'_id': parent_id + key, '_parent_id': parent_id, '_key': key, '_label': label, '_level': level, '_data': []};
+                    }
+                    if(typeof group == 'object') {
+                        if(group.hasOwnProperty('operation')) {
                             parent[key]['_operation'] = group.operation;
                         }
+                        if(group.hasOwnProperty('operations')) {
+                            parent[key]['_operations'] = group.operations;
+                        }
+                        if(group.hasOwnProperty('colspan')) {
+                            parent[key]['_colspan'] = group.colspan;
+                        }
                     }
+
                 }
-                parent_id = parent_id+key;
+                parent_id = parent_id + key;
                 parent = parent[key];
                 ++level;
             }
@@ -504,12 +544,14 @@ export class LayoutList extends Layout {
      * @param parent_group_id A string used as DOM id that allows to retrieve parent node.
      * @returns
      */
-    private feedListCreateObjectRow(object:any, parent_group_id:string) {
-        let schema = this.view.getViewSchema();
+    private feedListCreateObjectRow(object: any, parent_group_id: string) {
+        let view_schema = this.view.getViewSchema();
 
         let view_fields = this.view.getViewFields();
         let model_fields = this.view.getModelFields();
         let translation = this.view.getTranslation();
+
+        const user = this.view.getUser();
 
         let group_by = this.view.getGroupBy();
 
@@ -527,7 +569,7 @@ export class LayoutList extends Layout {
                 // #todo - allow overloading default action ('ACTIONS.UPDATE')
                 // fallback to view mode if `header.actions.ACTION.EDIT` is set to false
                 let mode = this.view.getMode();
-                if(childViewSchema.hasOwnProperty("header") && childViewSchema.header.hasOwnProperty("actions")) {
+                if(childViewSchema.hasOwnProperty("header") && childViewSchema.header.hasOwnProperty('actions')) {
                     if(childViewSchema.header.actions.hasOwnProperty("ACTION.EDIT") && childViewSchema.header.actions["ACTION.EDIT"] === false) {
                         mode = 'view';
                     }
@@ -536,7 +578,7 @@ export class LayoutList extends Layout {
                 let config: any = {entity: this.view.getEntity(), type: 'form', name: this.view.getName(), mode: mode, domain: ['id', '=', object.id]};
                 // if current list is a widget, reload content after child context has been closed
                 if(this.view.getPurpose() == 'widget') {
-                    config.callback = (data:any) => {
+                    config.callback = (data: any) => {
                         // trigger a refresh of the current view
                         this.view.onchangeView();
                     };
@@ -545,7 +587,7 @@ export class LayoutList extends Layout {
             }
         })
         // toggle mode for all cells in row
-        .on( '_toggle_mode', (event:any, mode: string = 'view') => {
+        .on( '_toggle_mode', (event: any, mode: string = 'view') => {
             console.debug('Layout - received toggle_mode', mode);
             let $this = $(event.currentTarget);
 
@@ -566,17 +608,17 @@ export class LayoutList extends Layout {
                 $cell.empty().append($widget);
 
                 if(mode == 'edit') {
-                    $widget.on('_updatedWidget', async (event:any, refresh: boolean = true) => {
+                    $widget.on('_updatedWidget', async (event: any, refresh: boolean = true) => {
                         console.debug('Layout - received _updatedWidget event', widget.getValue());
-                        let values:any = {};
+                        let values: any = {};
                         values[field] = widget.getValue();
-                        let model_fields:any = {};
+                        let model_fields: any = {};
                         // if value is less than 1k, relay onchange to server
                         // #todo - choose an objectivable limit
                         if(String(widget.getValue()).length < 1000) {
                             // relay the change to back-end through onupdate
                             try {
-                                // #todo - add support for dynamic schema (ex. filter or update selection of selectable fields, based on value from other fields)
+                                // #todo - add support for dynamic view_schema (ex. filter or update selection of selectable fields, based on value from other fields)
                                 const result = await ApiService.call("?do=model_onchange", {entity: this.view.getEntity(), changes: this.view.getModel().export(values), values: this.view.getModel().export(object), lang: this.view.getLang()} );
                                 if (typeof result === 'object' && result != null) {
                                     for(let field of Object.keys(result)) {
@@ -639,18 +681,19 @@ export class LayoutList extends Layout {
         });
 
         // for lists in edit mode (excepted widgets), add a checkbox
+        // #todo - in some cases we should be able to perform a custom action on elements from widget lists : use embedded actions (?)
         if(this.view.getPurpose() != 'widget' || this.view.getMode() == 'edit') {
-            UIHelper.createTableCellCheckbox()
-            .addClass('sb-view-layout-list-row-checkbox')
-            .appendTo($row)
-            .find('input')
-            .attr('data-id', object.id)
-            .on('click', (event:any) => {
-                // wait for widget to update and notify about change
-                setTimeout( () => this.view.onchangeSelection(this.getSelected()) );
-                // prevent handling of click on parent `tr` element
-                event.stopPropagation();
-            });
+            UIHelper.createTableCellCheckbox(this.uuid + '_object' + object.id)
+                .addClass('sb-view-layout-list-row-checkbox')
+                .appendTo($row)
+                .find('input')
+                .attr('data-id', object.id)
+                .on('click', (event:any) => {
+                    // wait for widget to update and notify about change
+                    setTimeout( () => this.view.onchangeSelection(this.getSelected()) );
+                    // prevent handling of click on parent `tr` element
+                    event.stopPropagation();
+                });
         }
 
         if(group_by.length > 0) {
@@ -660,12 +703,18 @@ export class LayoutList extends Layout {
 
         // for each field, create a widget, append to a cell, and append cell to row
         let is_first:boolean = true;
-        for(let item of schema.layout.items) {
+        for(let item of view_schema.layout.items) {
 
             let config = WidgetFactory.getWidgetConfig(this.view, item.value, translation, model_fields, view_fields);
 
-            // unknown or invisible field
-            if(config === null || (config.hasOwnProperty('visible') && !config.visible)) continue;
+            if(!config) {
+                continue;
+            }
+
+            // ignore non-visible fields
+            if(config.hasOwnProperty('visible') && config.visible == 'false') {
+                continue;
+            }
 
             let value = object[item.value];
 
@@ -676,7 +725,7 @@ export class LayoutList extends Layout {
                 if(config.hasOwnProperty('original_domain')) {
                     let user = this.view.getUser();
                     let tmpDomain = new Domain(config.original_domain);
-                    config.domain = tmpDomain.parse(object, user).toArray();
+                    config.domain = tmpDomain.parse(object, user, {}, this.getEnv()).toArray();
                 }
                 else {
                     config.domain = [];
@@ -684,8 +733,8 @@ export class LayoutList extends Layout {
 
                 // by convention, `name` subfield is always loaded for relational fields
                 if(config.type == 'many2one') {
-                    value = (object[item.value] && object[item.value].hasOwnProperty('name'))?object[item.value]['name']:'';
-                    config.object_id = (object[item.value] && object[item.value].hasOwnProperty('id'))?object[item.value]['id']:0;
+                    value = (object[item.value] && object[item.value].hasOwnProperty('name')) ? object[item.value]['name'] : '';
+                    config.object_id = (object[item.value] && object[item.value].hasOwnProperty('id')) ? object[item.value]['id'] : 0;
                 }
                 else {
                     // Model do not load o2m and m2m fields : these are handled by sub-views
@@ -697,7 +746,7 @@ export class LayoutList extends Layout {
                 }
             }
 
-            let widget:Widget = WidgetFactory.getWidget(this, config.type, '', '', config);
+            let widget: Widget = WidgetFactory.getWidget(this, config.type, '', '', config);
             widget.setValue(value);
             widget.setReadonly(config.readonly);
             widget.setIsFirst(is_first);
@@ -726,11 +775,13 @@ export class LayoutList extends Layout {
 
     private feedListCreateGroupRow(group:any, $tbody:any) {
         let schema = this.view.getViewSchema();
+        let model_fields = this.view.getModelFields();
+        let viewModel = this.view.getModel();
 
-        let label:string = (group.hasOwnProperty('_label'))?group['_label']:'';
-        let level:string = (group.hasOwnProperty('_level'))?group['_level']:'';
-        let prefix:string = '';
-        let suffix:string = '';
+        let label: string = (group.hasOwnProperty('_label')) ? group['_label'] : '';
+        let level: string = (group.hasOwnProperty('_level')) ? group['_level'] : '';
+        let prefix: string = '';
+        let suffix: string = '';
 
         let children_count = 0;
         let parent_group_id = group['_parent_id'];
@@ -747,85 +798,23 @@ export class LayoutList extends Layout {
         }
 
         if(group.hasOwnProperty('_operation')) {
-            let op_type = group._operation[0];
-            let op_field = (group._operation[1].split('.'))[1];
-            const item = schema.layout?.items.find( (item: any) => item.value === op_field );
-            let data: any[] = this.getGroupData(group, op_field);
-            let op_result: number = 0;
-            let i:number = 0;
-            for(let val of data) {
-                if(item.type == 'time' || item.result_type == 'time') {
-                    const [hours, minutes, seconds] = val.split(':').map(Number);
-                    val = hours * 3600 + minutes * 60 + (seconds || 0);
-                }
-                switch(op_type) {
-                    case 'DIFF':
-                        op_result = (i == 0) ? val : (op_result - val);
-                        break;
-                    case 'SUM':
-                        op_result += val;
-                        break;
-                    case 'COUNT':
-                        ++op_result;
-                        break;
-                    case 'MIN':
-                        if(i == 0 || val < op_result) {
-                            op_result = val;
-                        }
-                        break;
-                    case 'MAX':
-                        if(i == 0 || val > op_result) {
-                            op_result = val;
-                        }
-                        break;
-                    case 'AVG':
-                        op_result += (val - op_result) / (i+1);
-                        break;
-                }
-                ++i;
-            }
-            let value: string = op_result.toString();
-            if(item.type == 'time' || item.result_type == 'time') {
-                value = String(Math.floor(op_result / 3600)).padStart(2, '0') + ':' +
-                    String(Math.floor((op_result % 3600) / 60)).padStart(2, '0') + ':' +
-                    String(op_result % 60).padStart(2, '0');
-            }
-            else if(item.type == 'integer' || item.result_type == 'integer') {
-                value = op_result.toFixed(0);
-            }
-            else if(item && item.hasOwnProperty('usage')) {
-                const usage = item.usage;
-                if(usage.indexOf('amount/percent') >= 0 || usage.indexOf('amount/rate') >= 0) {
-                    value = (op_result * 100).toFixed(0) + '%';
-                }
-                else if(usage.indexOf('amount/money') >= 0) {
-                    value = EnvService.formatCurrency(op_result);
-                }
-                else if(usage.indexOf('number/integer') >= 0 || usage.indexOf('numeric/integer') >= 0) {
-                    value = op_result.toFixed(0);
-                }
-                else if(usage.indexOf('number/real') >= 0) {
-                    value = EnvService.formatNumber(op_result);
-                }
-            }
-            else {
-                value = EnvService.formatNumber(op_result);
-            }
+            let value = this.computeOperation(group._operation, group);
             suffix = '[' + value + ']';
         }
 
+        const row_uuid: string = UIHelper.getUuid();
         let $row = $('<tr/>')
             .addClass('sb-view-layout-list-row sb-group-row folded')
             .attr('data-parent-id', parent_group_id)
             .attr('data-id', group['_id'])
             .attr('data-key', group['_key'])
             .attr('data-label', group['_label'])
-           .attr('data-level', group['_level'])
+            .attr('data-level', group['_level'])
             .attr('data-children-count', children_count)
-            .attr('id', UIHelper.getUuid());
+            .attr('id', row_uuid);
 
         if(this.view.getPurpose() != 'widget' || this.view.getMode() == 'edit') {
-            let $checkbox = UIHelper.createTableCellCheckbox().addClass('sb-view-layout-list-row-checkbox');
+            let $checkbox = UIHelper.createTableCellCheckbox(row_uuid).addClass('sb-view-layout-list-row-checkbox');
             $checkbox.find('input').on('click', (event:any) => {
                 event.stopPropagation();
 
@@ -843,7 +832,7 @@ export class LayoutList extends Layout {
                         }
                     }
                     else {
-                        selection.push(parseInt(<string>$this.children().first().find('input').attr('data-id'), 10));
+                        selection.push(parseInt(<string> $this.children().first().find('input').attr('data-id'), 10));
                     }
                 });
 
@@ -857,13 +846,33 @@ export class LayoutList extends Layout {
             $row.append($checkbox);
         }
 
-        $row.append( $('<td />').addClass('sb-group-cell').css({'padding-left': ''+(12+parseInt(level)*4)+'px)'}).append( $('<i/>').addClass('material-icons sb-toggle-button').text('chevron_right') ) );
+        // compute colspan: default to full row
+        let colspan = group['_colspan'] ?? schema.layout.items.length;
+        $row.append( $('<td />').addClass('sb-group-cell').css({'padding-left': '' + (12 + parseInt(level) * 4) + 'px)'}).append( $('<i/>').addClass('material-icons sb-toggle-button').text('chevron_right') ) );
         $row.append( $('<td/>')
-                        .attr('title', prefix + label)
-                        .attr('colspan', schema.layout.items.length)
-                        .addClass('sb-group-cell sb-group-cell-label')
-                        .append('<div style="display: flex;"> <div style="overflow: hidden;text-overflow: ellipsis;">'+prefix + ' <span>'+label+'</span></div>'+'<div style="font-weight: 500; margin-left: 20px;">'+suffix+'</div></div>')
-                    );
+                .attr('title', prefix + label)
+                .attr('colspan', colspan)
+                .addClass('sb-group-cell sb-group-cell-label')
+                .append('<div style="display: flex;"> <div style="overflow: hidden;text-overflow: ellipsis;">' + prefix + ' <span>' + label + '</span></div>'+'<div style="font-weight: 500; margin-left: 20px;">' + suffix + '</div></div>')
+            );
+
+        // append remaining cells, and inject operations, if any
+        for(let i = colspan, n = schema.layout.items.length; i < n; ++i) {
+            let column = schema.layout.items[i].value;
+            let type = viewModel.getFinalType(column);
+            let value = '';
+            let align = 'right';
+            if(group.hasOwnProperty('_operations') && group._operations.hasOwnProperty(column)) {
+                let operation = [ group._operations[column]?.operation, column ];
+                value = this.computeOperation(operation, group, group._operations[column]?.usage ?? null);
+                align = group._operations[column]?.align ?? align;
+            }
+            $row.append( $('<td/>')
+                    .addClass('sb-group-cell sb-group-cell-label sb-widget-cell')
+                    .attr('data-type', type)
+                    .append('<div class="sb-widget-mode-view" style="width: 100%; text-align: ' + align + '; font-weight: bold;">' + value + '</div>')
+                );
+        }
 
         $row.on('click', () => {
             let $tbody = this.$layout.find('tbody');
@@ -930,6 +939,66 @@ export class LayoutList extends Layout {
         }
 
         return $row;
+    }
+
+    private computeOperation(operation: Array<string>, group: any, usage?: string | null) {
+        let result: string = '';
+        let op_type  = operation?.[0] ?? null;
+        let op_field = operation?.[1] ?? null;
+
+        let viewSchema = this.view.getViewSchema();
+        // support (unnecessary) notation 'object.{field}'
+        if(op_field.startsWith('object.')) {
+            op_field = (op_field.split('.'))[1];
+        }
+        const item = viewSchema.layout?.items.find( (item: any) => item.value === op_field );
+
+        if(item) {
+            let data: any[] = this.getGroupData(group, op_field);
+            let op_result: number = 0;
+            let i: number = 0;
+            for(let val of data) {
+                if(item.type == 'time' || item.result_type == 'time') {
+                    const time_str = (typeof val === 'string') ? val : '';
+                    const [hours, minutes, seconds] = time_str.split(':').map(Number);
+                    val = (hours || 0) * 3600 + (minutes || 0) * 60 + (seconds || 0);
+                }
+                switch(op_type) {
+                    case 'DIFF':
+                        op_result = (i == 0) ? val : (op_result - val);
+                        break;
+                    case 'SUM':
+                        op_result += val;
+                        break;
+                    case 'COUNT':
+                        ++op_result;
+                        break;
+                    case 'MIN':
+                        if(i == 0 || val < op_result) {
+                            op_result = val;
+                        }
+                        break;
+                    case 'MAX':
+                        if(i == 0 || val > op_result) {
+                            op_result = val;
+                        }
+                        break;
+                    case 'AVG':
+                        op_result += (val - op_result) / (i+1);
+                        break;
+                }
+                ++i;
+            }
+
+            let model_def = this.view.getModelFields()[op_field] ?? null;
+            let type: string | null = this.view.getModel().getFinalType(op_field);
+            usage = usage ?? item.usage ?? model_def.usage ?? null;
+            if(usage) {
+                type = WidgetFactory.getTypeFromUsage(usage, type ?? 'string');
+            }
+            result = Widget.toString(type ?? 'string', op_result, usage);
+        }
+        return result;
     }
 
     private getGroupData(group: any, field: string) {

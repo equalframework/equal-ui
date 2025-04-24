@@ -106,6 +106,9 @@ export class Layout implements LayoutInterface{
                     let config = widget.getConfig();
                     if(config.hasOwnProperty('required') && config.required) {
                         let value = widget.getValue();
+                        if(config.type == 'many2one' && config.hasOwnProperty('object_id')) {
+                            value = config.object_id;
+                        }
                         if(value === null || value.length == 0) {
                             this.markFieldAsInvalid(parseInt(object_id), field, msg);
                             return false;
@@ -143,9 +146,9 @@ export class Layout implements LayoutInterface{
             return null;
         }
 
-        let type = this.view.getModel().getFinalType(field);
+        let type: string | null = this.view.getModel().getFinalType(field);
 
-        if(['one2many', 'many2one', 'many2many'].indexOf(type) > -1) {
+        if(type && ['one2many', 'many2one', 'many2many'].indexOf(type) > -1) {
             // by convention, `name` subfield is always loaded for relational fields
             if(type == 'many2one') {
                 value = value['name'];
@@ -244,7 +247,8 @@ export class Layout implements LayoutInterface{
     }
 
     protected async decorateActionButton($button: JQuery, action: any, object: any = {}) {
-        $button.on('click', async () => {
+        $button.on('click', async (event: any) => {
+            event.stopPropagation();
             let $disable_overlay = this.view.getContainer().find('.sb-view-header-actions .disable-overlay');
             try {
                 let resulting_params: any = {};
@@ -406,7 +410,6 @@ export class Layout implements LayoutInterface{
                 await this.view.displayErrorFeedback(this.view.getTranslation(), response);
             }
         });
-
     }
 
     /**
@@ -524,6 +527,37 @@ export class Layout implements LayoutInterface{
             await this.view.updatedContext();
             await this.view.displayErrorFeedback(translation, response);
         }
+    }
+
+    protected isVisible(visible: string | [], object: any, user: any, parent: any = {}, env: any = {}) {
+        console.debug('LayoutForm::isVisible - evaluating visibility', JSON.stringify(visible), object, user, env);
+        let result = true;
+        if(visible.length) {
+            if(visible === 'false') {
+                result = false;
+            }
+            else if(visible === 'true') {
+                result = true;
+            }
+            else {
+                try {
+                    let array_domain = visible;
+                    if(typeof array_domain == 'string') {
+                        array_domain = JSON.parse(array_domain);
+                    }
+                    if(!Array.isArray(array_domain)) {
+                        throw new Error('non array visibility domain');
+                    }
+                    let domain = new Domain(array_domain);
+                    result = domain.evaluate(object, user, parent, env);
+                }
+                catch(error) {
+                    console.warn('Error parsing JSON', visible, error);
+                }
+            }
+        }
+        console.debug('LayoutForm::isVisible - visibility result', result);
+        return result;
     }
 
 }
