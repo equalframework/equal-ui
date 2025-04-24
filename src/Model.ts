@@ -45,7 +45,7 @@ export class Model {
         }
     }
 
-    private deepCopy(obj:any):any {
+    private deepCopy(obj: any):any {
         var copy:any;
 
         // Handle the 3 simple types, and null or undefined
@@ -85,8 +85,8 @@ export class Model {
      * @param field
      * @returns string The final type. If final type cannot be resolved, the 'string' type is returned as default.
      */
-    public getFinalType(field:string) {
-        let result = 'string';
+    public getFinalType(field: string): string | null {
+        let result = null;
         let schema = this.view.getModelFields();
         if(schema) {
             while(schema.hasOwnProperty(field) && schema[field].hasOwnProperty('type') && schema[field].type == 'alias' && schema[field].hasOwnProperty('alias')) {
@@ -137,16 +137,19 @@ export class Model {
             if(!object.hasOwnProperty(field)) {
                 continue;
             }
-            let type = this.getFinalType(field);
+            let type: string | null = this.getFinalType(field);
             if(type == 'many2one') {
                 if(typeof object[field] == 'object' && object[field]) {
                     result[field] = object[field].id;
                 }
                 else {
-                    result[field] = (object[field])?object[field]:'null';
+                    result[field] = (object[field]) ? object[field] : 'null';
                 }
             }
-            else if(['one2many', 'many2many'].indexOf(type) > -1) {
+            else if(type && ['time', 'date', 'datetime'].indexOf(type) > -1) {
+                result[field] = (object[field] && object[field].length) ? object[field] : 'null';
+            }
+            else if(type && ['one2many', 'many2many'].indexOf(type) > -1) {
                 // #todo
                 result[field] = object[field];
             }
@@ -187,7 +190,7 @@ export class Model {
                 console.warn('unknown field', field);
                 continue;
             }
-            let type = this.getFinalType(field);
+            let type: string | null = this.getFinalType(field);
             // append `name` subfield for relational fields, using the dot notation
             if('many2one' == type) {
                 fields.push(field + '.name');
@@ -202,12 +205,18 @@ export class Model {
                 }
             }
             // we do not load relational fields, these can result in potentially long lists which are handled by the Widgets
-            else if(['one2many', 'many2many'].indexOf(type) > -1) {
+            else if(type && ['one2many', 'many2many'].indexOf(type) > -1) {
                 // ignore
             }
             else {
                 fields.push(field);
             }
+        }
+
+        // force adding special fields
+        // #todo - complete the list
+        if(schema.hasOwnProperty('status')) {
+            fields.push('status');
         }
 
         try {
@@ -300,18 +309,18 @@ export class Model {
     public get(ids:any[] = []) {
         console.debug('Model::get', this.objects, this.has_changed);
         let promise = $.Deferred();
-        this.loaded_promise.
-        then( () => {
-            if(ids.length) {
-                // create a custom collection by filtering objects on their ids
-                promise.resolve( this.objects.filter( (object:any) => ids.indexOf(+object['id']) > -1 ) );
-            }
-            else {
-                // return the full collection
-                promise.resolve(this.objects);
-            }
-        })
-        .catch( () => promise.resolve({}) );
+        this.loaded_promise
+            .then( () => {
+                if(ids.length) {
+                    // create a custom collection by filtering objects on their ids
+                    promise.resolve( this.objects.filter( (object:any) => ids.indexOf(+object['id']) > -1 ) );
+                }
+                else {
+                    // return the full collection
+                    promise.resolve(this.objects);
+                }
+            })
+            .catch( () => promise.resolve({}) );
 
         return promise;
     }
@@ -353,7 +362,7 @@ export class Model {
             if(object == undefined) {
                 continue;
             }
-            let result:any = {id: id};
+            let result: any = {id: id};
             for(let field of fields) {
                 result[field] = object[field];
             }
