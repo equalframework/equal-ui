@@ -123,22 +123,28 @@ export class Domain {
                 let value = condition.value;
 
                 // handle object references as `value` part
-                if(typeof value === 'string' && value.indexOf('object.') == 0 && object) {
+                if(typeof value === 'string' && value.indexOf('object.') == 0) {
                     let path: string = value.substring('object.'.length);
                     let parts: string[] = path.split('.');
                     let target: any = object;
 
+                    let has_unknown_field: boolean = false;
+
                     for(const subfield of parts) {
                         if(!target.hasOwnProperty(subfield)) {
+                            has_unknown_field = true;
                             break;
                         }
                         target = target[subfield];
                     }
+                    if(has_unknown_field) {
+                        continue;
+                    }
                     // target points to an object with subfields
                     if(typeof target === 'object' && !Array.isArray(target)) {
+                        // #memo - this case should never occur (unknown fields are ignored from condition)
                         if(target === null) {
                             value = 'null';
-                            continue;
                         }
                         else if(target.hasOwnProperty('id')) {
                             value = target.id;
@@ -147,7 +153,8 @@ export class Domain {
                             value = target.name;
                         }
                         else {
-                            continue;
+                            // target exists and is an empty object: resolve as null
+                            value = 'null';
                         }
                     }
                     else {
@@ -188,7 +195,6 @@ export class Domain {
                     let target = value.substring('env.'.length);
                     if(!env || !env.hasOwnProperty(target)) {
                         value = false;
-                        // continue;
                     }
                     value = env[target];
                 }
@@ -196,6 +202,7 @@ export class Domain {
                 condition.value = value;
             }
         }
+        console.debug('Domain::parse result', JSON.stringify(this.toArray()));
         return this;
     }
 
