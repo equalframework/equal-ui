@@ -129,7 +129,7 @@ export class Model {
         return (Object.keys(this.has_changed).length > 0);
     }
 
-    public export(object:any) {
+    public export(object: any) {
         console.debug('Model::export', object);
         let result:any = {};
         let schema = this.view.getModelFields();
