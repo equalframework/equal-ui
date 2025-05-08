@@ -376,7 +376,7 @@ export class LayoutForm extends Layout {
             });
 
             for(let widget_index of Object.keys(this.model_widgets[0])) {
-                let widget = this.model_widgets[0][widget_index];
+                let widget: Widget = this.model_widgets[0][widget_index];
                 // widget might be missing (if not visible)
                 if(!widget) {
                     continue;
@@ -473,9 +473,9 @@ export class LayoutForm extends Layout {
 
                     // #todo - systematize the way change is transmitted
                     has_changed = (!value || $parent.data('value') != JSON.stringify(value));
-                    if(widget.config.hasOwnProperty('changed') && widget.config.changed) {
+                    if(widget.getConfig().hasOwnProperty('changed') && widget.getConfig().changed) {
                         has_changed = true;
-                        widget.config.changed = false;
+                        widget.setConfig({...config, changed: false});
                     }
 
                     widget.setConfig({...config, ready: true})
@@ -509,18 +509,36 @@ export class LayoutForm extends Layout {
                             console.debug("Layout::feedForm : received _updatedWidget", field, widget.getValue(), refresh);
                             // #memo - the focus must be given back to currently focused item, regardless of the updated widget
                             // this.focused_widget_id = widget.getId();
+
                             // update object with new value
                             let values: any = {};
-                            values[field] = widget.getValue();
                             let model_fields: any = {};
-                            // if value is less than 1k, relay onchange to server
-                            // #todo - choose an proportionate limit
-                            if(String(widget.getValue()).length < 1000) {
-                                // relay the change to back-end through onupdate
-                                try {
-                                    const result = await ApiService.call("?do=model_onchange", {entity: this.view.getEntity(), changes: this.view.getModel().export(values), values: this.view.getModel().export(object), lang: this.view.getLang()} );
 
-                                    if (typeof result === 'object' && result != null) {
+                            values[field] = widget.getValue();
+
+                            // relay the change to back-end through onupdate
+                            // if value is over 1k, do not relay onchange to server
+                            // #todo - choose a proportionate (objectivable) limit
+                            if(widget.getType() === 'file' || widget.toString().length < 1000) {
+                                try {
+                                    let params: any = {
+                                        entity: this.view.getEntity(),
+                                        changes: {},
+                                        values: {},
+                                        lang: this.view.getLang()
+                                    };
+                                    // for `file` wdgets, we relay only meta instead of full binary data (see below)
+                                    if(widget.getType() === 'file') {
+                                        params.changes[field] = widget.getMeta();
+                                    }
+                                    else {
+                                        params.changes = this.view.getModel().export(values);
+                                        params.values  = this.view.getModel().export(object);
+                                    }
+
+                                    const result = await ApiService.call("?do=model_onchange", params);
+
+                                    if(typeof result === 'object' && result != null) {
 
                                         for(let changed_field of Object.keys(result)) {
                                             // there are changes to apply on the schema: we must force a re-feed on the Form
@@ -568,6 +586,7 @@ export class LayoutForm extends Layout {
                                     console.warn('unable to send onchange request', response);
                                 }
                             }
+
                             // update model schema of the view if necessary
                             if(Object.keys(model_fields).length > 0) {
                                 console.debug('LayoutForm::feed - updating model', model_fields);
@@ -584,7 +603,9 @@ export class LayoutForm extends Layout {
                                     }
                                 }
                             }
-                            this.view.onchangeViewModel([object.id], values, refresh);
+                            if(Object.keys(values).length > 0) {
+                                this.view.onchangeViewModel([object.id], values, refresh);
+                            }
                         });
 
                         // prevent refreshing objects that haven't changed
