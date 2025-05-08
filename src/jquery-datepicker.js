@@ -94,6 +94,11 @@
 			//call the original function
 			this._updateDatepicker_orig(inst);
 
+            // prevent click on href="#" from triggering a page context change
+            inst.dpDiv.off('click.preventDefaultFix').on('click.preventDefaultFix', 'td a', function(e) {
+                e.preventDefault();
+            });
+
 			//TODO: multiMonth
 			var numMonths = this._getNumberOfMonths(inst);
 			var isMultiMonth = (numMonths[0] != 1 || numMonths[1] != 1);
