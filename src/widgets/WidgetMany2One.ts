@@ -83,8 +83,12 @@ export default class WidgetMany2One extends Widget {
                     if(this.config.hasOwnProperty('header')) {
                         if(this.config.header.hasOwnProperty('view')) {
                             let parts = this.config.header.view.split('.');
-                            if(parts.length) view_type = <string>parts.shift();
-                            if(parts.length) view_name = <string>parts.shift();
+                            if(parts.length) {
+                                view_type = <string> parts.shift();
+                            }
+                            if(parts.length) {
+                                view_name = <string> parts.shift();
+                            }
                         }
                     }
                     // open targeted object in new context
@@ -136,12 +140,7 @@ export default class WidgetMany2One extends Widget {
                                     let action: any = this.config.header.actions['ACTION.CREATE'][0];
                                     if(action.hasOwnProperty('domain')) {
                                         let tmpDomain = new Domain(action.domain);
-                                        let object = {};
-                                        let user = this.getLayout().getView().getUser();
-                                        if(this.config.object) {
-                                            object = this.config.object
-                                        }
-                                        tmpDomain.parse(object, user, {}, this.getLayout().getEnv());
+                                        tmpDomain.parse(this.config?.object ?? {}, this.getLayout().getView().getUser(), {}, this.getLayout().getEnv());
                                         contextDomain.merge(new Domain(tmpDomain.toArray()));
                                     }
                                     if(action.hasOwnProperty('view')) {
@@ -202,10 +201,11 @@ export default class WidgetMany2One extends Widget {
                 };
 
                 let openSelectContext = () => {
-                    let domain:any = [];
+                    let tmpDomain = new Domain([]);
                     if(this.config.hasOwnProperty('domain')) {
-                        domain = this.config.domain;
+                        tmpDomain.merge(new Domain(this.config.domain));
                     }
+                    tmpDomain.parse(this.config?.object ?? {}, this.getLayout().getView().getUser(), {}, this.getLayout().getEnv());
 
                     this.getLayout().openContext({...this.config,
                         entity: this.config.foreign_object,
@@ -215,7 +215,7 @@ export default class WidgetMany2One extends Widget {
                         */
                         type: 'list',
                         name: 'default',
-                        domain: domain,
+                        domain: tmpDomain.toArray(),
                         mode: 'view',
                         purpose: 'select',
                         limit: 25,
@@ -252,11 +252,11 @@ export default class WidgetMany2One extends Widget {
                             domainArray.push(cond);
                         }
                         let tmpDomain = new Domain(domainArray);
-                        let domain:any = [];
                         if(this.config.hasOwnProperty('domain')) {
-                            domain = this.config.domain;
+                            tmpDomain.merge(new Domain(this.config.domain));
                         }
-                        tmpDomain.merge(new Domain(domain));
+                        tmpDomain.parse(this.config?.object ?? {}, this.getLayout().getView().getUser(), {}, this.getLayout().getEnv());
+
                         // fetch first objects from config.foreign_object (use config.domain) + add an extra line ("advanced search...")
                         let limit = (this.config.hasOwnProperty('limit') && this.config.limit) ? this.config.limit : 5;
                         let order = (this.config.hasOwnProperty('order') && this.config.order) ? this.config.order : 'id';
