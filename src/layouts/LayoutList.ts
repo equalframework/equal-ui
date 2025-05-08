@@ -296,6 +296,8 @@ export class LayoutList extends Layout {
             groups = this.feedListGroupObjects(objects, group_by);
         }
 
+        const user = this.view.getUser();
+
         let view_schema = this.view.getViewSchema();
 
         let $elem = this.$layout.find('.table-wrapper');
@@ -325,13 +327,20 @@ export class LayoutList extends Layout {
                 }
                 for(let object of group) {
                     let $row = this.feedListCreateObjectRow(object, parent_group_id);
-                    let $actions_cell = $('<td/>').css({'text-overflow': 'unset'});
-                    // #todo #inline #action #inline_actions - add actions for single line here
+                    let $actions_cell = $('<td/>').addClass('sb-action-cell').css({'text-overflow': 'unset'});
+                    // #inline #action #inline_actions - add actions for single line
                     // #todo - add a disable-overlay on the whole column (to prevent multiple clicks when action is running)
 
                     if(view_schema.hasOwnProperty('actions')) {
                         for(let action of view_schema.actions) {
+                            let visible = true;
                             if(!action.hasOwnProperty('inline') || !action.inline) {
+                                visible = false;
+                            }
+                            else if(action.hasOwnProperty('visible')) {
+                                visible = this.isVisible(action.visible, object, user, {}, this.getEnv());
+                            }
+                            if(!visible) {
                                 continue;
                             }
                             let action_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, action.label);
@@ -509,7 +518,6 @@ export class LayoutList extends Layout {
                     if(i < n-1) {
                         //  no data (data are stored in children)
                         parent[key] = {'_id': parent_id + key, '_parent_id': parent_id, '_key': key, '_label': label, '_level': level};
-
                     }
                     else {
                         parent[key] = {'_id': parent_id + key, '_parent_id': parent_id, '_key': key, '_label': label, '_level': level, '_data': []};
@@ -597,15 +605,31 @@ export class LayoutList extends Layout {
                 let widget = this.model_widgets[object.id][field];
 
                 // switch to given mode
-                if(widget.getMode() == mode) return;
+                if(widget.getMode() == mode) {
+                    return;
+                }
+
+                $cell.empty();
+
+                let visible = true;
+                let config = widget.getConfig();
+                // handle visibility tests (domain)
+                if(config.hasOwnProperty('visible')) {
+                    visible = this.isVisible(config.visible, object, user, {}, this.getEnv());
+                }
+
+                if(!visible) {
+                    return;
+                }
+
                 let $widget = widget.setMode(mode).render();
+
+                $cell.append($widget);
 
                 // handle special situations that allow cell content to overflow
                 if(widget.getType() == 'boolean') {
                     $cell.addClass('allow-overflow');
                 }
-
-                $cell.empty().append($widget);
 
                 if(mode == 'edit') {
                     $widget.on('_updatedWidget', async (event: any, refresh: boolean = true) => {
@@ -614,7 +638,7 @@ export class LayoutList extends Layout {
                         values[field] = widget.getValue();
                         let model_fields: any = {};
                         // if value is less than 1k, relay onchange to server
-                        // #todo - choose an objectivable limit
+                        // #todo - choose a proportionate (objectivable) limit
                         if(String(widget.getValue()).length < 1000) {
                             // relay the change to back-end through onupdate
                             try {
@@ -723,7 +747,6 @@ export class LayoutList extends Layout {
 
                 // if widget has a domain, parse it using current object and user
                 if(config.hasOwnProperty('original_domain')) {
-                    let user = this.view.getUser();
                     let tmpDomain = new Domain(config.original_domain);
                     config.domain = tmpDomain.parse(object, user, {}, this.getEnv()).toArray();
                 }
@@ -758,8 +781,21 @@ export class LayoutList extends Layout {
             }
             // store widget: use id and field as keys for storing widgets (current layout is for a single entity)
             this.model_widgets[object.id][item.value] = widget;
+
+            let visible = true;
+            // handle visibility tests (domain)
+            if(config.hasOwnProperty('visible')) {
+                visible = this.isVisible(config.visible, object, user, {}, this.getEnv());
+            }
+
             // #memo - class is added by decorateTable() call in feed() method
-            let $cell = $('<td/>').addClass('sb-widget-cell').attr('data-type', config.type).attr('data-field', item.value).append(widget.render());
+            let $cell = $('<td/>').addClass('sb-widget-cell')
+                .attr('data-type', config.type)
+                .attr('data-field', item.value);
+
+            if(visible) {
+                $cell.append(widget.render());
+            }
 
             if(config.align == 'right' || config.align == 'center') {
                 $cell.css({'text-align': config.align});
