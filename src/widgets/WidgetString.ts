@@ -94,6 +94,9 @@ export default class WidgetString extends Widget {
                                     error:     {icon: "report", color: "red"},
                                     paid:      {icon: "paid", color: "green"},
                                     due:       {icon: "money_off", color: "red"},
+                                    folder:    {icon: "folder", color: "#F8D775"},
+                                    file:      {icon: "description", color: "grey"},
+                                    document:  {icon: "description", color: "grey"}
                                 };
 
                             this.$elem = $('<div />');
