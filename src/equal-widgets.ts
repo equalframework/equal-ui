@@ -16,6 +16,7 @@ import WidgetOne2Many  from "./widgets/WidgetOne2Many";
 import WidgetMany2One  from "./widgets/WidgetMany2One";
 import WidgetMany2Many  from "./widgets/WidgetMany2Many";
 import WidgetLabel  from "./widgets/WidgetLabel";
+import WidgetPdf  from "./widgets/WidgetPdf";
 
 import { View, Layout } from "./equal-lib";
 
@@ -83,13 +84,28 @@ class WidgetFactory {
                     return new WidgetImage(layout, label, value, config);
                 }
                 return new WidgetFile(layout, label, value, config);
+            case 'pdf':
+                return new WidgetPdf(layout, label, value, config);
             case 'label':
                 return new WidgetLabel(layout, label, value, config);
             case 'text':
                 return new WidgetText(layout, label, value, config);
             case 'string':
                 if(config.hasOwnProperty('usage') && config.usage.substring(0, 5) == 'color') {
-                    // #todo - widgetSelect with predefined std colors
+                    // WidgetSelect with predefined std colors
+                    config.values = [
+                        'lavender',         // light purple
+                        'antiquewhite',     // light beige
+                        'moccasin',         // light orange
+                        'lightpink',        // soft pink
+                        'lightgreen',       // light green
+                        'paleturquoise',    // soft teal
+                        'lightblue',        // light blue
+                        'thistle',          // light mauve/grey
+                        'honeydew',         // very pale green
+                        'mistyrose'         // very light pink
+                    ];
+                    return new WidgetSelect(layout, label, value, config);
                 }
             default:
                 return new WidgetString(layout, label, value, config);
@@ -311,7 +327,7 @@ class WidgetFactory {
             }
 
         }
-        console.debug('WidgetFactory::getWidgetConfig result for field '+field, config, model_fields, view_fields);
+        console.debug('WidgetFactory::getWidgetConfig result for field ' + field, config, model_fields, view_fields);
         return config;
     }
 
