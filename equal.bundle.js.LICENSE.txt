@@ -522,6 +522,8 @@ PERFORMANCE OF THIS SOFTWARE.
 
 /*! ./widgets/WidgetOne2Many */
 
+/*! ./widgets/WidgetPdf */
+
 /*! ./widgets/WidgetSelect */
 
 /*! ./widgets/WidgetString */
@@ -760,6 +762,10 @@ PERFORMANCE OF THIS SOFTWARE.
 
 /*!************************************!*\
   !*** ./build/jquery-datepicker.js ***!
+  \************************************/
+
+/*!************************************!*\
+  !*** ./build/widgets/WidgetPdf.js ***!
   \************************************/
 
 /*!*************************************!*\

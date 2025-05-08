@@ -301,7 +301,6 @@ class UIHelper {
         return $('<li role="separator" class="mdc-list-divider"></li>');
     }
 
-
     public static createListItemCheckbox(id: string, label: string) {
         let $elem = $('\
         <li class="mdc-list-item"> \
@@ -561,13 +560,11 @@ class UIHelper {
         return $elem;
     }
 
-
     public static createPaginationSelect(id: string, label: string, values: any, selected: any='') {
         let $elem  = UIHelper.createSelect(id, label, values, selected);
         $elem.addClass('mdc-data-table__pagination-rows-per-page-select');
         return $elem;
     }
-
 
     public static createDialog(id: string, title: string, label_accept:string='Ok', label_cancel:string='Cancel') {
         let $elem = $('\

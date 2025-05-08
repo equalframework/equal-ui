@@ -56,7 +56,8 @@ body, html {
     /* added for WP compliance */
     background-color: white;
     position: relative;
-    z-index: 2;
+    /* #memo - this impacts lang menu actual z-index */
+    /* z-index: 2; */
 }
 
 .sb-container-loader-overlay {
@@ -809,13 +810,24 @@ body, html {
     text-decoration: underline;
 }
 
-.sb-view-layout-list .sb-widget-mode-edit button.mdc-icon-button {
+/* reduce size of inner icon buttons (widgets) in edit mode */
+.sb-view-layout-list .sb-widget.sb-widget-mode-edit button.mdc-icon-button {
     padding: 5px 5px 0px 5px;
     height: auto;
     width: auto;
-    position: absolute;
-    top: -3px;
-    right: 10px;
+    top: -3px !important;
+}
+.sb-view-layout-list .sb-widget.sb-widget-mode-edit button.mdc-icon-button .material-icons {
+    font-size: 20px;
+}
+
+/* reduce size of icon buttons (mini-fab) when inside a table */
+.sb-view-layout-list .sb-widget-cell .sb-widget.sb-widget-mode-view button.mdc-icon-button,
+.sb-view-layout-list .sb-action-cell button.mdc-icon-button {
+    padding: 10px;
+    font-size: 20px;
+    height: 44px;
+    width: 44px;
 }
 
 .sb-view-layout-form-input-button {
@@ -826,6 +838,7 @@ body, html {
     top: calc(50% - 15px);
 }
 
+/* hide datepicker input and void impact on layout */
 .sb-widget-datetime-datepicker {
     position: absolute;
     left: 16px;
@@ -856,6 +869,11 @@ body, html {
 }
 
 /* Material Components customizations */
+
+/* use same default background color as other buttons */
+.mdc-fab {
+    background-color: var(--mdc-theme-primary, #6200ee);
+}
 
 /* fix for ripple not working on icon-button */
 button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-button:focus {
@@ -1090,7 +1108,6 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     /* margin-top: 45px !important; */
 }
 
-
 .sb-widget-cell .mdc-select__anchor {
     height: 100%;
 }
@@ -1194,7 +1211,7 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
 }
 
 .mdc-data-table__cell:first-child, .mdc-data-table__header-cell:first-child {
-    padding-left: 12px; 
+    padding-left: 12px;
 }
 
 .mdc-data-table__cell--checkbox {
@@ -1359,7 +1376,6 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     align-items: center !important;
 }
 
-
 .mdc-text-field {
     width: 100%;
 }
@@ -1369,13 +1385,11 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     /* color: rgba(0, 0, 0, 0.8) !important;*/
 }
 
-
 .mdc-text-field-helper-line .mdc-text-field-helper-text {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
-
 
 .mdc-text-field--invalid .mdc-text-field-helper-line .mdc-text-field-helper-text--validation-msg {
     color: var(--mdc-theme-error, #b00020) !important;
@@ -1570,10 +1584,6 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     top: 8px !important;
 }
 
-
-
-
-
 button.ui-state-hover {
     background: unset !important;
     background-color: var(--mdc-theme-primary-hover) !important;
@@ -1583,6 +1593,41 @@ button.ui-state-hover {
 }
 
 
+/* pdfjs widget */
+
+.sb-widget.sb-ui-pdfjs {
+    outline: solid 1px lightgrey;
+}
+
+/* #memo - this is meant to be prepend to body */
+.pdfjs-custom-fullscreen {
+    position: absolute;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+}
+
+.pdfjs-custom-fullscreen:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.pdfjs-custom-fullscreen[data-state="expanded"] {
+    z-index: 10000;
+}
+
+/*  iframe marked as applicative full-screen */
+.sb-widget.sb-ui-pdfjs iframe.pdfjs-custom-iframe-fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+}
 
 /* jquery ui datepicker month year picker */
 .ui-datepicker .ui-datepicker-select-month td ,
