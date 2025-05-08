@@ -55,6 +55,8 @@ export default class Widget {
     protected readonly: boolean = false;
 
     protected config: any;
+    // meta data, if any (used for files)
+    protected meta: any;
 
     constructor(layout: Layout, type: string, label: string, value: any, config: any) {
         this.layout = layout;
@@ -104,6 +106,10 @@ export default class Widget {
         return this.config;
     }
 
+    public getMeta() {
+        return this.meta;
+    }
+
     public setIsFirst(is_first: boolean) {
         this.is_first = is_first;
     }
@@ -136,6 +142,11 @@ export default class Widget {
     public setConfig(config: any) {
         console.debug('Widget::setConfig', this.type, config);
         this.config = config;
+        return this;
+    }
+
+    public setMeta(meta: any) {
+        this.meta = meta;
         return this;
     }
 
