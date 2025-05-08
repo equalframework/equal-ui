@@ -1026,7 +1026,7 @@ export class View {
         // view is valid
         if(view_schema.hasOwnProperty('layout')) {
             stack.push(view_schema['layout']);
-            var path = ['groups', 'sections', 'rows', 'columns'];
+            const path = ['groups', 'sections', 'rows', 'columns'];
 
             while(stack.length) {
                 var elem: any = stack.pop();
@@ -1060,7 +1060,6 @@ export class View {
         this.model_fields = model_schema.fields;
     }
 
-
     private layoutListFooter() {
         // it is best UX practice to avoid footer on lists
     }
@@ -1077,16 +1076,26 @@ export class View {
             </div>'
         );
 
+        const header_layout = this.config.header?.layout ?? 'full';
+
         let $elem = this.$headerContainer.find('.sb-view-header-list');
 
         let $actions_set = $elem.find('.sb-view-header-actions');
+
         let $level1 = $elem.find('.sb-view-header-advanced');
         let $level2 = $elem.find('.sb-view-header-list-navigation');
 
         // left side : standard actions for views
         let $std_actions = $('<div />').addClass('sb-view-header-actions-std').appendTo($actions_set);
+        // inline header : merged header-actions & header-list
+        let $std_actions_inline = $('<div />');
+
         // right side : the actions specific to the view, and depending on object status
         let $view_actions = $('<div />').addClass('sb-view-header-actions-view').appendTo($actions_set);
+
+        if(header_layout !== 'full') {
+            $actions_set.hide();
+        }
 
         let has_action_create = true;
         let has_action_select = true;
@@ -1103,88 +1112,117 @@ export class View {
             switch(this.purpose) {
                 case 'view':
                     if(has_action_create) {
-                        $std_actions
-                        .prepend(
-                            UIHelper.createButton(this.uuid+'_action-edit', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'raised')
-                            .on('click', async () => {
-                                try {
-                                    let view_type = 'form';
-                                    let view_name = this.name;
-                                    let domain = this.getDomain();
-                                    if(this.custom_actions.hasOwnProperty('ACTION.CREATE')) {
-                                        if(Array.isArray(this.custom_actions['ACTION.CREATE']) && this.custom_actions['ACTION.CREATE'].length) {
-                                            let custom_action_create = this.custom_actions['ACTION.CREATE'][0];
-                                            if(custom_action_create.hasOwnProperty('view')) {
-                                                let parts = custom_action_create.view.split('.');
-                                                if(parts.length) {
-                                                    view_type = <string> parts.shift();
-                                                }
-                                                if(parts.length) {
-                                                    view_name = <string> parts.shift();
-                                                }
+                        let $createActionButton: JQuery;
+
+                        if(header_layout === 'full') {
+                            $createActionButton = UIHelper.createButton(this.uuid + '_action-edit', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'raised');
+                            $std_actions.prepend($createActionButton);
+                        }
+                        else {
+                            $createActionButton = UIHelper.createButton(this.uuid + '_action-edit', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'mini-fab', 'add');
+                            $std_actions_inline.append($createActionButton);
+                        }
+
+                        $createActionButton.on('click', async () => {
+                            try {
+                                let view_type = 'form';
+                                let view_name = this.name;
+                                let domain = this.getDomain();
+                                if(this.custom_actions.hasOwnProperty('ACTION.CREATE')) {
+                                    if(Array.isArray(this.custom_actions['ACTION.CREATE']) && this.custom_actions['ACTION.CREATE'].length) {
+                                        let custom_action_create = this.custom_actions['ACTION.CREATE'][0];
+                                        if(custom_action_create.hasOwnProperty('view')) {
+                                            let parts = custom_action_create.view.split('.');
+                                            if(parts.length) {
+                                                view_type = <string> parts.shift();
                                             }
-                                            if(custom_action_create.hasOwnProperty('domain')) {
-                                                let tmpDomain = new Domain(domain);
-                                                tmpDomain.merge(new Domain(custom_action_create['domain']));
-                                                domain = tmpDomain.toArray();
+                                            if(parts.length) {
+                                                view_name = <string> parts.shift();
                                             }
                                         }
+                                        if(custom_action_create.hasOwnProperty('domain')) {
+                                            let tmpDomain = new Domain(domain);
+                                            tmpDomain.merge(new Domain(custom_action_create['domain']));
+                                            domain = tmpDomain.toArray();
+                                        }
                                     }
-                                    // request a new Context for editing a new object
-                                    await this.openContext({entity: this.entity, type: view_type, name: view_name, domain: domain, mode: 'edit', purpose: 'create'});
                                 }
-                                catch(response) {
-                                    try {
-                                        await this.displayErrorFeedback(this.translation, response);
-                                    }
-                                    catch(error) {
+                                // request a new Context for editing a new object
+                                await this.openContext({entity: this.entity, type: view_type, name: view_name, domain: domain, mode: 'edit', purpose: 'create'});
+                            }
+                            catch(response) {
+                                try {
+                                    await this.displayErrorFeedback(this.translation, response);
+                                }
+                                catch(error) {
 
-                                    }
                                 }
-                            })
-                        );
+                            }
+                        });
                     }
                     break;
                 case 'select':
                     if(has_action_create) {
-                        $std_actions
-                        .prepend(
-                            UIHelper.createButton(this.uuid+'_action-create', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'text')
-                            .on('click', async () => {
-                                try {
-                                    // request a new Context for editing a new object
-                                    await this.openContext({entity: this.entity, type: 'form', name: this.name, domain: this.getDomain(), mode: 'edit', purpose: 'create'});
-                                }
-                                catch(response) {
-                                    try {
-                                        await this.displayErrorFeedback(this.translation, response);
-                                    }
-                                    catch(error) {
+                        let $createActionButton: JQuery;
 
-                                    }
+                        if(header_layout === 'full') {
+                            $createActionButton = UIHelper.createButton(this.uuid+'_action-create', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'text');
+                            $std_actions.prepend($createActionButton);
+                        }
+                        else {
+                            $createActionButton = UIHelper.createButton(this.uuid+'_action-create', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'mini-fab', 'add');
+                            $std_actions_inline.append($createActionButton);
+                        }
+
+                        $createActionButton.on('click', async () => {
+                            try {
+                                // request a new Context for editing a new object
+                                await this.openContext({entity: this.entity, type: 'form', name: this.name, domain: this.getDomain(), mode: 'edit', purpose: 'create'});
+                            }
+                            catch(response) {
+                                try {
+                                    await this.displayErrorFeedback(this.translation, response);
                                 }
-                            })
-                        );
+                                catch(error) {
+
+                                }
+                            }
+                        });
+
                     }
                     if(has_action_select) {
-                        $std_actions
-                        .prepend(
-                            UIHelper.createButton(this.uuid+'_action-select', TranslationService.instant('SB_ACTIONS_BUTTON_SELECT'), 'raised', 'check')
-                            .on('click', async () => {
+                        let $selectActionButton: JQuery;
+
+                        if(header_layout === 'full') {
+                            $selectActionButton = UIHelper.createButton(this.uuid+'_action-select', TranslationService.instant('SB_ACTIONS_BUTTON_SELECT'), 'raised', 'check');
+                            $std_actions.prepend($selectActionButton);
+                        }
+                        else {
+                            $selectActionButton = UIHelper.createButton(this.uuid+'_action-select', TranslationService.instant('SB_ACTIONS_BUTTON_SELECT'), 'mini-fab', 'playlist_add_circle');
+                            $std_actions_inline.prepend($selectActionButton);
+                        }
+
+                        $selectActionButton.on('click', async () => {
                                 // close context and relay selection, if any (mark the view as changed to force parent context update)
                                 // #todo : user should not be able to select more thant one id
                                 let objects = await this.model.get(this.selected_ids);
                                 this.closeContext({selection: this.selected_ids, objects: objects});
-                            })
-                        );
+                            });
                     }
                     break;
                 case 'add':
                     if(has_action_create) {
-                        $std_actions
-                        .prepend(
-                            UIHelper.createButton(this.uuid+'_action-create', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'text')
-                            .on('click', async () => {
+                        let $createActionButton: JQuery;
+                        if(header_layout === 'full') {
+                            $createActionButton = UIHelper.createButton(this.uuid+'_action-create', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'text');
+                            $std_actions.prepend($createActionButton);
+                        }
+                        else {
+                            $createActionButton = UIHelper.createButton(this.uuid+'_action-create', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'mini-fab', 'add');
+                            $std_actions_inline.prepend($createActionButton);
+                        }
+
+                        $createActionButton.on('click', async () => {
                                 try {
                                     // request a new Context for editing a new object
                                     await this.openContext({entity: this.entity, type: 'form', name: this.name, domain: this.getDomain(), mode: 'edit', purpose: 'create'});
@@ -1197,19 +1235,25 @@ export class View {
 
                                     }
                                 }
-                            })
-                        );
+                            });
+
                     }
                     if(has_action_select) {
-                        $std_actions
-                        .prepend(
-                            UIHelper.createButton(this.uuid+'_action-add', TranslationService.instant('SB_ACTIONS_BUTTON_ADD'), 'raised', 'check')
-                            .on('click', async () => {
+                        let $selectActionButton: JQuery;
+                        if(header_layout === 'full') {
+                            $selectActionButton = UIHelper.createButton(this.uuid+'_action-add', TranslationService.instant('SB_ACTIONS_BUTTON_ADD'), 'raised', 'check');
+                            $std_actions.prepend($selectActionButton);
+                        }
+                        else {
+                            $selectActionButton = UIHelper.createButton(this.uuid+'_action-add', TranslationService.instant('SB_ACTIONS_BUTTON_ADD'), 'mini-fab', 'playlist_add_circle');
+                            $std_actions_inline.prepend($selectActionButton);
+                        }
+
+                        $selectActionButton.on('click', async () => {
                                 // close context and relay selection, if any (mark the view as changed to force parent context update)
                                 let objects = await this.model.get(this.selected_ids);
                                 this.closeContext({selection: this.selected_ids, objects: objects});
                             })
-                        );
                     }
                     break;
                 case 'create':
@@ -1223,7 +1267,6 @@ export class View {
                     break;
             }
         }
-
 
         // append advanced layout if requested
         if(this.hasAdvancedFilters()) {
@@ -1274,17 +1317,17 @@ export class View {
         let $filters_search = $('<div />').addClass('sb-view-header-list-filters-search');
         let $search_input = UIHelper.createInput('sb-view-header-search', TranslationService.instant('SB_FILTERS_SEARCH'), '', '', '', false, 'outlined', 'close').appendTo($filters_search);
 
-
-
         $search_input.addClass('dialog-select').find('.mdc-text-field__icon').on('click', async (e) => {
             // reset input value
             $search_input.find('input').val('').trigger('focus').trigger('blur');
             // unapply related filter
             await this.unapplyFilter('filter_search_on_name');
         });
+
         $search_input.on('keypress', (e) => {
             if(e.key == 'Enter') $search_input.find('input').trigger('blur');
         });
+
         $search_input.find('input').on('blur', (e) => {
             setTimeout( () => {
                 let value = String($search_input.find('input').val()).trim();
@@ -1365,12 +1408,16 @@ export class View {
 
 
         // fields toggle menu : button for displaying the fields menu
-        let $fields_toggle_button = $('<div/>').addClass('sb-view-header-list-fields_toggle mdc-menu-surface--anchor')
+        let $fieldsToggleButton = $('<div/>').addClass('sb-view-header-list-fields_toggle mdc-menu-surface--anchor')
             .append( UIHelper.createButton('view-fields', 'fields', 'icon', 'more_vert') );
 
         // create floating menu for fields selection
-        let $fields_toggle_menu = UIHelper.createMenu('fields-menu').addClass('sb-view-header-list-fields_toggle-menu').appendTo($fields_toggle_button);
-        let $fields_toggle_list = UIHelper.createList('fields-list').appendTo($fields_toggle_menu);
+        let $fieldsToggleMenu = UIHelper.createMenu('fields-menu').addClass('sb-view-header-list-fields_toggle-menu').appendTo($fieldsToggleButton);
+        let $fieldsToggleList = UIHelper.createList('fields-list').appendTo($fieldsToggleMenu);
+
+        if(header_layout != 'full') {
+            $fieldsToggleButton.hide();
+        }
 
         // #todo : translate fields names
         for(let item of this.getViewSchema().layout.items ) {
@@ -1378,7 +1425,7 @@ export class View {
             let visible = (item.hasOwnProperty('visible')) ? item.visible : true;
 
             UIHelper.createListItemCheckbox('sb-fields-toggle-checkbox-'+item.value, label)
-                .appendTo($fields_toggle_list)
+                .appendTo($fieldsToggleList)
                 .find('input')
                 .on('change', (event) => {
                     let $this = $(event.currentTarget);
@@ -1390,8 +1437,8 @@ export class View {
                 .prop('checked', visible);
         }
 
-        UIHelper.decorateMenu($fields_toggle_menu);
-        $fields_toggle_button.find('button').on('click', () => $fields_toggle_menu.trigger('_toggle') );
+        UIHelper.decorateMenu($fieldsToggleMenu);
+        $fieldsToggleButton.find('button').on('click', () => $fieldsToggleMenu.trigger('_toggle') );
 
         // export button
         let $export_button = $('<div/>').addClass('sb-view-header-list-fields_toggle mdc-menu-surface--anchor')
@@ -1417,57 +1464,74 @@ export class View {
         // pagination controls
         let $pagination = UIHelper.createPagination().addClass('sb-view-header-list-pagination');
 
-        let $refresh_list_button = UIHelper.createButton('refresh-view', 'refresh', 'icon', 'refresh').on('click', () => this.onchangeView());
+        let $refreshListButton = UIHelper.createButton('refresh-view', 'refresh', 'icon', 'refresh').on('click', () => this.onchangeView());
 
         $pagination.find('.pagination-container')
-            .prepend( $refresh_list_button );
+            .prepend( $refreshListButton );
 
-        $pagination.find('.pagination-total')
+
+        let $paginationTotal = $pagination.find('.pagination-total');
+
+        if(header_layout != 'full') {
+            $paginationTotal.hide();
+        }
+
+        $paginationTotal
             .append( $('<span class="sb-view-header-list-pagination-start"></span>') ).append( $('<span />').text('-') )
             .append( $('<span class="sb-view-header-list-pagination-end"></span>') ).append( $('<span />').text(' / ') )
             .append( $('<span class="sb-view-header-list-pagination-total"></span>') );
 
-        $pagination.find('.pagination-navigation')
-            .append(
+        let $paginationNavigation = $pagination.find('.pagination-navigation');
+
+        if(header_layout == 'full') {
+            $paginationNavigation.append(
                 UIHelper.createButton('', '', 'icon', 'first_page').addClass('sb-view-header-list-pagination-first_page')
                 .on('click', (event: any) => {
                     this.setStart(0);
                     this.onchangeView();
                 })
-            )
-            .append(
+            );
+        }
+
+        $paginationNavigation.append(
                 UIHelper.createButton('', '', 'icon', 'chevron_left').addClass('sb-view-header-list-pagination-prev_page')
                 .on('click', (event: any) => {
                     this.setStart(Math.max(0, this.getStart() - this.getLimit()));
                     this.onchangeView();
                 })
-            )
-            .append(
+            );
+
+        $paginationNavigation.append(
                 UIHelper.createButton('', '', 'icon', 'chevron_right').addClass('sb-view-header-list-pagination-next_page')
                 .on('click', (event: any) => {
                     this.setStart(Math.min( this.getTotal() - this.getLimit(), this.getStart() + this.getLimit() ));
                     this.onchangeView();
                 })
-            )
-            .append(
+            );
+
+        if(header_layout == 'full') {
+            $paginationNavigation.append(
                 UIHelper.createButton('', '', 'icon', 'last_page').addClass('sb-view-header-list-pagination-last_page')
                 .on('click', (event: any) => {
                     this.setStart(this.getTotal() - this.getLimit());
                     this.onchangeView();
                 })
             );
+        }
 
-        let $select = UIHelper.createPaginationSelect('', '', [5, 10, 25, 50, 100, 500], this.limit).addClass('sb-view-header-list-pagination-limit_select');
+        if(header_layout == 'full') {
+            let $select = UIHelper.createPaginationSelect('', '', [5, 10, 25, 50, 100, 500], this.limit).addClass('sb-view-header-list-pagination-limit_select');
 
-        $pagination.find('.pagination-rows-per-page')
-            .append($select);
+            $pagination.find('.pagination-rows-per-page')
+                .append($select);
 
-        $select.find('input').on('change', (event: any) => {
-            let $this = $(event.currentTarget);
-            this.setLimit(<number>$this.val());
-            this.setStart(0);
-            this.onchangeView();
-        });
+            $select.find('input').on('change', (event: any) => {
+                let $this = $(event.currentTarget);
+                this.setLimit(<number>$this.val());
+                this.setStart(0);
+                this.onchangeView();
+            });
+        }
 
         if(this.config.show_filter) {
             $level2.append( $filters_button );
@@ -1481,9 +1545,18 @@ export class View {
                 this.showFilter(filter_id);
             }
         }
+
+        if(header_layout !== 'full') {
+            $level2.append( $('<div class="sb-view-header-actions-inline"></div>') );
+        }
+
         $level2.append( $pagination );
         $level2.append( $export_button );
-        $level2.append( $fields_toggle_button );
+        $level2.append( $fieldsToggleButton );
+
+        if(header_layout !== 'full') {
+            $level2.prepend($std_actions_inline);
+        }
 
         this.$headerContainer.append( $elem );
     }
@@ -1645,6 +1718,8 @@ export class View {
         let end: number = start + limit - 1;
         end = (total)?Math.min(end, start + this.model.ids().length - 1):0;
 
+        const header_layout = this.config.header?.layout ?? 'full';
+
         this.$headerContainer.find('.sb-view-header-list-pagination-total').html(total);
         this.$headerContainer.find('.sb-view-header-list-pagination-start').html(start);
         this.$headerContainer.find('.sb-view-header-list-pagination-end').html(end);
@@ -1656,18 +1731,19 @@ export class View {
 
         this.$headerContainer.find('.sb-view-header-list-export_button').prop('disabled', !(total > 0));
 
-
         let $action_set = this.$headerContainer.find('.sb-view-header-actions');
         let $std_actions = $action_set.find('.sb-view-header-actions-std');
 
         // abort any pending edition
-        let $actions_selected_edit = $action_set.find('.sb-view-header-list-actions-selected-edit');
+        let $actions_selected_edit = this.$headerContainer.find('.sb-view-header-list-actions-selected-edit');
         if($actions_selected_edit.length) {
-            $actions_selected_edit.find('.action-selected-edit-cancel').trigger('click');
+            this.$headerContainer.find('.action-selected-edit-cancel').trigger('click');
         }
         // remove containers related to selection actions
-        $action_set.find('.sb-view-header-list-actions-selected-edit').remove();
-        $action_set.find('.sb-view-header-list-actions-selected').remove();
+        this.$headerContainer.find('.sb-view-header-list-actions-selected-edit').remove();
+        this.$headerContainer.find('.sb-view-header-list-actions-selected').remove();
+
+        // #todo - is this still used ?
         $action_set.find('.sb-view-header-list-actions-export').remove();
 
         // do not show the actions menu for 'add' and 'select' purposes
@@ -1711,11 +1787,19 @@ export class View {
 
             // create buttons with actions to apply on current selection
             if(this.selected_ids.length > 0) {
-                let $container = $('<div/>').addClass('sb-view-header-list-actions-selected').appendTo($std_actions);
+                let $container = $('<div/>').addClass('sb-view-header-list-actions-selected')
+
+                if(header_layout === 'full') {
+                    $container.appendTo($std_actions);
+                }
+                else {
+                    $container.appendTo(this.$headerContainer.find('.sb-view-header-actions-inline'));
+                }
+
                 let count = this.selected_ids.length;
 
                 let $fields_toggle_button = $('<div/>').addClass('mdc-menu-surface--anchor')
-                .append( UIHelper.createButton('action-selected', count+' '+TranslationService.instant('SB_ACTIONS_BUTTON_SELECTED'), 'outlined') );
+                    .append( UIHelper.createButton('action-selected', count+' '+TranslationService.instant('SB_ACTIONS_BUTTON_SELECTED'), 'outlined') );
 
                 let $list = UIHelper.createList('fields-list');
                 let $menu = UIHelper.createMenu('fields-menu').addClass('sb-view-header-list-fields_toggle-menu');
@@ -2704,21 +2788,28 @@ export class View {
 
     }
 
+
+    /**
+     * #memo - we need to provide `Content-Type` in adavance for ApiService.fetch() to apply a conversion to ArrayBuffer.
+     * In controllers, use `application/octet-stream` for binary data responses to ensure proper handling and downloading on the client side.
+     */
     public async performAction(action:any, params:any, response_descr: any = {}) {
         console.debug('View::performAction');
         try {
             let translation = await ApiService.getTranslation(action.controller.replaceAll('_', '\\'));
             try {
 
-                let content_type:string = 'application/json';
+                let content_type: string = 'application/json';
 
                 if(response_descr.hasOwnProperty('content-type')) {
                     content_type = response_descr['content-type'];
                 }
 
                 const result = await ApiService.fetch("/", {do: action.controller, ...params}, content_type);
+
                 const status = ApiService.getLastStatus();
                 const headers = ApiService.getLastHeaders();
+
                 // handle binary data response
                 if(content_type != 'application/json') {
                     let blob = new Blob([result], {type: content_type});
