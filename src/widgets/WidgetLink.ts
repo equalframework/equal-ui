@@ -15,7 +15,7 @@ export default class WidgetLink extends Widget {
 
     public render():JQuery {
         let value:string = (typeof this.value != undefined && this.value != undefined)?this.value:'';
-        let $button_open = UIHelper.createButton('link-actions-open-'+this.id, '', 'icon', 'link').addClass('widget-link-btn');
+        let $button_open = UIHelper.createButton('link-actions-open-' + this.id, '', 'icon', 'link').addClass('widget-link-btn');
 
         // open target in new window
         $button_open.on('click', async (event) => {
@@ -58,7 +58,7 @@ export default class WidgetLink extends Widget {
                             this.$elem.append($button_open);
                         }
                         else {
-                            let $link = $('<a target="_blank" href="'+value+'">'+value+'</a>');
+                            let $link = $('<a target="_blank" href="' + value + '">' + value + '</a>');
                             $link.on('click', (event) => {
                                 event.stopPropagation();
                             })
