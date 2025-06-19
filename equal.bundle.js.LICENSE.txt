@@ -532,6 +532,8 @@ PERFORMANCE OF THIS SOFTWARE.
 
 /*! ./widgets/WidgetTime */
 
+/*! ./widgets/WidgetUpload */
+
 /*! @babel/runtime/helpers/assertThisInitialized */
 
 /*! @babel/runtime/helpers/asyncToGenerator */
@@ -826,6 +828,10 @@ PERFORMANCE OF THIS SOFTWARE.
 
 /*!***************************************!*\
   !*** ./build/widgets/WidgetString.js ***!
+  \***************************************/
+
+/*!***************************************!*\
+  !*** ./build/widgets/WidgetUpload.js ***!
   \***************************************/
 
 /*!***************************************!*\

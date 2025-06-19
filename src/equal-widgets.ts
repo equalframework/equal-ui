@@ -12,11 +12,12 @@ import WidgetLink from "./widgets/WidgetLink";
 import WidgetSelect from "./widgets/WidgetSelect";
 import WidgetFile from "./widgets/WidgetFile";
 import WidgetImage from "./widgets/WidgetImage";
-import WidgetOne2Many  from "./widgets/WidgetOne2Many";
-import WidgetMany2One  from "./widgets/WidgetMany2One";
-import WidgetMany2Many  from "./widgets/WidgetMany2Many";
-import WidgetLabel  from "./widgets/WidgetLabel";
-import WidgetPdf  from "./widgets/WidgetPdf";
+import WidgetOne2Many from "./widgets/WidgetOne2Many";
+import WidgetMany2One from "./widgets/WidgetMany2One";
+import WidgetMany2Many from "./widgets/WidgetMany2Many";
+import WidgetLabel from "./widgets/WidgetLabel";
+import WidgetPdf from "./widgets/WidgetPdf";
+import WidgetUpload from "./widgets/WidgetUpload";
 
 import { View, Layout } from "./equal-lib";
 
@@ -86,6 +87,8 @@ class WidgetFactory {
                 return new WidgetFile(layout, label, value, config);
             case 'pdf':
                 return new WidgetPdf(layout, label, value, config);
+            case 'upload':
+                return new WidgetUpload(layout, label, value, config);
             case 'label':
                 return new WidgetLabel(layout, label, value, config);
             case 'text':
@@ -189,7 +192,7 @@ class WidgetFactory {
     public static getWidgetConfig(view: View, field: string, translation: any, model_fields: any, view_fields: any): any {
         console.debug('Widget::getWidgetConfig for field ' + field, view.getName(), model_fields, view_fields);
 
-        let config:any = {
+        let config: any = {
             widget_type: 'field'
         };
 
@@ -249,8 +252,13 @@ class WidgetFactory {
         config.ready = false;
         config.title = TranslationService.resolve(translation, 'model', [], field, label, 'label');
         config.description = TranslationService.resolve(translation, 'model', [], field, description, 'description');
-        config.readonly = (def.hasOwnProperty('readonly')) ? def.readonly : ((item.hasOwnProperty('readonly')) ? item['readonly'] : false);
+
         config.required = (def.hasOwnProperty('required')) ? def.required : ((item.hasOwnProperty('required')) ? item['required'] : false);
+
+        config.readonly = (view.getPurpose() === 'create')
+            ? false
+            : (def.hasOwnProperty('readonly') ? def.readonly : (item.hasOwnProperty('readonly') ? item['readonly'] : false));
+
         let default_align: string = (item.field != 'id' && (config.type == 'integer' || config.type == 'float' || config.type == 'time')) ? 'right' : 'left';
         // default align is left, unless for integer fields (with an exception for 'id' field - which, by convention, should be first column)
         config.align = item.hasOwnProperty('align') ? item.align : default_align;

@@ -80,6 +80,27 @@ export class Layout implements LayoutInterface{
         return this.$layout;
     }
 
+    public destroy() {
+        if(!this.model_widgets) {
+            return;
+        }
+        for(let object_id in this.model_widgets) {
+            const widgets = this.model_widgets[object_id];
+            if(!widgets) {
+                continue;
+            }
+            for(let field in widgets) {
+                const widget = widgets[field];
+                if(widget && typeof widget.destroy === 'function') {
+                    widget.destroy();
+                }
+            }
+        }
+    }
+
+    public prependObject(object: any, actions: any[] = []) {
+    }
+
     /**
      * Relay Context opening requests to parent View.
      *
@@ -250,6 +271,14 @@ export class Layout implements LayoutInterface{
         $button.on('click', async (event: any) => {
             event.stopPropagation();
             let $disable_overlay = this.view.getContainer().find('.sb-view-header-actions .disable-overlay');
+
+            if(action.hasOwnProperty('callback')) {
+                if( ({}).toString.call(action.callback) === '[object Function]' ) {
+                    action.callback(object);
+                }
+                return;
+            }
+
             try {
                 let resulting_params: any = {};
                 let missing_params: any = {};

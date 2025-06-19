@@ -160,21 +160,21 @@ class UIHelper {
         return $elem;
     }
 
-    public static createSwitch(id:string, label:string, value:boolean, helper:string = '', icon: string = '', disabled: boolean = false) {
+    public static createSwitch(id: string, label: string, value: boolean, helper: string = '', icon: string = '', disabled: boolean = false) {
         let $elem = $('\
-        <div id="'+id+'"> \
+        <div id="' + id + '"> \
             <div class="sb-ui-switch" > \
-                <div class="mdc-switch '+ ((disabled)?'mdc-switch--disabled':'') + '"> \
+                <div class="mdc-switch '+ ((disabled) ? 'mdc-switch--disabled' : '') + '"> \
                     <div class="mdc-switch__track"></div> \
                     <div class="mdc-switch__thumb-underlay"> \
                         <div class="mdc-switch__thumb"></div> \
-                        <input type="checkbox" id="' + id + '_checkbox" class="mdc-switch__native-control" role="switch" '+ ((value)?'checked':'') + ' ' + ((disabled)?'disabled':'') +'> \
+                        <input type="checkbox" id="' + id + '_checkbox" class="mdc-switch__native-control" role="switch" '+ ((value) ? 'checked' : '') + ' ' + ((disabled) ? 'disabled' : '') +'> \
                     </div> \
                 </div> \
-                <span>'+label+'</span> \
+                <span>' + label + '</span> \
             </div> \
             <div class="mdc-text-field-helper-line"> \
-                <div class="mdc-text-field-helper-text" aria-hidden="true" title="'+helper+'">'+helper+'</div> \
+                <div class="mdc-text-field-helper-text" aria-hidden="true" title="' + helper + '">' + helper + '</div> \
             </div> \
         </div>');
         // #memo - seems to update the parent id (removes 'bool_')

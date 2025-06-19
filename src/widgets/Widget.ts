@@ -58,13 +58,13 @@ export default class Widget {
     // meta data, if any (used for files)
     protected meta: any;
 
-    constructor(layout: Layout, type: string, label: string, value: any, config: any) {
+    constructor(layout: Layout, label: string, value: any, config: any) {
         this.layout = layout;
 
         this.is_first = false;
         this.value = value;
         this.label = label;
-        this.type = type;
+        this.type = config.type ?? 'string';
         this.config = config;
         // assign default mode
         this.mode = 'view';

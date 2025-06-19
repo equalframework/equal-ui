@@ -76,6 +76,7 @@ export class View {
     private subscribers: any = {};
 
     private is_ready_promise: any;
+    private is_editing: boolean = false;
 
     public $container: any;
 
@@ -126,7 +127,7 @@ export class View {
                     label: 'SB_ACTIONS_BUTTON_INLINE_UPDATE',
                     icon:  'edit_attributes',
                     primary: false,
-                    handler: (selection:any, item:any) => this.actionListInlineEdit(selection)
+                    handler: (selection: any, item: any) => this.actionSelectionInlineEdit(selection)
                 },
                 {
                     id: "ACTION.EDIT_BULK",
@@ -134,14 +135,14 @@ export class View {
                     icon:  'dynamic_form',
                     primary: false,
                     visible: false,
-                    handler: (selection:any, item:any) => this.actionBulkAssign(selection)
+                    handler: (selection: any, item: any) => this.actionSelectionBulkAssign(selection)
                 },
                 {
                     id: "ACTION.EDIT",
                     label: 'SB_ACTIONS_BUTTON_UPDATE',
                     icon:  'edit',
                     primary: true,
-                    handler: (selection:any, item:any) => {
+                    handler: (selection: any, item: any) => {
                         let selected_id = selection[0];
                         this.openContext({entity: this.entity, type: 'form', name: this.name, domain: ['id', '=', selected_id], mode: 'edit', purpose: 'update'});
                     }
@@ -151,7 +152,7 @@ export class View {
                     label: 'SB_ACTIONS_BUTTON_CLONE',
                     icon:  'content_copy',
                     primary: false,
-                    handler: async (selection:any, item:any) => {
+                    handler: async (selection: any, item: any) => {
                         try {
                             // #todo - global loader: prevent any action (loader on context, frame, root)
                             // show loader
@@ -332,7 +333,7 @@ export class View {
             let view = await ApiService.getView(this.entity, this.type + '.' + this.name);
             if(!Object.keys(view).length) {
                 // #memo - fallback to default view is performed in the back-end
-                console.warn("no result for "+this.entity+"."+this.type+"."+this.name+", stop processing");
+                console.warn("no result for " + this.entity + "." + this.type + "." + this.name + ", stop processing");
                 return;
             }
             this.view_schema = this.deepCopy(view);
@@ -402,7 +403,7 @@ export class View {
             }
 
             // some custom actions might have been defined in the parent view, if so, override the view schema
-            if(this.config.header.hasOwnProperty('actions')) {
+            if(this.config.header?.hasOwnProperty('actions')) {
                 for (const [id, item] of Object.entries(this.config.header.actions)) {
                     this.custom_actions[id] = item;
                 }
@@ -691,6 +692,9 @@ export class View {
 
             }
 
+            const header_layout = ( (this.config.header?.layout ?? 'full') === 'inline') ? 'inline' : 'full';
+            this.$container.addClass('header-' + header_layout);
+
             if(['list', 'cards'].indexOf(this.type) >= 0) {
                 this.$layoutContainer.addClass('sb-view-layout-list');
                 this.layoutListHeader();
@@ -761,6 +765,12 @@ export class View {
         return (['core_model_collect', 'model_collect'].indexOf(this.controller) < 0);
     }
 
+    public destroy() {
+        if(this.layout && typeof this.layout.destroy === 'function') {
+            this.layout.destroy();
+        }
+    }
+
     public addSubscriber(events: string[], callback: (context:any) => void) {
         for(let event of events) {
             // if(!['open', 'close', 'updated', 'navigate'].includes(event)) continue;
@@ -771,12 +781,30 @@ export class View {
         }
     }
 
-    public keyboardAction(action: string) {
-        console.log('view received '+action, this);
-        if(action == 'ctrl_s') {
+    /**
+     * This is meant to be used by children components, in order to control the View according to specific bahavior
+     *
+     * Supported actions:
+     *
+     * ACTION.EDIT
+     * ACTION.SAVE
+     * ACTION.CANCEL
+     *
+     */
+    public triggerAction(action: string) {
+        console.debug('View::triggerAction - received action: ' + action, this);
+        if(action == 'ACTION.SELECT') {
+            this.$headerContainer.find('#' + this.uuid + '_action-add').first().trigger('click');
+        }
+        else if(action == 'ACTION.EDIT') {
+            if(this.mode == 'view') {
+                this.$headerContainer.find('#' + this.uuid + '_action-edit').first().trigger('click');
+            }
+        }
+        else if(action == 'ACTION.SAVE') {
             if(this.mode == 'edit') {
                 // retrieve the first button amongst the view actions and trigger a click
-                let $saveButton = this.$headerContainer.find('.sb-view-header-actions-std').find('button').first();
+                let $saveButton = this.$headerContainer.find('#' + this.uuid + '_action-save').first();
                 // blur any active input (in order to trigger `_updatedWidget`)
                 $saveButton.trigger('focus');
                 // wait for the model to be updated and run the action
@@ -784,6 +812,19 @@ export class View {
                     $saveButton.trigger('click');
                 }, 250);
             }
+        }
+        else if(action == 'ACTION.CANCEL') {
+            // retrieve the first button amongst the view actions and trigger a click
+            this.$headerContainer.find('#' + this.uuid + '_action-cancel').first().trigger('click');
+        }
+    }
+
+    public keyboardAction(action: string) {
+        if(action == 'ctrl_s') {
+            this.triggerAction('ACTION.SAVE');
+        }
+        else if(action == 'esc') {
+            this.triggerAction('ACTION.CANCEL');
         }
     }
 
@@ -1023,7 +1064,35 @@ export class View {
         console.debug('View::loadFields', view_schema);
         this.view_fields = {};
         var stack = [];
-        // view is valid
+
+        let processNode = (node: any) => {
+            if(node.visible ?? false) {
+                this.extractFieldsFromDomain(node.visible).forEach( (f: string) => {this.view_fields[f] = {type: 'field', value: f};});
+            }
+            if(node.domain ?? false) {
+                this.extractFieldsFromDomain(node.domain).forEach( (f: string) => {this.view_fields[f] = {type: 'field', value: f};});
+            }
+        };
+
+        if(view_schema.hasOwnProperty('routes')) {
+            for(const route of this.view_schema.routes) {
+                if(route.context?.domain) {
+                    this.extractFieldsFromDomain(route.context.domain).forEach( (f: string) => {this.view_fields[f] = {type: 'field', value: f};});
+                }
+                if(route.visible) {
+                    this.extractFieldsFromDomain(route.visible).forEach( (f: string) => {this.view_fields[f] = {type: 'field', value: f};});
+                }
+            }
+        }
+
+        if(view_schema.hasOwnProperty('actions')) {
+            for(const action of this.view_schema.actions) {
+                if(action.visible) {
+                    this.extractFieldsFromDomain(action.visible).forEach( (f: string) => {this.view_fields[f] = {type: 'field', value: f};});
+                }
+            }
+        }
+
         if(view_schema.hasOwnProperty('layout')) {
             stack.push(view_schema['layout']);
             const path = ['groups', 'sections', 'rows', 'columns'];
@@ -1031,8 +1100,11 @@ export class View {
             while(stack.length) {
                 var elem: any = stack.pop();
 
+                processNode(elem);
+
                 if(elem.hasOwnProperty('items')) {
-                    for (let item of elem['items']) {
+                    for(let item of elem['items']) {
+                        processNode(elem);
                         if(item.type == 'field' && item.hasOwnProperty('value')) {
                             this.view_fields[item.value] = item;
                         }
@@ -1040,9 +1112,9 @@ export class View {
                 }
                 else {
                     // recurse through layout structure
-                    for (let step of path) {
+                    for(let step of path) {
                         if(elem.hasOwnProperty(step)) {
-                            for (let obj of elem[step]) {
+                            for(let obj of elem[step]) {
                                 stack.push(obj);
                             }
                         }
@@ -1076,7 +1148,7 @@ export class View {
             </div>'
         );
 
-        const header_layout = this.config.header?.layout ?? 'full';
+        const header_layout = ( (this.config.header?.layout ?? 'full') === 'inline') ? 'inline' : 'full';
 
         let $elem = this.$headerContainer.find('.sb-view-header-list');
 
@@ -1093,19 +1165,25 @@ export class View {
         // right side : the actions specific to the view, and depending on object status
         let $view_actions = $('<div />').addClass('sb-view-header-actions-view').appendTo($actions_set);
 
-        if(header_layout !== 'full') {
-            $actions_set.hide();
-        }
-
-        let has_action_create = true;
         let has_action_select = true;
+        let has_action_create = true;
+        let has_action_create_inline = true;
 
         if(this.custom_actions.hasOwnProperty('ACTION.SELECT')) {
-            has_action_select = (this.custom_actions['ACTION.SELECT']) ? true : false;
+            has_action_select = this.isActionEnabled(this.custom_actions['ACTION.SELECT'], this.mode);
         }
         if(this.custom_actions.hasOwnProperty('ACTION.CREATE')) {
-            has_action_create = (this.custom_actions['ACTION.CREATE']) ? true : false;
+            has_action_create = this.isActionEnabled(this.custom_actions['ACTION.CREATE'], this.mode);
         }
+
+        if(this.custom_actions.hasOwnProperty('ACTION.CREATE_INLINE') || (header_layout === 'inline' && has_action_create)) {
+            // #todo - test, to confirm
+            this.purpose = 'view';
+            has_action_create = false;
+            has_action_create_inline = this.isActionEnabled(this.custom_actions['ACTION.CREATE_INLINE'], this.mode);
+        }
+
+        console.debug('View::layoutListHeader: resulting = has_action_ ', has_action_select, has_action_create, has_action_create_inline, header_layout, this.custom_actions);
 
         // append view actions, if requested
         if(this.config.show_actions) {
@@ -1124,6 +1202,7 @@ export class View {
                         }
 
                         $createActionButton.on('click', async () => {
+                            console.debug('layoutListHeader::full $createActionButton.on(click)');
                             try {
                                 let view_type = 'form';
                                 let view_name = this.name;
@@ -1157,6 +1236,33 @@ export class View {
                                 catch(error) {
 
                                 }
+                            }
+                        });
+                    }
+                    else if(has_action_create_inline) {
+                        let $createActionButton: JQuery;
+
+                        if(header_layout === 'full') {
+                            $createActionButton = UIHelper.createButton(this.uuid + '_action-edit', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'raised');
+                            $std_actions.prepend($createActionButton);
+                        }
+                        else {
+                            $createActionButton = UIHelper.createButton(this.uuid + '_action-edit', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'mini-fab', 'add');
+                            $std_actions_inline.append($createActionButton);
+                        }
+
+                        $createActionButton.on('click', async () => {
+                            console.debug('layoutListHeader::inline $createActionButton.on(click)');
+                            try {
+                                /*
+                                    créer un objet et le charger
+                                    ajouter une ligne en tête de liste
+                                    passer la ligne en mode edit
+                                */
+                                await this.actionCreateInline();
+                            }
+                            catch(response) {
+                                await this.displayErrorFeedback(this.translation, response);
                             }
                         });
                     }
@@ -1198,7 +1304,7 @@ export class View {
                             $std_actions.prepend($selectActionButton);
                         }
                         else {
-                            $selectActionButton = UIHelper.createButton(this.uuid+'_action-select', TranslationService.instant('SB_ACTIONS_BUTTON_SELECT'), 'mini-fab', 'playlist_add_circle');
+                            $selectActionButton = UIHelper.createButton(this.uuid+'_action-select', TranslationService.instant('SB_ACTIONS_BUTTON_SELECT'), 'mini-fab', 'add');
                             $std_actions_inline.prepend($selectActionButton);
                         }
 
@@ -1245,7 +1351,7 @@ export class View {
                             $std_actions.prepend($selectActionButton);
                         }
                         else {
-                            $selectActionButton = UIHelper.createButton(this.uuid+'_action-add', TranslationService.instant('SB_ACTIONS_BUTTON_ADD'), 'mini-fab', 'playlist_add_circle');
+                            $selectActionButton = UIHelper.createButton(this.uuid+'_action-add', TranslationService.instant('SB_ACTIONS_BUTTON_ADD'), 'mini-fab', 'add');
                             $std_actions_inline.prepend($selectActionButton);
                         }
 
@@ -1714,9 +1820,9 @@ export class View {
         // update footer indicators (total count)
         let limit: number = this.getLimit();
         let total: number = this.getTotal();
-        let start: number = (total)?this.getStart() + 1:0;
+        let start: number = (total) ? (this.getStart() + 1) : 0;
         let end: number = start + limit - 1;
-        end = (total)?Math.min(end, start + this.model.ids().length - 1):0;
+        end = (total) ? Math.min(end, start + this.model.ids().length - 1) : 0;
 
         const header_layout = this.config.header?.layout ?? 'full';
 
@@ -1750,7 +1856,7 @@ export class View {
         if(['view', 'widget'].indexOf(this.purpose) > -1) {
             if(this.purpose == 'view') {
                 // create export menu (always visible: no selection means "export all")
-                let $export_actions_menu_button = $('<div/>').addClass('sb-view-header-list-actions-export mdc-menu-surface--anchor')
+                let $export_actions_menu_button = $('<div />').addClass('sb-view-header-list-actions-export mdc-menu-surface--anchor')
                     .append(UIHelper.createButton('selection-action-' + 'SB_ACTIONS_BUTTON_EXPORT', 'export', 'icon', 'file_download'))
                     .appendTo($std_actions);
 
@@ -1787,7 +1893,7 @@ export class View {
 
             // create buttons with actions to apply on current selection
             if(this.selected_ids.length > 0) {
-                let $container = $('<div/>').addClass('sb-view-header-list-actions-selected')
+                let $container = $('<div />').addClass('sb-view-header-list-actions-selected')
 
                 if(header_layout === 'full') {
                     $container.appendTo($std_actions);
@@ -1897,6 +2003,8 @@ export class View {
     }
 
     private layoutFormHeader() {
+        console.debug('View::layoutFormHeader');
+
         let $elem = $('<div />').addClass('sb-view-header-form');
 
         // container for holding chips of currently applied filters
@@ -1924,48 +2032,33 @@ export class View {
             ]
         */
         // default order for header actions split buttons (can be overridden in view files)
-        let default_header_actions:any = {
+        let default_header_actions: any = {
             "ACTION.EDIT":     [],
             "ACTION.SAVE":     [ {"id": "SAVE_AND_CLOSE"} ],
             "ACTION.CANCEL":   [ {"id": "CANCEL_AND_CLOSE"} ]
         };
 
-        let header_actions:any = {};
+        const header_layout = ( (this.config.header?.layout ?? 'full') === 'inline') ? 'inline' : 'full';
+
+        let header_actions: any = {};
 
         // overwrite with view schema, if defined
         if(this.custom_actions.hasOwnProperty('ACTION.SAVE')) {
             header_actions['ACTION.SAVE'] = this.custom_actions['ACTION.SAVE'];
         }
         else {
-            if(default_header_actions.hasOwnProperty('ACTION.SAVE')) {
-                header_actions['ACTION.SAVE'] = default_header_actions['ACTION.SAVE'];
-            }
+            header_actions['ACTION.SAVE'] = default_header_actions['ACTION.SAVE'];
         }
         if(this.custom_actions.hasOwnProperty('ACTION.CANCEL')) {
             header_actions['ACTION.CANCEL'] = this.custom_actions['ACTION.CANCEL'];
         }
         else {
-            if(default_header_actions.hasOwnProperty('ACTION.CANCEL')) {
-                header_actions['ACTION.CANCEL'] = default_header_actions['ACTION.CANCEL'];
-            }
+            header_actions['ACTION.CANCEL'] = default_header_actions['ACTION.CANCEL'];
         }
 
-        let has_action_update = true;
-        if(this.config.header.hasOwnProperty('actions')) {
-            if(this.config.header.actions.hasOwnProperty('ACTION.EDIT')) {
-                has_action_update = (this.config.header.actions['ACTION.EDIT'])?true:false;
-                if(this.config.header.actions['ACTION.EDIT'].hasOwnProperty('visible')) {
-                    // visible attribute is a Domain
-                    if(Array.isArray(this.config.header.actions['ACTION.EDIT'].visible)) {
-                        let domain = new Domain(this.config.header.actions['ACTION.EDIT'].visible);
-                        has_action_update = domain.parse({}, this.getUser(), {}, this.getEnv()).test();
-                    }
-                    else {
-                        has_action_update = <boolean>this.config.header.actions['ACTION.EDIT'].visible;
-                    }
-                }
-            }
-        }
+        let has_action_save = this.isActionEnabled(header_actions['ACTION.SAVE'], this.mode);
+        let has_action_cancel = this.isActionEnabled(header_actions['ACTION.CANCEL'], this.mode);
+        let has_action_update = this.isActionEnabled(this.config?.header?.actions?.['ACTION.EDIT'] ?? true, this.mode);
 
         // overlay to cover the buttons and prevent additional click while action is processing
         let $disable_overlay = $('<div />').addClass('disable-overlay');
@@ -1973,10 +2066,10 @@ export class View {
 
         switch(this.mode) {
             case 'view':
-                if(has_action_update) {
+                if(has_action_update && header_layout === 'full') {
                     $std_actions
                     .append(
-                        UIHelper.createButton(this.uuid+'_action-edit', TranslationService.instant('SB_ACTIONS_BUTTON_UPDATE'), 'raised')
+                        UIHelper.createButton(this.uuid + '_action-edit', TranslationService.instant('SB_ACTIONS_BUTTON_UPDATE'), 'raised')
                         .on('click', async () => {
                             // #todo - allow overloading default action controller ('ACTION.EDIT')
                             await this.openContext({
@@ -1989,12 +2082,16 @@ export class View {
                 }
                 break;
             case 'edit':
+
                 // define the save method (used for all action implying saving the object)
                 const save_method = async (action:any) => {
                     let objects;
                     if(!this.layout.checkRequiredFields()) {
+                        let $snack = UIHelper.createSnackbar(TranslationService.instant('SB_ERROR_MISSING_PARAM', 'Missing value.'), TranslationService.instant('SB_ERROR_ERROR', 'Error'), '', 4000);
+                        this.$container.append($snack);
                         return null;
                     }
+                    // #memo - while inline editing, we must send the full object
                     if(this.purpose == 'create') {
                         // get the full collection, whatever the changes made by user
                         objects = await this.model.get();
@@ -2121,7 +2218,7 @@ export class View {
                     }
                 };
 
-                let $cancel_button = UIHelper.createButton(this.uuid+'_action-cancel', TranslationService.instant('SB_ACTIONS_BUTTON_CANCEL'), 'outlined');
+                let $cancel_button = UIHelper.createButton(this.uuid + '_action-cancel', TranslationService.instant('SB_ACTIONS_BUTTON_CANCEL'), 'outlined');
 
                 $cancel_button.on('click', async () => {
                     let validation = true;
@@ -2135,6 +2232,10 @@ export class View {
 
                 let $save_button = $();
 
+                if(!Array.isArray(header_actions["ACTION.SAVE"])) {
+                    header_actions["ACTION.SAVE"] = default_header_actions["ACTION.SAVE"];
+                }
+
                 if(header_actions["ACTION.SAVE"].length <= 1) {
                     let save_button_title_id = 'SB_ACTIONS_BUTTON_SAVE';
                     /*
@@ -2142,26 +2243,32 @@ export class View {
                         save_button_title_id = 'SB_ACTIONS_BUTTON_' + header_actions["ACTION.SAVE"][0].id;
                     }
                     */
-                    $save_button = UIHelper.createButton(this.uuid+'_action-save', TranslationService.instant(save_button_title_id), 'raised', '', 'secondary');
+                    $save_button = UIHelper.createButton(this.uuid + '_action-save', TranslationService.instant(save_button_title_id), 'raised', '', 'secondary');
                 }
                 else {
-                    $save_button = UIHelper.createSplitButton(this.uuid+'_action-save', TranslationService.instant('SB_ACTIONS_BUTTON_'+header_actions["ACTION.SAVE"][0].id), 'raised', '', 'secondary');
+                    $save_button = UIHelper.createSplitButton(this.uuid + '_action-save', TranslationService.instant('SB_ACTIONS_BUTTON_' + header_actions["ACTION.SAVE"][0].id), 'raised', '', 'secondary');
                     for(let i = 1, n = header_actions["ACTION.SAVE"].length; i < n; ++i) {
                         // retrieve order in which actions must be invoked
                         let header_action = header_actions["ACTION.SAVE"][i].id;
-                        if(!save_actions.hasOwnProperty(header_action)) continue;
+                        if(!save_actions.hasOwnProperty(header_action)) {
+                            continue;
+                        }
                         let save_action = save_actions[header_action];
-                        $save_button.find('.menu-list')
-                        .append(
-                            UIHelper.createListItem(this.uuid+'_action-'+header_action, TranslationService.instant('SB_ACTIONS_BUTTON_'+header_action))
+                        $save_button.find('.menu-list').append(
+                            UIHelper.createListItem(this.uuid + '_action-' + header_action, TranslationService.instant('SB_ACTIONS_BUTTON_' + header_action))
                             // onclick, save and stay in edit mode (save and go back to list)
                             .on('click', () => {
+                                console.debug('View::layoutFormHeader>$save_button[' + i + '].onclick');
                                 // #memo - delay action so that widgets onchange handlers are processed
                                 setTimeout( async () => {
                                     try {
                                         // disable header buttons
                                         $disable_overlay.show();
+                                        // show loader
+                                        this.layout.loading(true);
                                         await save_action(header_actions["ACTION.SAVE"][i]);
+                                        // hide loader (instant)
+                                        this.layout.loading(false);
                                         // delay 2 seconds after response before re-enabling
                                         setTimeout( () => $disable_overlay.hide(), 2000);
                                     }
@@ -2179,12 +2286,17 @@ export class View {
                 if(save_actions.hasOwnProperty(header_action)) {
                     let save_action = save_actions[header_action];
                     $save_button.on('click', async () => {
+                        console.debug('View::layoutFormHeader>$save_button.onclick');
                         // #memo - delay action so that widgets onchange handlers are processed
                         setTimeout( async () => {
                             try {
                                 // disable header buttons
                                 $disable_overlay.show();
+                                // show loader
+                                this.layout.loading(true);
                                 await save_action(header_actions["ACTION.SAVE"][0]);
+                                // hide loader (instant)
+                                this.layout.loading(false);
                                 // delay 2 seconds after response before re-enabling
                                 setTimeout( () => $disable_overlay.hide(), 2000);
                             }
@@ -2193,6 +2305,14 @@ export class View {
                             }
                         }, 100);
                     });
+                }
+
+                if(!has_action_save) {
+                    $save_button.hide();
+                }
+
+                if(!has_action_cancel) {
+                    $cancel_button.hide();
                 }
 
                 $std_actions
@@ -2505,6 +2625,11 @@ export class View {
      */
     public async onchangeView(full: boolean = false) {
         console.debug('View::onchangeView', full);
+
+        if(this.is_editing) {
+            return;
+        }
+
         // notify about context update
         this.context.updatedContext();
 
@@ -2584,12 +2709,12 @@ export class View {
         }
     }
 
-    private async actionBulkAssign(selection: any) {
+    private async actionSelectionBulkAssign(selection: any) {
         console.debug('View::opening bulk assign dialog');
         this.$container.find('#'+this.uuid+'_bulk-assign-dialog').trigger('_open');
     }
 
-    private async actionListInlineEdit(selection: any) {
+    private async actionSelectionInlineEdit(selection: any) {
         if(selection.length && !this.$container.find('.sb-view-header-list-actions-selected-edit').length) {
             this.$headerContainer.find('#'+'SB_ACTION_ITEM-'+'SB_ACTIONS_BUTTON_INLINE_UPDATE').hide();
             this.$headerContainer.find('#'+'SB_ACTION_ITEM-'+'SB_ACTIONS_BUTTON_BULK_ASSIGN').show();
@@ -2715,6 +2840,95 @@ export class View {
             });
         }
     }
+
+    private async actionCreateInline() {
+
+        if(this.is_editing) {
+            return;
+        }
+
+        this.is_editing = true;
+
+        try {
+            // create a new object
+            let objectDefaults: any = await this.model.getModelDefaults();
+            let response = await ApiService.create(this.entity, objectDefaults);
+            let object_id: number = response.id;
+
+            response = await ApiService.read(this.entity, [object_id], Object.keys(this.model_fields), this.getLang());
+            let newObject = response[0];
+
+            // inject object into model
+            this.model.add(newObject);
+
+            // adapt actions header width
+            const $actionsHeader = this.layout.getContainer().find('thead th[name="actions"]');
+            const original_width = $actionsHeader[0].offsetWidth;
+            $actionsHeader.css('width', Math.max(original_width, 98) + 'px');
+
+            let actions: any[] = [
+                {
+                    "id": "save",
+                    "icon": "done",
+                    "color": "#1a7f4c",
+                    "callback": async (object: any) => {
+                        console.debug('saving', object);
+                        let $tr = this.$layoutContainer.find('tr[data-id="' + object.id + '"]').first();
+                        // handle changed objects
+                        // let objects = this.model.getChanges([object.id]);
+                        // #memo - when creating a new object, we must send the full object
+                        let objects = await this.model.get();
+                        object = objects.find( (o: any) => o.id == object.id );
+                        try {
+                            const response = await ApiService.update(this.entity, [object.id], this.model.export(object), false, this.getLang());
+                            $tr.trigger('_toggle_mode', 'view');
+                            $tr.attr('data-edit', '0');
+                            $tr.find('.sb-action-cell').empty();
+                            // restore header width
+                            $actionsHeader.css('width', original_width + 'px');
+                            // toggle is_editing flag
+                            this.is_editing = false;
+                            // refresh view (necessary for computed operations)
+                            await this.onchangeView();
+                        }
+                        catch(response) {
+                            this.displayErrorFeedback(this.translation, response, object, true);
+                        }
+                    }
+                },
+                {
+                    "id": "cancel",
+                    "icon": "cancel",
+                    "color": "#ba1a1a",
+                    "callback": async (object: any) => {
+                        console.debug('cancelled creation', object);
+                        this.$layoutContainer.find('tr[data-id="' + object.id + '"]').remove();
+                        $tr.remove();
+                        this.is_editing = false;
+                        $actionsHeader.css('width', original_width + 'px');
+                    }
+                }
+            ];
+
+            // inject object to current layout
+            this.layout.prependObject(newObject, actions);
+
+            // switch new object to edit mode
+            let $tr = this.$layoutContainer.find('tr[data-id="' + object_id + '"]').first();
+
+            $tr.addClass('sb-widget')
+                // save original object in the row
+                .data('original', this.deepCopy(newObject))
+                // mark row as being edited (prevent click handling)
+                .attr('data-edit', '1')
+                // for each widget of the row, switch to edit mode
+                .trigger('_toggle_mode', 'edit');
+        }
+        catch(response) {
+            this.is_editing = false;
+        }
+    }
+
 
     public async decorateActionDialog($dialog: JQuery, action: any, params: any, object: any = {}, user: any = {}, parent: any = {}) {
         console.debug('View::decorateActionDialog', action, params, object, user, parent);
@@ -3096,6 +3310,57 @@ export class View {
         return false;
     }
 
+    /**
+     * Tells if an action button is visible, based on configuration from the View Header.
+     * Action descriptor can either be a boolean, an object, or an array.
+     * @see https://doc.equal.run/usage/views/lists/#actions
+     */
+    private isActionEnabled(action: any, mode: string): boolean {
+        console.debug("View::isActionEnabled - evaluating action", action, mode);
+        // direct boolean (visibility)
+        if(typeof action === 'boolean') {
+            return action;
+        }
+        // array of descriptors
+        if(Array.isArray(action)) {
+            if(action.length <= 0) {
+                return false;
+            }
+            action = action[0];
+        }
+        // single descriptor
+        if(typeof action === 'object') {
+            if(action.hasOwnProperty(mode)) {
+                // boolean
+                if(typeof action[mode] === 'boolean') {
+                    return action[mode];
+                }
+                // visibility domain
+                else if(Array.isArray(action[mode])) {
+                    let domain = new Domain(action[mode]);
+                    return domain.parse({}, this.getUser(), {}, this.getEnv()).test();
+                }
+                // other value for 'view' (e.g. view id)
+                else {
+                    return true;
+                }
+            }
+            else if(action.hasOwnProperty('visible')) {
+                if(typeof action.visible === 'boolean') {
+                    return action.visible;
+                }
+                else if(Array.isArray(action.visible)) {
+                    // visibility domain
+                    let domain = new Domain(action.visible);
+                    return domain.parse({}, this.getUser(), {}, this.getEnv()).test();
+                }
+            }
+            else {
+                return true;
+            }
+        }
+        return false;
+    }
 
     private openAuthPopup(url: string, title = "Authentication", width = 400, height = 600) {
         // Calculer la position pour centrer la popup
@@ -3228,6 +3493,28 @@ export class View {
 
         return result;
     }
+
+    private extractFieldsFromDomain(domain_array: any): string[] {
+        const result: string[] = [];
+
+        if (!Array.isArray(domain_array) || domain_array.length === 0) {
+            return [];
+        }
+
+        let domain: Domain = new Domain(domain_array);
+
+        for(let clause of domain.getClauses()) {
+            for(let condition of clause.getConditions()) {
+                let value = condition.getValue();
+                if(typeof value === "string" && value.startsWith("object.")) {
+                    result.push(value);
+                }
+            }
+        }
+
+        return result;
+    }
+
 }
 
 export default View;

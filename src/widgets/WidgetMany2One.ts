@@ -9,7 +9,7 @@ export default class WidgetMany2One extends Widget {
 
 
     constructor(layout: Layout, label: string, value: any, config: any) {
-        super(layout, 'many2one', label, value, config);
+        super(layout, label, value, config);
     }
 
     public render(): JQuery {
@@ -60,7 +60,7 @@ export default class WidgetMany2One extends Widget {
                     this.$elem.trigger('_updatedWidget');
                 });
 
-                if(value.length) {
+                if(value.length || this.readonly) {
                     $button_create.hide();
                 }
                 else {
@@ -79,7 +79,7 @@ export default class WidgetMany2One extends Widget {
                 else {
                     this.$elem.append($button_open);
                     let view_type = 'form';
-                    let view_name = (this.config.hasOwnProperty('view_name'))?this.config.view_name:'default';
+                    let view_name = (this.config.hasOwnProperty('view_name')) ? this.config.view_name : 'default';
                     if(this.config.hasOwnProperty('header')) {
                         if(this.config.header.hasOwnProperty('view')) {
                             let parts = this.config.header.view.split('.');
@@ -115,7 +115,7 @@ export default class WidgetMany2One extends Widget {
                     });
                 }
 
-                if(!this.config.has_action_create) {
+                if(!this.config.has_action_create || this.readonly) {
                     $button_create.hide();
                 }
                 else {
@@ -125,12 +125,12 @@ export default class WidgetMany2One extends Widget {
                         console.debug('WidgetMany2one:: received click on button create', this.config);
                         let view_type = 'form';
                         let view_name = (this.config.hasOwnProperty('view_name')) ? this.config.view_name : 'default';
-                        let domain:any = [];
+                        let domain: any = [];
                         if(this.config.hasOwnProperty('domain')) {
                             domain = this.config.domain;
                         }
                         let contextDomain = new Domain(domain);
-                        let value:string = <string> $select.find('input').val();
+                        let value: string = <string> $select.find('input').val();
                         if(value.length > 0) {
                             contextDomain.merge(new Domain(['name', '=', value]));
                         }
@@ -145,8 +145,12 @@ export default class WidgetMany2One extends Widget {
                                     }
                                     if(action.hasOwnProperty('view')) {
                                         let parts = action.view.split('.');
-                                        if(parts.length) view_type = <string>parts.shift();
-                                        if(parts.length) view_name = <string>parts.shift();
+                                        if(parts.length) {
+                                            view_type = <string> parts.shift();
+                                        }
+                                        if(parts.length) {
+                                            view_name = <string> parts.shift();
+                                        }
                                     }
                                 }
                             }
@@ -241,15 +245,17 @@ export default class WidgetMany2One extends Widget {
                         return;
                     }
                     let val = <string> $input.val();
-                    let parts:string[] = val.split(" ");
+                    let parts: string[] = val.trim().split(" ");
 
                     if(val != query || !objects.length) {
                         query = val;
 
                         let domainArray = [];
                         for(let word of parts) {
-                            let cond = ['name', 'ilike', '%'+word+'%'];
-                            domainArray.push(cond);
+                            if(word.length > 0) {
+                                const cond = ['name', 'ilike', '%' + word + '%'];
+                                domainArray.push(cond);
+                            }
                         }
                         let tmpDomain = new Domain(domainArray);
                         if(this.config.hasOwnProperty('domain')) {
@@ -312,7 +318,7 @@ export default class WidgetMany2One extends Widget {
                     $select.find('.mdc-menu-surface').width(<number>$select.width());
                 };
 
-                if(this.config.layout == 'form' && !this.readonly) {
+                if(/*this.config.layout == 'form' &&*/ !this.readonly) {
                     console.debug('WidgetMany2One: setting up listener on $select');
 
                     if(!this.config.has_action_open && !this.config.has_action_create) {
@@ -455,7 +461,7 @@ export default class WidgetMany2One extends Widget {
 
                         this.$elem.append($viewInput);
 
-                        if(this.config.has_action_open) {
+                        if(value.length && this.config.has_action_open) {
                             this.$elem.append($button_open);
                             // open targeted object in new context
                             $button_open.on('click', async () => {
@@ -474,21 +480,26 @@ export default class WidgetMany2One extends Widget {
                         break;
                     case 'list':
                     default:
-                        // by convention, first column of each row opens the object no matter the type of the field
-                        if(this.is_first) {
-                            this.$elem.addClass('is-first');
+                        this.$elem.text(value)
+                            .attr('title', value)
+                            .addClass('sb-string-flow')
+                            .css({"cusor": "pointer"});
+
+                        if(this.config.hasOwnProperty('wrap') && this.config.wrap) {
+                            this.$elem.addClass('sb-string-wrap');
                         }
 
-                        this.$elem.text(value);
-                        this.$elem.css({"width": "100%", "height": "auto", "max-height": "calc(44px - 2px)", "white-space": "break-spaces", "overflow": "hidden", "cusor": "pointer"});
-
-                        if(!this.is_first) {
+                        if(this.is_first) {
+                            // by convention, first column of each row opens the object no matter the type of the field
+                            this.$elem.addClass('is-first');
+                        }
+                        else {
                             // open targeted object in new context
                             this.$elem.on('click', async (event: any) => {
                                 this.getLayout().openContext({
                                     entity: this.config.foreign_object,
                                     type: 'form',
-                                    name: (this.config.hasOwnProperty('view_name'))?this.config.view_name:'default',
+                                    name: (this.config.hasOwnProperty('view_name')) ? this.config.view_name : 'default',
                                     domain: ['id', '=', this.config.object_id]
                                 });
                                 event.stopPropagation();

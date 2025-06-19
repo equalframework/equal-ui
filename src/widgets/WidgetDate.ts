@@ -9,7 +9,7 @@ import { $, jqlocale } from "../jquery-lib";
 export default class WidgetDate extends Widget {
 
     constructor(layout: Layout, label: string, value: any, config: {}) {
-        super(layout, 'date', label, value, config);
+        super(layout, label, value, config);
     }
 
     private jqueryToMomentFormat(format: string): string {

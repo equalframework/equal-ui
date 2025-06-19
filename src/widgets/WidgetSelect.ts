@@ -6,7 +6,7 @@ import { UIHelper } from '../material-lib';
 export default class WidgetSelect extends Widget {
 
     constructor(layout: Layout, label: string, value: any, config: any) {
-        super(layout, 'select', label, value, config);
+        super(layout, label, value, config);
     }
 
     public change(value: any) {

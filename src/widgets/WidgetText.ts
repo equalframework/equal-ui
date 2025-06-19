@@ -9,7 +9,7 @@ export default class WidgetText extends Widget {
 
 
     constructor(layout: Layout, label: string, value: any, config: {}) {
-        super(layout, 'text', label, value, config);
+        super(layout, label, value, config);
     }
 
     public change(value: any) {
@@ -20,8 +20,19 @@ export default class WidgetText extends Widget {
         }
     }
 
+    private updateWidget() {
+        const usage = this.config.usage;
+        if(this.$elem.data('quill')) {
+            const editor = this.$elem.data('quill');
+            if(!usage.startsWith('text/html') && !usage.startsWith('html')) {
+                this.value = editor.getText().trim();
+            }
+        }
+        this.$elem.trigger('_updatedWidget', [false]);
+    }
+
     public render():JQuery {
-        let value:string = this.value?this.value:'';
+        let value: string = this.value ? this.value : '';
         switch(this.mode) {
             case 'edit':
                 if(this.config.layout == 'list') {
@@ -32,7 +43,7 @@ export default class WidgetText extends Widget {
                         let $this = $(event.currentTarget);
                         this.value = $this.val();
                         if(this.value != value) {
-                            this.$elem.trigger('_updatedWidget', [false]);
+                            this.updateWidget();
                         }
                     });
 
@@ -50,11 +61,11 @@ export default class WidgetText extends Widget {
 
                     this.getLayout().getView().isReady().then( () => {
                         // init inline styling
-                        const ColorClass = Quill.import('attributors/class/color');
+                        const ColorStyle = Quill.import('attributors/style/color');
                         const SizeStyle  = Quill.import('attributors/style/size');
                         const AlignStyle = Quill.import('attributors/style/align');
 
-                        Quill.register(ColorClass, true);
+                        Quill.register(ColorStyle, true);
                         Quill.register(SizeStyle, true);
                         Quill.register(AlignStyle, true);
 
@@ -82,7 +93,12 @@ export default class WidgetText extends Widget {
                                     [{ 'list': 'ordered'}, { 'list': 'bullet' }],
                                     [{ "align": '' }, { "align": 'center' }, { 'align': 'right' }],
 //                                    [{ 'size': ['small', false, 'large', 'huge'] }],
-                                    ['small', 'big', { 'background': ['#fff59d', '#fd4444', '#a5d6a7', '#81d4fa', '#ffccbc', false] }],
+                                    [
+                                        'small',
+                                        'big',
+                                        { 'color': ['#000000', '#e60000', '#ff9900', '#ffff00', '#008a00', '#0066cc', false] },
+                                        { 'background': ['#fff59d', '#fd4444', '#a5d6a7', '#81d4fa', '#ffccbc', false] }
+                                    ],
                                     ['fullscreen']
                                 ]
                             }
@@ -90,13 +106,13 @@ export default class WidgetText extends Widget {
 
                         this.$elem.find('.ql-small').html(`
                                 <svg viewBox="0 0 18 18" width="18" height="18">
-                                <text x="2" y="14" font-size="10" font-family="sans-serif">A</text>
+                                    <text x="2" y="14" font-size="10" font-family="sans-serif">A</text>
                                 </svg>
                             `);
 
                         this.$elem.find('.ql-big').html(`
                                 <svg viewBox="0 0 18 18" width="18" height="18">
-                                <text x="1" y="15" font-size="16" font-family="sans-serif">A</text>
+                                    <text x="1" y="15" font-size="16" font-family="sans-serif">A</text>
                                 </svg>
                             `);
 
@@ -118,6 +134,7 @@ export default class WidgetText extends Widget {
 
                         let timeout: any;
                         let initial_change = true;
+
                         editor.on('text-change', (delta, source) => {
                             this.value = editor.root.innerHTML;
                             // update value without refreshing the layout
@@ -128,13 +145,29 @@ export default class WidgetText extends Widget {
                                 }
                                 if(!initial_change) {
                                     timeout = setTimeout( () => {
-                                        this.$elem.trigger('_updatedWidget', [false]);
-                                        // we set timeout to 1s because there is no hurry here and we want to minimize requests
+                                        this.updateWidget();
+                                        // we set timeout to 1s as debounce (there is no hurry here)
                                     }, 1000);
                                 }
                                 initial_change = false;
                             }
-                        })
+                        });
+
+                        // add support for silent copy-paste
+                        editor.root.addEventListener('paste', () => {
+                            setTimeout(() => {
+                                // simulate a text-change if content was actually updated
+                                this.value = editor.root.innerHTML;
+                                if(this.value != value) {
+                                    if (timeout) {
+                                        clearTimeout(timeout);
+                                    }
+                                    timeout = setTimeout(() => {
+                                        this.updateWidget();
+                                    }, 1000);
+                                }
+                            }, 100);
+                        });
 
                     });
                 }

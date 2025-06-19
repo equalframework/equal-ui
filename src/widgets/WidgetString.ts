@@ -6,7 +6,7 @@ import { UIHelper } from '../material-lib';
 export default class WidgetString extends Widget {
 
     constructor(layout: Layout, label: string, value: any, config: {}) {
-        super(layout, 'string', label, value, config);
+        super(layout, label, value, config);
     }
 
     public change(value: any) {
@@ -109,8 +109,13 @@ export default class WidgetString extends Widget {
                             this.$elem.css({"width": "100%", "text-align": "center"});
                         }
                         else {
-                            this.$elem = $('<div />').html(value);
-                            this.$elem.css({"width": "100%", "height": "auto", "max-height": "calc(44px - 2px)", "white-space": "break-spaces", "overflow": "hidden"});
+                            this.$elem = $('<div />')
+                                .html(value)
+                                .addClass('sb-string-flow');
+
+                            if(this.config.hasOwnProperty('wrap') && this.config.wrap) {
+                                this.$elem.addClass('sb-string-wrap');
+                            }
                         }
                     }
                     else {
@@ -127,6 +132,7 @@ export default class WidgetString extends Widget {
 
         return this.$elem
             .addClass('sb-widget')
+            .addClass('sb-widget-type-string')
             .addClass('sb-widget-mode-' + this.mode)
             .attr('id', this.getId())
             .attr('data-type', this.config.type)

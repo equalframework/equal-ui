@@ -8,7 +8,7 @@ import { ApiService, TranslationService } from "../equal-services";
 export class WidgetDashboardItem extends Widget {
 
     constructor(layout:Layout, label: string, value: any, config: any) {
-        super(layout, 'dashboarditem', label, value, config);
+        super(layout, label, value, config);
     }
 
     public render():JQuery {

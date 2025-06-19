@@ -40,7 +40,7 @@ export class LayoutList extends Layout {
         this.feed(objects);
     }
 
-    public loading(loading:boolean) {
+    public loading(loading: boolean) {
         let $elem = this.$layout.find('.table-wrapper');
         let $loader = $elem.find('.table-loader');
 
@@ -208,6 +208,7 @@ export class LayoutList extends Layout {
         this.$layout.append($elem);
 
         if(view_schema.hasOwnProperty('operations')) {
+            console.debug('LayoutList::layout() assigning operations');
             let $operations = $('<div>').addClass('table-operations');
             for(let operation in view_schema.operations) {
                 let op_descriptor = view_schema.operations[operation];
@@ -218,34 +219,35 @@ export class LayoutList extends Layout {
                 let $op_row = $('<div>').addClass('operation-row').appendTo($op_div);
                 let pos = 0;
                 for(let item of view_schema.layout.items) {
-                    if(!item.hasOwnProperty('visible') || item.visible == true) {
-                        let width = Math.floor(10 * item.width) / 10;
-                        let $cell = $('<div>').addClass('operation-cell mdc-data-table__cell').css({width: width+'%'});
-                        if(pos == 0) {
-                            let offset = 0;
-                            if(this.view.getPurpose() != 'widget' || this.view.getMode() == 'edit') {
-                                offset += 44;
-                            }
-                            if(group_by.length > 0) {
-                                offset += 44;
-                            }
-                            if(offset > 0) {
-                                $cell.css({width: 'calc('+width+'% + '+offset+'px)' });
-                            }
-                        }
-                        let field = item.value;
-                        if(op_descriptor.hasOwnProperty(field)) {
-                            $cell.attr('data-id', 'operation-'+operation+'-'+field);
-                            let type: string | null = this.view.getModel().getFinalType(field);
-                            if(type && ['float', 'integer', 'time'].indexOf(type) >= 0 && field != 'id') {
-                                $cell.css({'text-align': 'right'});
-                            }
-                        }
-                        else if(pos == 0) {
-                            $cell.append($title);
-                        }
-                        $op_row.append($cell);
+                    if(item.hasOwnProperty('visible') && !item.visible) {
+                        continue;
                     }
+                    let width = Math.floor(10 * item.width) / 10;
+                    let $cell = $('<div>').addClass('operation-cell mdc-data-table__cell').css({width: width + '%'});
+                    if(pos == 0) {
+                        let offset = 0;
+                        if(this.view.getPurpose() != 'widget' || this.view.getMode() == 'edit') {
+                            offset += 44;
+                        }
+                        if(group_by.length > 0) {
+                            offset += 44;
+                        }
+                        if(offset > 0) {
+                            $cell.css({width: 'calc(' + width + '% + ' + offset + 'px)' });
+                        }
+                    }
+                    let field = item.value;
+                    if(op_descriptor.hasOwnProperty(field)) {
+                        $cell.attr('data-id', 'operation-' + operation + '-' + field);
+                        let type: string | null = this.view.getModel().getFinalType(field);
+                        if(type && ['float', 'integer', 'time'].indexOf(type) >= 0 && field != 'id') {
+                            $cell.css({'text-align': 'right'});
+                        }
+                    }
+                    else if(pos == 0) {
+                        $cell.append($title);
+                    }
+                    $op_row.append($cell);
                     ++pos;
                 }
 
@@ -273,7 +275,8 @@ export class LayoutList extends Layout {
                         continue;
                     }
                     let action_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, action.label);
-                    let $action_button = UIHelper.createButton(this.uuid + '_action-view-' + action.id, action_title, 'outlined')
+                    let $action_button = UIHelper.createButton(this.uuid + '_action-view-' + action.id, action_title, 'outlined');
+                    $action_button.css({'margin-left': '12px'});
                     $view_actions.append($action_button);
                     this.decorateActionButton($action_button, action);
                 }
@@ -361,7 +364,6 @@ export class LayoutList extends Layout {
                 $row.append($('<td/>'));
                 $tbody.append($row);
             }
-
             // 'group' is a descriptor and needs to be pushed on the stack
             else {
                 // #memo - keys must be strings
@@ -546,13 +548,40 @@ export class LayoutList extends Layout {
         return groups;
     }
 
+    public prependObject(object: any, actions: any[] = []) {
+        let $tbody = this.$layout.find("tbody");
+
+        let $row = this.feedListCreateObjectRow(object);
+
+        // Check if an sb-action-cell already exists in $row
+        let $actions_cell = $row.find('.sb-action-cell').empty();
+        if($actions_cell.length === 0) {
+            $actions_cell = $('<td/>').addClass('sb-action-cell').css({'text-overflow': 'unset'});
+        }
+
+        for(let action of actions) {
+            let $action_button = UIHelper.createButton(this.uuid + '_action-view-' + action.id + '-' + object.id, '', 'icon', action.icon ?? 'done');
+            if(action.hasOwnProperty('color')) {
+                $action_button.css({'color': action.color});
+            }
+            this.decorateActionButton($action_button, action, object);
+            $actions_cell.append($action_button);
+        }
+
+        $row.append($actions_cell);
+
+        // decorate
+        $row.find('td').addClass('mdc-data-table__cell');
+        $tbody.prepend($row);
+    }
+
     /**
      *
      * @param object
      * @param parent_group_id A string used as DOM id that allows to retrieve parent node.
      * @returns
      */
-    private feedListCreateObjectRow(object: any, parent_group_id: string) {
+    private feedListCreateObjectRow(object: any, parent_group_id: string = '') {
         let view_schema = this.view.getViewSchema();
 
         let view_fields = this.view.getViewFields();
@@ -564,145 +593,150 @@ export class LayoutList extends Layout {
         let group_by = this.view.getGroupBy();
 
         let $row = $('<tr/>')
-        .addClass('sb-view-layout-list-row')
-        .attr('data-parent-id', parent_group_id)
-        .attr('data-id', object.id)
-        .attr('data-edit', '0')
-        // open form view on click
-        .on('click', async (event:any) => {
-            let $this = $(event.currentTarget);
-            // discard click when row is being edited
-            if($this.attr('data-edit') == '0') {
-                let childViewSchema = await ApiService.getView(this.view.getEntity(), 'form' + '.' + this.view.getName());
-                // #todo - allow overloading default action ('ACTIONS.UPDATE')
-                // fallback to view mode if `header.actions.ACTION.EDIT` is set to false
-                let mode = this.view.getMode();
-                if(childViewSchema.hasOwnProperty("header") && childViewSchema.header.hasOwnProperty('actions')) {
-                    if(childViewSchema.header.actions.hasOwnProperty("ACTION.EDIT") && childViewSchema.header.actions["ACTION.EDIT"] === false) {
-                        mode = 'view';
+            .addClass('sb-view-layout-list-row')
+            .attr('data-parent-id', parent_group_id)
+            .attr('data-id', object.id)
+            .attr('data-edit', '0')
+            // open form view on click
+            .on('click', async (event:any) => {
+                let $this = $(event.currentTarget);
+                if(this.view.getPurpose() == 'add') {
+                    this.addToSelection([object.id]);
+                    this.view.triggerAction('ACTION.SELECT');
+                    return;
+                }
+                // discard click when row is being edited
+                if($this.attr('data-edit') == '0') {
+                    let childViewSchema = await ApiService.getView(this.view.getEntity(), 'form' + '.' + this.view.getName());
+                    // #todo - allow overloading default action ('ACTIONS.UPDATE')
+                    // fallback to view mode if `header.actions.ACTION.EDIT` is set to false
+                    let mode = this.view.getMode();
+                    if(childViewSchema.hasOwnProperty('header') && childViewSchema.header.hasOwnProperty('actions')) {
+                        if(childViewSchema.header.actions.hasOwnProperty('ACTION.EDIT') && childViewSchema.header.actions['ACTION.EDIT'] === false) {
+                            mode = 'view';
+                        }
                     }
+
+                    let config: any = {entity: this.view.getEntity(), type: 'form', name: this.view.getName(), mode: mode, domain: ['id', '=', object.id]};
+                    // if current list is a widget, reload content after child context has been closed
+                    if(this.view.getPurpose() == 'widget') {
+                        config.callback = (data: any) => {
+                            // trigger a refresh of the current view
+                            this.view.onchangeView();
+                        };
+                    }
+                    this.openContext(config);
                 }
+            })
+            // toggle mode for all cells in row
+            .on( '_toggle_mode', (event: any, mode: string = 'view') => {
+                console.debug('Layout - received toggle_mode', mode);
+                let $this = $(event.currentTarget);
 
-                let config: any = {entity: this.view.getEntity(), type: 'form', name: this.view.getName(), mode: mode, domain: ['id', '=', object.id]};
-                // if current list is a widget, reload content after child context has been closed
-                if(this.view.getPurpose() == 'widget') {
-                    config.callback = (data: any) => {
-                        // trigger a refresh of the current view
-                        this.view.onchangeView();
-                    };
-                }
-                this.openContext(config);
-            }
-        })
-        // toggle mode for all cells in row
-        .on( '_toggle_mode', (event: any, mode: string = 'view') => {
-            console.debug('Layout - received toggle_mode', mode);
-            let $this = $(event.currentTarget);
+                $this.find('td.sb-widget-cell').each( (index: number, elem: any) => {
+                    let $cell = $(elem);
+                    let field: any = $cell.attr('data-field');
+                    let widget = this.model_widgets[object.id][field];
 
-            $this.find('td.sb-widget-cell').each( (index: number, elem: any) => {
-                let $cell = $(elem);
-                let field:any = $cell.attr('data-field');
-                let widget = this.model_widgets[object.id][field];
+                    // switch to given mode
+                    if(widget.getMode() == mode) {
+                        return;
+                    }
 
-                // switch to given mode
-                if(widget.getMode() == mode) {
-                    return;
-                }
+                    $cell.empty();
 
-                $cell.empty();
+                    let visible = true;
+                    let config = widget.getConfig();
+                    // handle visibility tests (domain)
+                    if(config.hasOwnProperty('visible')) {
+                        visible = this.isVisible(config.visible, object, user, {}, this.getEnv());
+                    }
 
-                let visible = true;
-                let config = widget.getConfig();
-                // handle visibility tests (domain)
-                if(config.hasOwnProperty('visible')) {
-                    visible = this.isVisible(config.visible, object, user, {}, this.getEnv());
-                }
+                    if(!visible) {
+                        return;
+                    }
 
-                if(!visible) {
-                    return;
-                }
+                    let $widget = widget.setMode(mode).render();
 
-                let $widget = widget.setMode(mode).render();
+                    $cell.append($widget);
 
-                $cell.append($widget);
+                    // handle special situations that allow cell content to overflow
+                    if(widget.getType() == 'boolean') {
+                        $cell.addClass('allow-overflow');
+                    }
 
-                // handle special situations that allow cell content to overflow
-                if(widget.getType() == 'boolean') {
-                    $cell.addClass('allow-overflow');
-                }
-
-                if(mode == 'edit') {
-                    $widget.on('_updatedWidget', async (event: any, refresh: boolean = true) => {
-                        console.debug('Layout - received _updatedWidget event', widget.getValue());
-                        let values: any = {};
-                        values[field] = widget.getValue();
-                        let model_fields: any = {};
-                        // if value is less than 1k, relay onchange to server
-                        // #todo - choose a proportionate (objectivable) limit
-                        if(String(widget.getValue()).length < 1000) {
-                            // relay the change to back-end through onupdate
-                            try {
-                                // #todo - add support for dynamic view_schema (ex. filter or update selection of selectable fields, based on value from other fields)
-                                const result = await ApiService.call("?do=model_onchange", {entity: this.view.getEntity(), changes: this.view.getModel().export(values), values: this.view.getModel().export(object), lang: this.view.getLang()} );
-                                if (typeof result === 'object' && result != null) {
-                                    for(let field of Object.keys(result)) {
-                                        // if some changes are returned from the back-end, append them to the view model update
-                                        if(typeof result[field] === 'object' && result[field] !== null) {
-                                            if(result[field].hasOwnProperty('value')) {
-                                                values[field] = result[field].value;
+                    if(mode == 'edit') {
+                        $widget.on('_updatedWidget', async (event: any, refresh: boolean = true) => {
+                            console.debug('Layout - received _updatedWidget event', widget.getValue());
+                            let values: any = {};
+                            values[field] = widget.getValue();
+                            let model_fields: any = {};
+                            // if value is less than 1k, relay onchange to server
+                            // #todo - choose a proportionate (objectivable) limit
+                            if(String(widget.getValue()).length < 1000) {
+                                // relay the change to back-end through onupdate
+                                try {
+                                    // #todo - add support for dynamic view_schema (ex. filter or update selection of selectable fields, based on value from other fields)
+                                    const result = await ApiService.call("?do=model_onchange", {entity: this.view.getEntity(), changes: this.view.getModel().export(values), values: this.view.getModel().export(object), lang: this.view.getLang()} );
+                                    if (typeof result === 'object' && result != null) {
+                                        for(let field of Object.keys(result)) {
+                                            // if some changes are returned from the back-end, append them to the view model update
+                                            if(typeof result[field] === 'object' && result[field] !== null) {
+                                                if(result[field].hasOwnProperty('value')) {
+                                                    values[field] = result[field].value;
+                                                }
+                                                else {
+                                                    values[field] = result[field];
+                                                }
+                                                model_fields[field] = result[field];
                                             }
                                             else {
                                                 values[field] = result[field];
                                             }
-                                            model_fields[field] = result[field];
                                         }
-                                        else {
-                                            values[field] = result[field];
+                                    }
+                                }
+                                catch(response) {
+                                    // ignore faulty responses
+                                    console.warn('unable to send onchange request', response);
+                                }
+                            }
+                            // update values of widgets impacted by onchange
+                            if(Object.keys(values).length > 0) {
+                                for(let widget_index of Object.keys(this.model_widgets[object.id])) {
+                                    let widget = this.model_widgets[object.id][widget_index];
+                                    let field = widget.config.field;
+                                    if(values.hasOwnProperty(field)) {
+                                        widget.change(values[field]);
+                                    }
+                                }
+                            }
+                            // update model schema of the view if necessary
+                            if(Object.keys(model_fields).length > 0) {
+                                // we need to retrieve the widget based on the field name
+                                for(let widget_index of Object.keys(this.model_widgets[object.id])) {
+                                    let widget = this.model_widgets[object.id][widget_index];
+                                    let field = widget.config.field;
+                                    if(model_fields.hasOwnProperty(field)) {
+                                        for(let property of Object.keys(model_fields[field])) {
+                                            widget.config[property] = model_fields[field][property];
+                                            widget.config.changed = true;
                                         }
                                     }
                                 }
                             }
-                            catch(response) {
-                                // ignore faulty responses
-                                console.warn('unable to send onchange request', response);
-                            }
-                        }
-                        // update values of widgets impacted by onchange
-                        if(Object.keys(values).length > 0) {
-                            for(let widget_index of Object.keys(this.model_widgets[object.id])) {
-                                let widget = this.model_widgets[object.id][widget_index];
-                                let field = widget.config.field;
-                                if(values.hasOwnProperty(field)) {
-                                    widget.change(values[field]);
-                                }
-                            }
-                        }
-                        // update model schema of the view if necessary
-                        if(Object.keys(model_fields).length > 0) {
-                            // we need to retrieve the widget based on the field name
-                            for(let widget_index of Object.keys(this.model_widgets[object.id])) {
-                                let widget = this.model_widgets[object.id][widget_index];
-                                let field = widget.config.field;
-                                if(model_fields.hasOwnProperty(field)) {
-                                    for(let property of Object.keys(model_fields[field])) {
-                                        widget.config[property] = model_fields[field][property];
-                                        widget.config.changed = true;
-                                    }
-                                }
-                            }
-                        }
 
-                        // propagate model change, without requesting a layout refresh (we're in inline edit and we d'ont want to refresh the whole view)
-                        this.view.onchangeViewModel([object.id], values, false);
-                    });
-                }
+                            // propagate model change, without requesting a layout refresh (we're in inline edit and we d'ont want to refresh the whole view)
+                            this.view.onchangeViewModel([object.id], values, false);
+                        });
+                    }
+                });
+            })
+            // dispatch value setter
+            .on( '_setValue', (event: any, field: string, value: any) => {
+                let widget = this.model_widgets[object.id][field];
+                widget.change(value);
             });
-        })
-        // dispatch value setter
-        .on( '_setValue', (event: any, field: string, value: any) => {
-            let widget = this.model_widgets[object.id][field];
-            widget.change(value);
-        });
 
         // for lists in edit mode (excepted widgets), add a checkbox
         // #todo - in some cases we should be able to perform a custom action on elements from widget lists : use embedded actions (?)
@@ -797,7 +831,7 @@ export class LayoutList extends Layout {
                 $cell.append(widget.render());
             }
 
-            if(config.align == 'right' || config.align == 'center') {
+            if (['right', 'center'].includes(config.align)) {
                 $cell.css({'text-align': config.align});
             }
 

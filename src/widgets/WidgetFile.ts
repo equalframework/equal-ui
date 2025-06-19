@@ -7,7 +7,7 @@ import { TranslationService } from "../equal-services";
 export default class WidgetFile extends Widget {
 
     constructor(layout: Layout, label: string, value: any, config: {}) {
-        super(layout, 'file', label, value, config);
+        super(layout, label, value, config);
     }
 
     public change(value: any) {
@@ -34,7 +34,8 @@ export default class WidgetFile extends Widget {
 
         switch(this.mode) {
             case 'edit':
-                this.$elem.css({"display": "flex", "align-items": "center"});
+                this.$elem.css({'display': 'flex', 'align-items': 'center'});
+
                 let $input: JQuery = $('<input type="file" />').hide();
 
                 let $button = UIHelper.createButton(this.getId()+'_upload-button', TranslationService.instant('SB_ACTIONS_BUTTON_SELECT'), 'raised', '', 'primary').css({"margin-left": "10px"});
@@ -83,7 +84,6 @@ export default class WidgetFile extends Widget {
                 break;
             case 'view':
             default:
-
                 this.$elem.append('[binary data]');
                 break;
         }

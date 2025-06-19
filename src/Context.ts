@@ -52,7 +52,6 @@ export class Context {
         this.$container.append(this.view.getContainer());
     }
 
-
     public getEnv() {
         return this.frame.getEnv();
     }
@@ -70,6 +69,9 @@ export class Context {
         console.debug('Context::close', data);
         // remove any beforeunload callback that might have been installed
         window.removeEventListener('beforeunload', window.beforeUnloadListener);
+        if(this.view && typeof this.view.destroy === 'function') {
+            this.view.destroy();
+        }
         // remove Context container
         this.$container.remove();
         // invoke callback to relay events across contexts (select, add, ...)
@@ -85,6 +87,9 @@ export class Context {
      */
     public destroy() {
         console.debug('Context::destroy');
+        if(this.view && typeof this.view.destroy === 'function') {
+            this.view.destroy();
+        }
         // remove Context container
         this.$container.remove();
     }

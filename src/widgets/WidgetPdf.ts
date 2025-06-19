@@ -1,12 +1,10 @@
 import Widget from "./Widget";
 import { View, Layout } from "../equal-lib";
-import { UIHelper } from '../material-lib';
-
 
 export default class WidgetPdf extends Widget {
 
     constructor(layout: Layout, label: string, value: any, config: {}) {
-        super(layout, 'text', label, value, config);
+        super(layout, label, value, config);
     }
 
     public change(value: any) {
@@ -28,7 +26,7 @@ export default class WidgetPdf extends Widget {
                     this.$elem.append( $('<iframe id=""width="100%" height="100%" allowfullscreen style="border: none;" />').attr('src', '/pdfjs/web/viewer.html?file=' + value) );
 
                     if(this.config.hasOwnProperty('height') && this.config.height > 0) {
-                        this.$elem.css({height: this.config.height+'px'});
+                        this.$elem.css({height: this.config.height + 'px'});
                     }
                     this.addFullscreenButton(this.$elem);
                 }
@@ -77,6 +75,7 @@ export default class WidgetPdf extends Widget {
                 }
 
                 $('.pdfjs-custom-fullscreen').remove();
+
                 $button.prependTo('body');
                 placeFullscreenButton();
 

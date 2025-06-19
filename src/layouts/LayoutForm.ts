@@ -38,6 +38,19 @@ export class LayoutForm extends Layout {
         this.feed(objects);
     }
 
+    public loading(loading: boolean) {
+        let $loader = this.$layout.find('.sb-view-loader-overlay');
+
+        if(loading) {
+            const rect = this.$layout[0].getBoundingClientRect();
+            $loader.css({'height': rect.height + 'px'});
+            $loader.show();
+        }
+        else {
+            $loader.hide();
+        }
+    }
+
     /**
      *
      * This method also stores the list of instantiated widgets to allow switching from view mode to edit mode  (for a form or a cell)
@@ -46,6 +59,9 @@ export class LayoutForm extends Layout {
     protected layout() {
         console.debug('LayoutForm::layout');
         let $elem = $('<div/>').css({"width": "100%"});
+
+        // add spinner
+        $elem.append($('<div/>').addClass('sb-view-loader-overlay').append($('<div/>').addClass('loader-container').append($('<div/>').addClass('loader-spinner'))).hide());
 
         let view_schema = this.view.getViewSchema();
 
@@ -61,7 +77,7 @@ export class LayoutForm extends Layout {
         }
 
         $.each(view_schema.layout.groups, (i:number, group) => {
-            let group_id = 'group-'+i;
+            let group_id = 'group-' + i;
             let $group = $('<div />').addClass('sb-view-form-group').appendTo($elem);
 
             // try to resolve the group title
@@ -196,7 +212,7 @@ export class LayoutForm extends Layout {
                                     }
                                     else if(item.type == 'label') {
                                         let label_title = TranslationService.resolve(translation, 'view', [this.view.getId(), 'layout'], item.id, item.value);
-                                        let widget:Widget = WidgetFactory.getWidget(this, 'label', '', label_title, {widget_type: 'label', ...item});
+                                        let widget:Widget = WidgetFactory.getWidget(this, 'label', '', label_title, {widget_type: 'label', ...item, ...(item?.widget ?? {})});
                                         this.model_widgets[0]['__label_'+widget.getId()] = widget;
                                         $cell.append(widget.render());
                                     }
@@ -220,9 +236,18 @@ export class LayoutForm extends Layout {
         // display the first object from the collection
 
         if(objects.length == 0) {
-            let $viewHeader = this.view.getContainer().find('.sb-view-header').first();
-            $viewHeader.empty();
-            this.$layout.empty().append($('<div />').append($('<div />').css({ 'padding': '30px 20px', 'font-style': 'italic'}).text(TranslationService.instant('SB_VIEW_UNKNOWN_OBJECT'))));
+            const view_schema: any = this.view.getViewSchema();
+            if(view_schema.hasOwnProperty('on_error') && view_schema.on_error.hasOwnProperty('missing')) {
+                if(view_schema.on_error.missing.hasOwnProperty('context')) {
+                    await this.view.getContext().getFrame().closeAll();
+                    this.view.getContext().getFrame().openContext(view_schema.on_error.missing.context);
+                }
+            }
+            else {
+                let $viewHeader = this.view.getContainer().find('.sb-view-header').first();
+                $viewHeader.empty();
+                this.$layout.empty().append($('<div />').append($('<div />').css({ 'padding': '30px 20px', 'font-style': 'italic'}).text(TranslationService.instant('SB_VIEW_UNKNOWN_OBJECT'))));
+            }
             return;
         }
 
@@ -245,10 +270,10 @@ export class LayoutForm extends Layout {
 
             // show object status, if defined and present
             if(model_fields.hasOwnProperty('status')) {
-                let $status_container = $view_actions.find('#'+this.uuid+'_status');
+                let $status_container = $view_actions.find('#' + this.uuid + '_status');
                 if($status_container.length == 0) {
                     let status_title = TranslationService.resolve(translation, 'model', [], 'status', 'status', 'label');
-                    $status_container = $('<div style="margin-left: auto;"></div>').attr('id', this.uuid+'_status').append( $('<span style="line-height: 46px; margin-right: 12px; text-transform: capitalize;">'+status_title+': <span class="status-value"></span></span>') ).appendTo($view_actions);
+                    $status_container = $('<div style="margin-left: auto;"></div>').attr('id', this.uuid + '_status').append( $('<span style="line-height: 46px; margin-right: 12px; text-transform: capitalize;">'+status_title+': <span class="status-value"></span></span>') ).appendTo($view_actions);
                 }
 
                 let translated = TranslationService.resolve(translation, 'model', [], 'status', model_fields['status'].selection, 'selection');
@@ -265,7 +290,7 @@ export class LayoutForm extends Layout {
                 $status_container.find('.status-value').empty().append($('<b>'+status_value+'</b>'));
             }
 
-            if(view_schema.hasOwnProperty('actions')) {
+            if(view_schema.hasOwnProperty('actions') && this.view.getMode() === 'view') {
                 // filter actions and keep only visible ones (based on 'visible' and 'access' properties)
                 let actions = [];
                 for(let action of view_schema.actions) {
@@ -407,7 +432,6 @@ export class LayoutForm extends Layout {
                     let has_changed = false;
                     let value = (object.hasOwnProperty(field)) ? object[field] : undefined;
 
-
                     // for relational fields, we need to check if the Model has been fetched
                     if(type && ['one2many', 'many2one', 'many2many'].indexOf(type) > -1) {
                         // if widget has a domain, parse it using current object and user
@@ -517,9 +541,10 @@ export class LayoutForm extends Layout {
                             values[field] = widget.getValue();
 
                             // relay the change to back-end through onupdate
+                            // for binary fields, relay only meta data
                             // if value is over 1k, do not relay onchange to server
                             // #todo - choose a proportionate (objectivable) limit
-                            if(widget.getType() === 'file' || widget.toString().length < 1000) {
+                            if(['file', 'upload', 'image'].includes(widget.getType()) || widget.toString().length < 1000) {
                                 try {
                                     let params: any = {
                                         entity: this.view.getEntity(),
@@ -528,7 +553,7 @@ export class LayoutForm extends Layout {
                                         lang: this.view.getLang()
                                     };
                                     // for `file` wdgets, we relay only meta instead of full binary data (see below)
-                                    if(widget.getType() === 'file') {
+                                    if(['file', 'upload', 'image'].includes(widget.getType())) {
                                         params.changes[field] = widget.getMeta();
                                     }
                                     else {
@@ -564,6 +589,10 @@ export class LayoutForm extends Layout {
                                                         this.view.updateModelField(changed_field, 'domain', result[changed_field].domain);
                                                     }
                                                 }
+                                                else if(changed_field_type == 'many2many') {
+                                                    // m2m is a list of positive or negative integers
+                                                    values[changed_field] = result[changed_field];
+                                                }
 
                                                 if(result[changed_field].hasOwnProperty('selection')) {
                                                     // special case of a descriptor providing a selection
@@ -576,7 +605,10 @@ export class LayoutForm extends Layout {
                                                 }
                                             }
                                             else {
+                                                // assign new value to the model (trough onchangeViewModel)
                                                 values[changed_field] = result[changed_field];
+                                                // mark widget as changed (see below)
+                                                model_fields[changed_field] = result[changed_field];
                                             }
                                         }
                                     }
@@ -587,15 +619,14 @@ export class LayoutForm extends Layout {
                                 }
                             }
 
-                            // update model schema of the view if necessary
+                            // update widgets (assign new value & mark as changed)
                             if(Object.keys(model_fields).length > 0) {
                                 console.debug('LayoutForm::feed - updating model', model_fields);
-                                // retrieve the widget based on the field name
                                 for(let widget_index of Object.keys(this.model_widgets[0])) {
                                     let widget = this.model_widgets[0][widget_index];
                                     let field = widget.config.field;
-                                    if(model_fields.hasOwnProperty(field)) {
-                                        for(let property of Object.keys(model_fields[field])) {
+                                    if (model_fields.hasOwnProperty(field) && model_fields[field] && typeof model_fields[field] === 'object') {
+                                        for (let property of Object.keys(model_fields[field])) {
                                             widget.config[property] = model_fields[field][property];
                                             widget.config.changed = true;
                                         }
@@ -603,6 +634,7 @@ export class LayoutForm extends Layout {
                                     }
                                 }
                             }
+                            // update model schema of the view
                             if(Object.keys(values).length > 0) {
                                 this.view.onchangeViewModel([object.id], values, refresh);
                             }

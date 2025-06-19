@@ -104,13 +104,18 @@ export class Frame {
 
         $(window).on('keydown', (e) => {
             if(this.is_active) {
-                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-                    // prevent opening 'save-as' dialog
+                let key: any = null;
+                if((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    key = 'ctrl_s';
+                }
+                else if(e.key === 'Escape') {
+                    key = 'esc';
+                }
+                if(key && typeof this.context.keyboardAction === 'function') {
+                    // prevent default behavior (i.e. opening 'save-as' dialog)
                     e.preventDefault();
                     // relay to current context
-                    if(typeof this.context.keyboardAction === 'function') {
-                        this.context.keyboardAction('ctrl_s');
-                    }
+                    this.context.keyboardAction(key);
                 }
             }
         });
@@ -201,10 +206,7 @@ export class Frame {
             })
             .html(text);
 
-        const width = $elem[0].clientWidth || $elem[0].offsetWidth;
-
-        console.debug('resulting width', width);
-        return width;
+        return $elem[0].clientWidth || $elem[0].offsetWidth;
     }
 
     private async getPurposeString(context:Context) {
@@ -284,7 +286,9 @@ export class Frame {
     private showLoader() {
         let $domContainer = $(this.domContainerSelector);
 
-        if(!$domContainer) return;
+        if(!$domContainer) {
+            return;
+        }
 
         // instantiate header upon first call
         let $loader = $domContainer.find('.sb-container-loader-overlay');
@@ -299,7 +303,9 @@ export class Frame {
     private hideLoader() {
         let $domContainer = $(this.domContainerSelector);
 
-        if(!$domContainer) return;
+        if(!$domContainer) {
+            return;
+        }
 
         // instantiate header upon first call
         let $loader = $domContainer.find('.sb-container-loader-overlay');
@@ -346,7 +352,7 @@ export class Frame {
 
         let current_purpose_string = await this.getPurposeString(this.context);
 
-        let available_width = (this.$headerContainer.length && this.$headerContainer[0]) ? (this.$headerContainer[0].clientWidth - 150) : 300;
+        let available_width = (this.$headerContainer.length && this.$headerContainer[0]) ? (this.$headerContainer[0].clientWidth - 160) : 300;
 
         let total_text_width = this.getTextWidth(current_purpose_string, $temp);
 
@@ -561,12 +567,13 @@ export class Frame {
 
     /**
      * Generate an object mapping fields of current entity with default values, based on current domain.
+     * #todo - use Model class
      *
      * @returns Object  A map of fields with their related default values
      */
-     private async getNewObjectDefaults(entity:string, domain:[] = []) {
+     private async getNewObjectDefaults(entity: string, domain: [] = []) {
         // create a new object as draft
-        let fields:any = {state: 'draft'};
+        let fields: any = {state: 'draft'};
         // retrieve fields definition
         let model_schema = await ApiService.getSchema(entity);
         let model_fields = model_schema.fields;
@@ -596,17 +603,17 @@ export class Frame {
     /**
      * This method can be called by any child or sub-child (view, layout, widgets) (bottom-up).
      *
-     * @param config
+     * @param context
      */
-    public async openContext(config: any) {
-        config.target = this.domContainerSelector;
+    public async openContext(context: any) {
+        context.target = this.domContainerSelector;
         // we use eventlistener :: open() method in order to relay the context change to the outside
 
         if(this.display_mode == 'stacked') {
-            await this.eq.open(config);
+            await this.eq.open(context);
         }
         else if(this.display_mode == 'popup') {
-            await this.eq.popup(config);
+            await this.eq.popup(context);
         }
     }
 
@@ -668,8 +675,13 @@ export class Frame {
             config.lang = this.context.getLang();
         }
 
+        // force consistency between mode and purpose
+        if(['create', 'update'].indexOf(config.purpose) > -1) {
+            config.mode = 'edit';
+        }
+
         // create a draft object if required: Edition is based on asynchronous creation:
-        //   a draft is created (or recycled) and is turned into an instance if 'update' action is triggered.
+        //   a draft is created (or recycled) and will be turned into an instance if 'update' action is triggered within view.
         if(config.purpose == 'create') {
             try {
                 console.debug('requesting draft object');

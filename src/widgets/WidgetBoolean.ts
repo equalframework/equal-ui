@@ -7,7 +7,7 @@ import { UIHelper } from '../material-lib';
 export default class WidgetBoolean extends Widget {
 
     constructor(layout: Layout, label: string, value: any, config: {}) {
-        super(layout, 'boolean', label, value, config);
+        super(layout, label, value, config);
     }
 
     public change(value: any) {
@@ -18,15 +18,17 @@ export default class WidgetBoolean extends Widget {
 
         switch(this.mode) {
             case 'edit':
-                this.$elem = UIHelper.createSwitch('bool_'+this.id, this.label, this.value, this.config.description, '', this.readonly);
+                this.$elem = UIHelper.createSwitch('bool_' + this.id, this.label, this.value, this.config.description, '', this.readonly);
 
                 // setup handler for relaying value update to parent layout
                 this.$elem.find('input')
-                .on('change', (event:any) => {
-                    let $this = $(event.currentTarget);
-                    this.value = $this.prop( "checked" )
-                    this.$elem.trigger('_updatedWidget');
-                });
+                    .on('change', (event:any) => {
+                        let $this = $(event.currentTarget);
+                        if(this.value != $this.prop("checked")) {
+                            this.value = $this.prop("checked");
+                            this.$elem.trigger('_updatedWidget');
+                        }
+                    });
                 break;
             case 'view':
             default:

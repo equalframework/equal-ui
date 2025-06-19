@@ -1,7 +1,7 @@
 import { $ } from "./jquery-lib";
 import { ApiService } from "./equal-services";
 
-import { View, Layout } from "./equal-lib";
+import { View, Layout, Domain } from "./equal-lib";
 /**
  * Class for Model interactions
  * Acts like server-side Collection.class.php
@@ -25,7 +25,7 @@ export class Model {
 
     // Collections do not deal with lang: it is used from EnvService in ApiService
 
-    constructor(view:View) {
+    constructor(view: View) {
         this.view = view;
 
         this.loaded_promise = $.Deferred();
@@ -77,6 +77,26 @@ export class Model {
         }
 
         throw new Error("Unable to copy obj! Its type isn't supported.");
+    }
+
+    public async getModelDefaults() {
+        // create a new object as draft
+        let fields: any = {state: 'draft'};
+        let schema: any = this.view.getModelFields();
+        // use given domain for setting default values
+        let domain = new Domain(this.view.getDomain());
+        for(let clause of domain.getClauses()) {
+            for(let condition of clause.getConditions()) {
+                let field  = condition.getOperand();
+                if(field == 'id') {
+                    continue;
+                }
+                if(['ilike', 'like', '=', 'is'].includes(condition.getOperator()) && schema.hasOwnProperty(field)) {
+                    fields[field] = condition.getValue();
+                }
+            }
+        }
+        return fields;
     }
 
     /**
@@ -220,7 +240,7 @@ export class Model {
         }
 
         try {
-            let body:any = {
+            let body: any = {
                     get: this.view.getController(),
                     entity: this.view.getEntity(),
                     fields: fields,
@@ -254,11 +274,11 @@ export class Model {
     public change(ids: Array<any>, values: any) {
         console.debug('Model::change', ids, values);
         let schema = this.view.getModelFields();
-        for (let index in this.objects) {
+        for(let index in this.objects) {
             let object = this.objects[index];
-            for (let id of ids) {
+            for(let id of ids) {
                 if(object.hasOwnProperty('id') && object.id == id) {
-                    for (let field in values) {
+                    for(let field in values) {
                         if(schema.hasOwnProperty(field)) {
                             if(!this.has_changed.hasOwnProperty(id)) {
                                 this.has_changed[id] = [];
@@ -282,7 +302,7 @@ export class Model {
      */
     public reset(id: number, values: any) {
         console.debug('Model::reset', values);
-        for (let index in this.objects) {
+        for(let index in this.objects) {
             let object = this.objects[index];
             if(object.hasOwnProperty('id') && object.id == id) {
                 this.has_changed[id] = [];
@@ -340,6 +360,28 @@ export class Model {
             this.objects[index] = this.deepCopy(object);
         }
         await this.view.onchangeModel();
+    }
+
+    public async add(object: any) {
+        if(!object || typeof object !== 'object') {
+            console.warn('Invalid object passed to Model::add');
+            return;
+        }
+
+        if(!object.hasOwnProperty('id')) {
+            object.id = 0;
+        }
+
+        const index = this.objects.findIndex((o: any) => o.id == object.id);
+        if(index !== -1) {
+            console.warn('Duplicate object id for call to Model::add');
+            return;
+        }
+        // Deep copy to ensure no reference issues
+        // this.objects.push(this.deepCopy(object));
+        this.objects.push(object);
+
+        ++this.total;
     }
 
     /**

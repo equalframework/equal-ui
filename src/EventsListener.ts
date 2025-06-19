@@ -114,7 +114,9 @@ class EventsListener {
 
     public addSubscriber(events: [], callback: (context:any) => void) {
         for(let event of events) {
-            if(!['open', 'close', 'updated', 'navigate'].includes(event)) continue;
+            if(!['open', 'close', 'updated', 'navigate'].includes(event)) {
+                continue;
+            }
             if(!this.subscribers.hasOwnProperty(event)) {
                 this.subscribers[event] = [];
             }
@@ -135,8 +137,9 @@ class EventsListener {
 
     /**
      * This method is used to generate an Action Button DOM element to be injected in a non-equal App (e.g. Angular native component)
-    */
+     */
     public async getActionButton(entity: string, view_id: string, domain: any[]) {
+        console.debug("EventListener::getActionButton - appending Action button");
         let type = 'list';
         let name = 'default';
         if( view_id.length ) {
@@ -167,7 +170,8 @@ class EventsListener {
         return $view_container.find('.layout-actions');
     }
 
-    private async _openContext(config:any, reset: boolean = false) {
+    private async _openContext(config: any, reset: boolean = false) {
+        console.debug('EventsListener::_openContext');
 
         if(!config) {
             config = window.context;
@@ -189,7 +193,7 @@ class EventsListener {
             target:     '#sb-container'
         }, ...config};
 
-        console.debug('eQ: received _openContext', config, reset, config.entity, config.entity.length);
+        console.debug('EventsListener::_openContext - retrieved context', config, reset, config.entity, config.entity.length);
 
         // abort invalid entities
         if(!config.entity.length) {
@@ -220,7 +224,7 @@ class EventsListener {
         // run callback of subscribers
         if(this.subscribers.hasOwnProperty('open') && this.subscribers['open'].length && !this.mute) {
             for(let callback of this.subscribers['open']) {
-                if( ({}).toString.call(callback) === '[object Function]') {
+                if( ({}).toString.call(callback) === '[object Function]' ) {
                     callback(config);
                 }
             }
@@ -232,6 +236,7 @@ class EventsListener {
      */
     private async _updatedContext() {
         console.debug('EventsListener::_updatedContext', this.mute);
+
         // run callback of subscribers
         if(this.subscribers.hasOwnProperty('updated') && this.subscribers['updated'].length && !this.mute) {
             console.debug('eQ::_updatedContext - running callbacks');
@@ -382,7 +387,7 @@ class EventsListener {
          * A new context can be requested by ngx (menu or app) or by opening a sub-object
          */
         this.$sbEvents.on('_openContext', async (event:any, config:any, reset: boolean = false) => {
-            console.debug('eQ: received _openContext', event, config, reset);
+            console.debug('EventsListener: received _openContext', event, config, reset);
             this._openContext(config, reset);
         });
 
@@ -451,7 +456,7 @@ class EventsListener {
      * @param external      Indicates if the request comes from the outside (not from the current Frame context stack).
      */
     public async open(context: any, external: boolean = false) {
-        console.debug("eQ::open", context, external);
+        console.debug("EventsListener::open", context, external);
 
         // opening a context from the outside implies closing some contexts: check for current changes before doing so
         if(external) {
@@ -519,6 +524,7 @@ class EventsListener {
      * @param config
      */
     public async popup(config: any, domContainerSelector: string = 'body') {
+        console.debug('EventsListener::popup', config);
 
         let $domContainer  = $(domContainerSelector);
 

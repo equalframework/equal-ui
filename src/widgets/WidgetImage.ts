@@ -6,15 +6,15 @@ import { UIHelper } from '../material-lib';
 export default class WidgetImage extends Widget {
 
     constructor(layout: Layout, label: string, value: any, config: {}) {
-        super(layout, 'file', label, value, config);
+        super(layout, label, value, config);
     }
 
     public change(value: any) {
         // this.$elem.find('input').val(value).trigger('change');
     }
 
-    public render():JQuery {
-        let value:string = (typeof this.value != undefined && this.value != undefined)?this.value:'';
+    public render(): JQuery {
+        let value: string = (typeof this.value != undefined && this.value != undefined) ? this.value : '';
         let $button_open = UIHelper.createButton('link-actions-open-'+this.id, '', 'icon', 'open_in_new');
 
         // open target in new window
@@ -28,7 +28,7 @@ export default class WidgetImage extends Widget {
             }
         });
 
-        let content_type = (this.config.hasOwnProperty('usage'))?this.config.usage:'image/jpeg';
+        let content_type = (this.config.hasOwnProperty('usage')) ? this.config.usage : 'image/jpeg';
 
         this.$elem = $('<div />').addClass('sb-image-thumbnail');
 
@@ -36,11 +36,9 @@ export default class WidgetImage extends Widget {
             case 'edit':
 
                 this.$elem.addClass('sb-dropable')
-                this.$elem.css({'background-image': 'url(' + 'data:'+content_type+';base64,'+value + ')'});
+                this.$elem.css({'background-image': 'url(' + 'data:' + content_type + ';base64,' + value + ')'});
 
-                let upqueue = [];
-
-                if (window.File && window.FileReader && window.FileList && window.Blob) {
+                if(window.File && window.FileReader && window.FileList && window.Blob) {
                     window.addEventListener("dragover", (e) => e.preventDefault());
                     // window.addEventListener("drop", (e) => e.preventDefault() );
                     this.$elem.on("dragenter", (event) => {
@@ -81,15 +79,13 @@ export default class WidgetImage extends Widget {
                             this.$elem.trigger('_updatedWidget', [false]);
                         }
                     });
-
-
                 }
 
                 break;
             case 'view':
             default:
 
-                this.$elem.css({'background-image': 'url(' + 'data:'+content_type+';base64,'+value + ')'});
+                this.$elem.css({'background-image': 'url(' + 'data:' + content_type + ';base64,' + value + ')'});
 
                 break;
         }

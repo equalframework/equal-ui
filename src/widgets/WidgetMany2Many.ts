@@ -10,12 +10,12 @@ export default class WidgetMany2Many extends Widget {
     protected rel_type: string;
 
     constructor(layout:Layout, label: string, value: any, config: any) {
-        super(layout, 'many2many', label, value, config);
+        super(layout, label, value, config);
         this.rel_type = 'many2many';
     }
 
-    public render():JQuery {
-        this.$elem = $('<div />');
+    public render(): JQuery {
+        this.$elem = $('<div />').css({'min-height': '100px'});
 
         // make sure view is not instantiated during 'layout' phase (while config is still incomplete)
         if(this.config.hasOwnProperty('ready') && this.config.ready) {
@@ -133,23 +133,17 @@ export default class WidgetMany2Many extends Widget {
                 let $container = view.getContainer();
 
                 // default values
-                let has_action_select: boolean = (this.rel_type == 'many2many');
-                let has_action_create: boolean = true;
+                let has_action_select: boolean = (this.mode === 'edit') && (this.rel_type === 'many2many');
+                let has_action_create: boolean = (this.mode === 'edit');
 
                 // override with view schema
                 if(this.config.header?.hasOwnProperty('actions')) {
                     // #memo - adding `select` for a one2many is generally meaningless, since a child can only be linked to a single parent
                     if(this.config.header.actions?.hasOwnProperty('ACTION.SELECT')) {
-                        has_action_select = (this.config.header.actions['ACTION.SELECT']) ? true : false;
+                        has_action_select = this.isActionEnabled(this.config.header.actions['ACTION.SELECT'], this.mode);
                     }
                     if(this.config.header.actions?.hasOwnProperty('ACTION.CREATE')) {
-                        const actionCreate = this.config.header.actions['ACTION.CREATE'];
-                        if (Array.isArray(actionCreate)) {
-                            has_action_create = actionCreate.length > 0;
-                        }
-                        else {
-                            has_action_create = Boolean(actionCreate);
-                        }
+                        has_action_create = this.isActionEnabled(this.config.header.actions['ACTION.CREATE'], this.mode);
                     }
                 }
 
@@ -163,66 +157,63 @@ export default class WidgetMany2Many extends Widget {
                 }
 
 
-                if(this.mode == 'edit') {
-                    // #todo - selection/update only available in edit mode ?
-                    if(has_action_select) {
-                        let domain: any[] = (new Domain(this.config.domain)).toArray();
+                // #todo - selection/update only available in edit mode ?
+                if(has_action_select) {
+                    let domain: any[] = (new Domain(this.config.domain)).toArray();
 
-                        if(this.config.header?.actions?.hasOwnProperty('ACTION.SELECT')) {
-                            if( Array.isArray(this.config.header.actions['ACTION.SELECT']) ) {
-                                let item = this.config.header.actions['ACTION.SELECT'][0];
-                                if(item.hasOwnProperty('domain')) {
-                                    let tmpDomain = new Domain(domain);
-                                    tmpDomain.merge(new Domain(item.domain));
-                                    domain = tmpDomain.toArray();
-                                }
+                    if(this.config.header?.actions?.hasOwnProperty('ACTION.SELECT')) {
+                        if( Array.isArray(this.config.header.actions['ACTION.SELECT']) ) {
+                            let item = this.config.header.actions['ACTION.SELECT'][0];
+                            if(item.hasOwnProperty('domain')) {
+                                let tmpDomain = new Domain(domain);
+                                tmpDomain.merge(new Domain(item.domain));
+                                domain = tmpDomain.toArray();
                             }
                         }
-
-                        let $selectActionButton: JQuery;
-                        let button_label = TranslationService.instant((this.rel_type == 'many2many') ? 'SB_ACTIONS_BUTTON_ADD' : 'SB_ACTIONS_BUTTON_SELECT');
-
-                        if((this.config.header?.layout ?? 'full') === 'full') {
-                            $selectActionButton = UIHelper.createButton(this.getId()+'_action-edit', button_label, 'raised');
-                            $actions_set.append($selectActionButton);
-                        }
-                        else {
-                            $selectActionButton = UIHelper.createButton(this.getId()+'_action-edit', button_label, 'mini-fab', 'playlist_add_circle');
-                            $actions_set.prepend($selectActionButton);
-                        }
-
-                        $selectActionButton.on('click', async () => {
-                                let purpose = (this.rel_type == 'many2many') ? 'add' : 'select';
-
-                                // request a new Context for selecting an existing object to add to current selection
-                                this.getLayout().openContext({
-                                    entity: this.config.entity,
-                                    type: 'list',
-                                    name: 'default',
-                                    domain: domain,
-                                    mode: 'view',
-                                    purpose: purpose,
-                                    callback: (data:any) => {
-                                        if(data && data.selection) {
-                                            // add ids that are not yet in the Object value
-                                            for(let id of data.selection) {
-                                                let index = this.value.indexOf(id);
-                                                if( index > -1 ) {
-                                                    this.value.splice(index, 1);
-                                                }
-                                                index = this.value.indexOf(-id);
-                                                if( index > -1 ) {
-                                                    this.value.splice(index, 1);
-                                                }
-                                                this.value.push(id);
-                                            }
-                                            this.$elem.trigger('_updatedWidget');
-                                        }
-                                    }
-                                });
-                            });
                     }
 
+                    let $selectActionButton: JQuery;
+                    let button_label = TranslationService.instant((this.rel_type == 'many2many') ? 'SB_ACTIONS_BUTTON_ADD' : 'SB_ACTIONS_BUTTON_SELECT');
+
+                    if((this.config.header?.layout ?? 'full') === 'full') {
+                        $selectActionButton = UIHelper.createButton(this.getId()+'_action-select', button_label, 'raised');
+                        $actions_set.append($selectActionButton);
+                    }
+                    else {
+                        $selectActionButton = UIHelper.createButton(this.getId()+'_action-select', button_label, 'mini-fab', 'add');
+                        $actions_set.prepend($selectActionButton);
+                    }
+
+                    $selectActionButton.on('click', async () => {
+                            let purpose = (this.rel_type == 'many2many') ? 'add' : 'select';
+
+                            // request a new Context for selecting an existing object to add to current selection
+                            this.getLayout().openContext({
+                                entity: this.config.entity,
+                                type: 'list',
+                                name: 'default',
+                                domain: domain,
+                                mode: 'view',
+                                purpose: purpose,
+                                callback: (data:any) => {
+                                    if(data && data.selection) {
+                                        // add ids that are not yet in the Object value
+                                        for(let id of data.selection) {
+                                            let index = this.value.indexOf(id);
+                                            if( index > -1 ) {
+                                                this.value.splice(index, 1);
+                                            }
+                                            index = this.value.indexOf(-id);
+                                            if( index > -1 ) {
+                                                this.value.splice(index, 1);
+                                            }
+                                            this.value.push(id);
+                                        }
+                                        this.$elem.trigger('_updatedWidget');
+                                    }
+                                }
+                            });
+                        });
                 }
 
                 // #memo - creation can be performed in view mode as well as in edit mode
@@ -306,6 +297,22 @@ export default class WidgetMany2Many extends Widget {
         }
 
         return this.$elem.addClass('sb-widget').attr('id', this.getId()).attr('data-type', this.config.type).attr('data-usage', this.config.usage||'');
+    }
+
+    private isActionEnabled(action: any, mode: string): boolean {
+        if(typeof action === 'boolean') {
+            return action;
+        }
+        if(Array.isArray(action)) {
+            return action.length > 0;
+        }
+        if(typeof action === 'object') {
+            if(Array.isArray(action[mode])) {
+                return action[mode].length > 0;
+            }
+            return !!action[mode];
+        }
+        return false;
     }
 
 }

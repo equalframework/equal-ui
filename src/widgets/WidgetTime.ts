@@ -6,7 +6,7 @@ import { UIHelper } from '../material-lib';
 export default class WidgetTime extends Widget {
 
     constructor(layout: Layout, label: string, value: any, config: {}) {
-        super(layout, 'string', label, value, config);
+        super(layout, label, value, config);
     }
 
     public change(value: any) {
