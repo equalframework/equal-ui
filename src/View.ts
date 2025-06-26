@@ -1058,7 +1058,7 @@ export class View {
 
     /**
      * Generates a map holding all fields (as items objects) that are present in a given view
-     * and stores them in the `view_fields` map (does not maintain the field order)
+     * and stores them in the ::`view_fields` map (does not maintain the field order)
      */
 	private loadViewFields(view_schema: any) {
         console.debug('View::loadFields', view_schema);
@@ -1130,6 +1130,8 @@ export class View {
 	private loadModelFields(model_schema: any) {
         console.debug('View::loadModelFields', model_schema);
         this.model_fields = model_schema.fields;
+
+        // #todo  - make sure fields referenced in domains are present in view_fields
     }
 
     private layoutListFooter() {
