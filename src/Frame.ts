@@ -209,7 +209,7 @@ export class Frame {
         return $elem[0].clientWidth || $elem[0].offsetWidth;
     }
 
-    private async getPurposeString(context:Context) {
+    private async getPurposeString(context: Context) {
         let result: string = '';
 
         let entity = context.getEntity();
@@ -271,12 +271,20 @@ export class Frame {
             let objects = await context.getView().getModel().get();
             if(objects.length) {
                 let object = objects[0];
-                // by convention, collections should always request the `name` field
-                if(object.hasOwnProperty('name') && purpose != 'create') {
+                result += ' <small>[';
+                if (
+                    purpose !== 'create' &&
+                    typeof object.name === 'string' &&
+                    object.name.trim() !== '' &&
+                    object.name !== 'null' &&
+                    object.name !== String(object.id)
+                ) {
                     // escape HTML and limit name length
-                    let name = $('<a>'+object['name']+'</a>').text().substring(0, 25);
-                    result += ' <small>[' + name + ' - ' + object['id'] + ']</small>';
+                    let name = $('<a>' + object['name' ] + '</a>').text().substring(0, 25);
+                    result +=  name + ' - ';
                 }
+                result += object['id'];
+                result += ']</small>';
             }
         }
 
