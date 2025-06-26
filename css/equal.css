@@ -703,8 +703,9 @@ body, html {
     left: 4px;
     color: rgba(0,0,0,0.8) !important;
     font-weight: 600;
-    transform: scale(75%);
     font-size: 16px;
+    transform: scale(75%);
+    transform-origin: top left;
 }
 
 .sb-widget-mode-view.sb-ui-textarea p {
