@@ -155,6 +155,7 @@ class WidgetFactory {
             // #deprecated - string/text should not be used
             case 'string/text':
             case 'text/plain':
+            case 'text/plain.small':
             case 'text/plain.medium':
             case 'text/plain.long':
             case 'text/html':
