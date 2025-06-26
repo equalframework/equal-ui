@@ -33,7 +33,13 @@ export default class WidgetText extends Widget {
 
     public render():JQuery {
         let value: string = this.value ? this.value : '';
-        switch(this.mode) {
+        let mode = this.mode;
+
+        if(this.readonly && this.config.layout == 'form') {
+            mode = 'view';
+        }
+
+        switch(mode) {
             case 'edit':
                 if(this.config.layout == 'list') {
                     this.$elem = UIHelper.createInput('', this.label, value, this.config.description, '', this.readonly);
@@ -183,7 +189,7 @@ export default class WidgetText extends Widget {
                     this.$elem = $('<div class="sb-ui-textarea" />');
                     this.$elem.append( $('<div class="textarea-content" />').html(value.replace(/(?:\r\n|\r|\n)/g, '<br />')) );
                     if(this.config.hasOwnProperty('height') && this.config.height > 0) {
-                        this.$elem.css({height: this.config.height+'px'});
+                        this.$elem.css({height: this.config.height + 'px'});
                     }
                 }
                 break;
