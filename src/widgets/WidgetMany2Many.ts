@@ -67,37 +67,40 @@ export default class WidgetMany2Many extends Widget {
             // in all other situations (default for widget), there is only the remove button
             else {
                 // merge config and set a single 'remove' selection action
-                view_config = {
-                    ...this.config,
-                    ...{
-                        header: {
-                            selection: {
-                                default: false
-                            }
-                        },
-                        // update the actions of the "current selection" button
-                        selection_actions: [
-                            {
-                                label: 'SB_ACTIONS_BUTTON_REMOVE',
-                                icon: 'playlist_remove',
-                                handler: (selection:any) => {
-                                    for(let id of selection) {
-                                        let index = this.value.indexOf(id);
-                                        if( index > -1 ) {
-                                            this.value.splice(index, 1);
-                                        }
-                                        index = this.value.indexOf(-id);
-                                        if( index > -1 ) {
-                                            this.value.splice(index, 1);
-                                        }
-                                        this.value.push(-id);
-                                    }
-                                    this.$elem.trigger('_updatedWidget');
+                // #memo - for m2m, removing elements must be allowed in edit only (it has no effect if parent is not stored)
+                if(this.rel_type !== 'many2many' || this.mode === 'edit') {
+                    view_config = {
+                        ...this.config,
+                        ...{
+                            header: {
+                                selection: {
+                                    default: false
                                 }
-                            }
-                        ]
-                    }
-                };
+                            },
+                            // update the actions of the "current selection" button
+                            selection_actions: [
+                                {
+                                    label: 'SB_ACTIONS_BUTTON_REMOVE',
+                                    icon: 'playlist_remove',
+                                    handler: (selection:any) => {
+                                        for(let id of selection) {
+                                            let index = this.value.indexOf(id);
+                                            if( index > -1 ) {
+                                                this.value.splice(index, 1);
+                                            }
+                                            index = this.value.indexOf(-id);
+                                            if( index > -1 ) {
+                                                this.value.splice(index, 1);
+                                            }
+                                            this.value.push(-id);
+                                        }
+                                        this.$elem.trigger('_updatedWidget');
+                                    }
+                                }
+                            ]
+                        }
+                    };
+                }
             }
 
             if(this.config.header?.layout) {
@@ -156,8 +159,11 @@ export default class WidgetMany2Many extends Widget {
                     $actions_set = $container.find('.sb-view-header-list-navigation');
                 }
 
+                // #memo - for m2m, selection is only available in edit mode (it has no effect if parent is not saved)
+                if(this.rel_type === 'many2many' && this.mode !== 'edit') {
+                    has_action_select = false;
+                }
 
-                // #todo - selection/update only available in edit mode ?
                 if(has_action_select) {
                     let domain: any[] = (new Domain(this.config.domain)).toArray();
 
