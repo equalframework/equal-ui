@@ -316,4 +316,67 @@ export default class Widget {
         }
         return <string> result;
     }
+
+    private normalizeToPx(v: any): string {
+        if(v === 'auto') {
+            return v;
+        }
+        let n = (typeof v === 'number') ? v : parseInt(v as string, 10);
+        if(isNaN(n)) {
+            n = 0;
+        }
+        return `${n}px`;
+    }
+
+    protected applyStyling($elem: any){
+
+        if(this.config.hasOwnProperty('wrap') && this.config.wrap) {
+            this.$elem.addClass('sb-string-wrap');
+        }
+
+        if(this.config.hasOwnProperty('text_decoration') && this.config.text_decoration) {
+            if(this.config.text_decoration === 'underline') {
+                $elem.css({'border-bottom': 'solid 1px black'});
+            }
+        }
+
+        if(this.config.hasOwnProperty('text_color') && this.config.text_color) {
+            $elem.css({'color': this.config.text_color});
+        }
+
+        if(this.config.hasOwnProperty('text_weight') && this.config.text_weight) {
+            $elem.css({'font-weight': this.config.text_weight});
+        }
+
+        if(this.config.hasOwnProperty('text_align') && this.config.text_align) {
+            $elem.css({'text-align': this.config.text_align});
+        }
+
+        if(this.config.hasOwnProperty('text_width') && this.config.text_width) {
+            $elem.css({
+                    'width': this.normalizeToPx(this.config.text_width),
+                    'min-width': this.normalizeToPx(this.config.text_width)
+                });
+        }
+
+        if(this.config.hasOwnProperty('background_color') && this.config.background_color) {
+            $elem.css({'background-color': this.config.background_color});
+        }
+
+        if(this.config.hasOwnProperty('border_radius') && this.config.border_radius) {
+            $elem.css({'border-radius': this.normalizeToPx(this.config.border_radius)});
+        }
+
+        if(this.config.hasOwnProperty('border_color') && this.config.border_color) {
+            $elem.css({'border-color': this.config.border_color});
+        }
+
+        if(this.config.hasOwnProperty('padding') && this.config.padding) {
+            $elem.css({'padding': this.config.padding});
+        }
+
+        if(this.config.hasOwnProperty('margin') && this.config.margin) {
+            $elem.css({'margin': this.config.margin});
+        }
+    }
 }
