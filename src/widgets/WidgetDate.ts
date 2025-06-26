@@ -172,7 +172,7 @@ export default class WidgetDate extends Widget {
                     });
 
                 let $button_open = UIHelper.createButton('date-actions-open_' + this.id, '', 'icon', 'calendar_today')
-                    .css({"position": "absolute", "right": "5px", "top": "5px", "z-index": "1"})
+                    .css({"position": "absolute", "right": "5px", "top": "7px", "z-index": "1"})
                     .on('focus click', () => {
                         let $input = this.$elem.find('input').first();
                         let val: string = <string> $input.val();
