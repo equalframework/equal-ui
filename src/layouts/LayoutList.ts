@@ -677,8 +677,15 @@ export class LayoutList extends Layout {
                                 // relay the change to back-end through onupdate
                                 try {
                                     // #todo - add support for dynamic view_schema (ex. filter or update selection of selectable fields, based on value from other fields)
-                                    const result = await ApiService.call("?do=model_onchange", {entity: this.view.getEntity(), changes: this.view.getModel().export(values), values: this.view.getModel().export(object), lang: this.view.getLang()} );
-                                    if (typeof result === 'object' && result != null) {
+                                    const result = await ApiService.call("?do=model_onchange", {
+                                            entity: this.view.getEntity(),
+                                            view_id: this.view.getId(),
+                                            changes: this.view.getModel().export(values),
+                                            values: this.view.getModel().export(object),
+                                            lang: this.view.getLang()
+                                        });
+
+                                    if(typeof result === 'object' && result != null) {
                                         for(let field of Object.keys(result)) {
                                             // if some changes are returned from the back-end, append them to the view model update
                                             if(typeof result[field] === 'object' && result[field] !== null) {

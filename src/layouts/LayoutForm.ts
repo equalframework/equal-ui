@@ -548,6 +548,7 @@ export class LayoutForm extends Layout {
                                 try {
                                     let params: any = {
                                         entity: this.view.getEntity(),
+                                        view_id: this.view.getId(),
                                         changes: {},
                                         values: {},
                                         lang: this.view.getLang()
