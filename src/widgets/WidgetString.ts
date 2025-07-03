@@ -29,11 +29,11 @@ export default class WidgetString extends Widget {
                 // support for adding selection after onchange
                 // #todo - merge with WidgetSelect (we should add selection capabilities to all widget, and remove WidgetSelect)
                 if(this.config.hasOwnProperty('selection')) {
-                    this.$elem = UIHelper.createSelect(this.getId(), this.label, this.config.selection, value, this.config.description, this.readonly);
+                    this.$elem = UIHelper.createSelect('widget-string_' + this.getId(), this.label, this.config.selection, value, this.config.description, this.readonly);
                     this.$elem.trigger('select', value);
                 }
                 else {
-                    this.$elem = UIHelper.createInput('string_' + this.id, this.label, value, this.config.description, '', this.readonly);
+                    this.$elem = UIHelper.createInput('widget-string_' + this.getId(), this.label, value, this.config.description, '', this.readonly);
                 }
 
                 if(this.config.layout == 'list') {
@@ -116,7 +116,7 @@ export default class WidgetString extends Widget {
                         }
                     }
                     else {
-                        this.$elem = UIHelper.createInputView('', this.label, value, this.config.description);
+                        this.$elem = UIHelper.createInputView('widget-string_' + this.getId(), this.label, value, this.config.description);
                     }
                     this.applyStyling(this.$elem);
                     this.$elem.attr('title', value);

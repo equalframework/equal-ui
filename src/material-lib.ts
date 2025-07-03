@@ -202,17 +202,17 @@ class UIHelper {
      */
     public static createInput(id: string, label: string, value: string, helper: string = '', icon: string = '', disabled: boolean = false, type: string = 'filled', trailing_icon: string = '') {
         let $elem = $('\
-        <div id="'+id+'"> \
-            <label class="mdc-text-field mdc-text-field--'+type+' mdc-text-field--with-trailing-icon"> \
+        <div id="' + id + '"> \
+            <label class="mdc-text-field mdc-text-field--' + type + ' mdc-text-field--with-trailing-icon"> \
                 <span class="mdc-text-field__ripple"></span> \
-                <span class="mdc-floating-label">'+label+'</span> \
-                '+((icon.length)?'<i aria-hidden="true" class="material-icons mdc-text-field__icon">'+icon+'</i>':'')+'\
-                <input id="'+id+'_input" '+( (disabled)?'disabled':'' )+' class="mdc-text-field__input" type="text" role="presentation" autocorrect="off" autocomplete="off" spellcheck="false" value="'+value+'"> \
-                '+((trailing_icon.length)?'<i class="material-icons mdc-text-field__icon mdc-text-field__icon--trailing" tabindex="0" role="button">'+trailing_icon+'</i>':'')+'\
+                <span class="mdc-floating-label">' + label + '</span> \
+                ' + ((icon.length)?'<i aria-hidden="true" class="material-icons mdc-text-field__icon">' + icon + '</i>':'')+'\
+                <input id="' + id + '_input" ' + ( (disabled)?'disabled':'' )+' class="mdc-text-field__input" type="text" role="presentation" autocorrect="off" autocomplete="off" spellcheck="false" value="' + value + '"> \
+                ' + ((trailing_icon.length)?'<i class="material-icons mdc-text-field__icon mdc-text-field__icon--trailing" tabindex="0" role="button">' + trailing_icon + '</i>':'') + '\
                 <span class="mdc-line-ripple"></span> \
             </label> \
             <div class="mdc-text-field-helper-line"> \
-                <div class="mdc-text-field-helper-text" aria-hidden="true" title="'+helper+'">'+helper+'</div> \
+                <div class="mdc-text-field-helper-text" aria-hidden="true" title="' + helper + '">' + helper + '</div> \
             </div> \
         </div>');
 
@@ -225,7 +225,7 @@ class UIHelper {
         return $elem;
     }
 
-    public static createTextArea(id:string, label:string, value:string, helper:string = '', icon: string = '', disabled: boolean = false) {
+    public static createTextArea(id: string, label: string, value: string, helper: string = '', icon: string = '', disabled: boolean = false) {
         let $elem = $('\
         <div> \
             <label class="mdc-text-field mdc-text-field--filled mdc-text-field--textarea mdc-text-field--with-internal-counter"> \
@@ -247,16 +247,16 @@ class UIHelper {
         return $elem;
     }
 
-    public static createInputView(id:string, label:string, value:string, helper:string) {
+    public static createInputView(id: string, label: string, value: string, helper: string) {
         let $elem = $('\
         <div> \
         <label class="mdc-text-field mdc-text-field--filled"> \
-            <span class="mdc-floating-label">'+label+'</span> \
-            <input disabled class="mdc-text-field__input" type="text" value="'+value+'"> \
+            <span class="mdc-floating-label">' + label + '</span> \
+            <input id="' + id + '_input" disabled class="mdc-text-field__input" type="text" value="' + value + '"> \
             <span class="mdc-line-ripple"></span>\
         </label> \
         <div class="mdc-text-field-helper-line"> \
-            <div class="mdc-text-field-helper-text" aria-hidden="true" title="'+helper+'">'+helper+'</div> \
+            <div class="mdc-text-field-helper-text" aria-hidden="true" title="' + helper + '">' + helper + '</div> \
         </div> \
         </div>');
         new MDCTextField($elem[0]);

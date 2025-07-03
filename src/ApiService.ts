@@ -453,7 +453,7 @@ export class _ApiService {
      * @param ids
      * @param fields
      */
-    public async update(entity:string, ids:any[], fields:any, force: boolean=false, lang: string = '') {
+    public async update(entity: string, ids: any[], fields: any, force: boolean=false, lang: string = '') {
         console.debug('ApiService::update', entity, ids, fields);
         let result: any = true;
         try {

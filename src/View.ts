@@ -1131,6 +1131,22 @@ export class View {
         console.debug('View::loadModelFields', model_schema);
         this.model_fields = model_schema.fields;
 
+        let processField = (node: any) => {
+            if(node.visible ?? false) {
+                this.extractFieldsFromDomain(node.visible).forEach( (f: string) => {
+                    if(!this.view_fields.hasOwnProperty(f)) {
+                        this.view_fields[f] = {type: 'field', value: f};
+                    }
+                });
+            }
+            if(node.domain ?? false) {
+                this.extractFieldsFromDomain(node.domain).forEach( (f: string) => {
+                    if(!this.view_fields.hasOwnProperty(f)) {
+                        this.view_fields[f] = {type: 'field', value: f};
+                    }
+                });
+            }
+        };
         // #todo  - make sure fields referenced in domains are present in view_fields
     }
 
@@ -1412,7 +1428,7 @@ export class View {
         }
 
         //  bulk assign action
-        let $bulk_assign_dialog = UIHelper.createDialog(this.uuid+'_bulk-assign-dialog', TranslationService.instant('SB_ACTIONS_BUTTON_BULK_ASSIGN'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
+        let $bulk_assign_dialog = UIHelper.createDialog('bulk-assign-dialog_' + this.getUuid(), TranslationService.instant('SB_ACTIONS_BUTTON_BULK_ASSIGN'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
         $bulk_assign_dialog.addClass('sb-view-dialog').appendTo(this.$container);
         // inject component as dialog content
         this.decorateBulkAssignDialog($bulk_assign_dialog);
@@ -1593,7 +1609,7 @@ export class View {
 
         if(header_layout == 'full') {
             $paginationNavigation.append(
-                UIHelper.createButton('', '', 'icon', 'first_page').addClass('sb-view-header-list-pagination-first_page')
+                UIHelper.createButton('pagination-first_' + this.getUuid(), '', 'icon', 'first_page').addClass('sb-view-header-list-pagination-first_page')
                 .on('click', (event: any) => {
                     this.setStart(0);
                     this.onchangeView();
@@ -1602,7 +1618,7 @@ export class View {
         }
 
         $paginationNavigation.append(
-                UIHelper.createButton('', '', 'icon', 'chevron_left').addClass('sb-view-header-list-pagination-prev_page')
+                UIHelper.createButton('pagination-prev_' + this.getUuid(), '', 'icon', 'chevron_left').addClass('sb-view-header-list-pagination-prev_page')
                 .on('click', (event: any) => {
                     this.setStart(Math.max(0, this.getStart() - this.getLimit()));
                     this.onchangeView();
@@ -1610,7 +1626,7 @@ export class View {
             );
 
         $paginationNavigation.append(
-                UIHelper.createButton('', '', 'icon', 'chevron_right').addClass('sb-view-header-list-pagination-next_page')
+                UIHelper.createButton('pagination-next_' + this.getUuid(), '', 'icon', 'chevron_right').addClass('sb-view-header-list-pagination-next_page')
                 .on('click', (event: any) => {
                     this.setStart(Math.min( this.getTotal() - this.getLimit(), this.getStart() + this.getLimit() ));
                     this.onchangeView();
@@ -1619,7 +1635,7 @@ export class View {
 
         if(header_layout == 'full') {
             $paginationNavigation.append(
-                UIHelper.createButton('', '', 'icon', 'last_page').addClass('sb-view-header-list-pagination-last_page')
+                UIHelper.createButton('pagination-last_' + this.getUuid(), '', 'icon', 'last_page').addClass('sb-view-header-list-pagination-last_page')
                 .on('click', (event: any) => {
                     this.setStart(this.getTotal() - this.getLimit());
                     this.onchangeView();
@@ -1628,7 +1644,7 @@ export class View {
         }
 
         if(header_layout == 'full') {
-            let $select = UIHelper.createPaginationSelect('', '', [5, 10, 25, 50, 100, 500], this.limit).addClass('sb-view-header-list-pagination-limit_select');
+            let $select = UIHelper.createPaginationSelect('pagination-select_' + this.getUuid(), '', [5, 10, 25, 50, 100, 500], this.limit).addClass('sb-view-header-list-pagination-limit_select');
 
             $pagination.find('.pagination-rows-per-page')
                 .append($select);
@@ -2359,7 +2375,7 @@ export class View {
             fields[item.value] = TranslationService.resolve(this.translation, 'model', [], item.value, label, 'label');
         }
 
-        $select_field = UIHelper.createSelect('bulk_assign_select_field', TranslationService.instant('SB_FILTERS_DIALOG_FIELD'), fields, Object.keys(fields)[0]).appendTo($elem);
+        $select_field = UIHelper.createSelect('bulk-assign-select-field_' + this.getUuid(), TranslationService.instant('SB_FILTERS_DIALOG_FIELD'), fields, Object.keys(fields)[0]).appendTo($elem);
 
         // setup handler for relaying value update to parent layout
         $select_field.find('input')
@@ -2367,13 +2383,13 @@ export class View {
             let $this = $(event.currentTarget);
             selected_field = <string> $this.val();
 
-            $elem.find('#bulk_assign_select_value').remove();
+            $elem.find('#bulk-assign-select-value_' + this.getUuid()).remove();
 
             let field_type = this.model.getFinalType(selected_field);
 
             switch(field_type) {
                 case 'boolean':
-                    $select_value = UIHelper.createSelect('bulk_assign_select_value', TranslationService.instant('SB_FILTERS_DIALOG_VALUE'), ['true', 'false']);
+                    $select_value = UIHelper.createSelect('bulk-assign-select-value_' + this.getUuid(), TranslationService.instant('SB_FILTERS_DIALOG_VALUE'), ['true', 'false']);
                     $select_value.find('input').on('change', (event) => {
                         let $this = $(event.currentTarget);
                         selected_value = ($this.children("option:selected").val() == 'true');
@@ -2382,7 +2398,7 @@ export class View {
                 case 'date':
                 case 'datetime':
                     // daterange selector
-                    $select_value = UIHelper.createInput('bulk_assign_select_value', TranslationService.instant('SB_FILTERS_DIALOG_VALUE'), '');
+                    $select_value = UIHelper.createInput('bulk-assign-select-value_' + this.getUuid(), TranslationService.instant('SB_FILTERS_DIALOG_VALUE'), '');
 
                     $select_value.find('input').datepicker({
                         ...jqlocale[this.config.locale],
@@ -2404,7 +2420,7 @@ export class View {
                 case 'integer':
                 case 'float':
                 default:
-                    $select_value = UIHelper.createInput('bulk_assign_select_value', TranslationService.instant('SB_FILTERS_DIALOG_VALUE'), '');
+                    $select_value = UIHelper.createInput('bulk-assign-select-value_' + this.getUuid(), TranslationService.instant('SB_FILTERS_DIALOG_VALUE'), '');
                     $select_value.find('input').on('change', (event) => {
                         let $this = $(event.currentTarget);
                         selected_value = <string> $this.val();
@@ -2457,7 +2473,7 @@ export class View {
             }
         }
 
-        $select_field = UIHelper.createSelect(this.uuid+'_custom-filter-select-field', TranslationService.instant('SB_FILTERS_DIALOG_FIELD'), fields, Object.keys(fields)[0]).appendTo($elem);
+        $select_field = UIHelper.createSelect('custom-filter-select-field_' + this.getUuid(), TranslationService.instant('SB_FILTERS_DIALOG_FIELD'), fields, Object.keys(fields)[0]).appendTo($elem);
         // setup handler for relaying value update to parent layout
         $select_field.addClass('dialog-select');
         $select_field.find('input').first()
@@ -2466,13 +2482,13 @@ export class View {
                 let $this = $(event.currentTarget);
                 selected_field = <string> $this.val();
 
-                $elem.find('#'+this.uuid+'_custom-filter-select-operator').remove();
+                $elem.find('#custom-filter-select-operator_' + this.getUuid()).remove();
                 $elem.find('.sb-widget').remove();
 
                 let field_type: string | null = this.model.getFinalType(selected_field);
                 let operators: any[] = this.model.getOperators(field_type ?? 'string');
                 selected_operator = operators[0];
-                $select_operator = UIHelper.createSelect(this.uuid+'_custom-filter-select-operator', TranslationService.instant('SB_FILTERS_DIALOG_OPERATOR'), operators, operators[0]);
+                $select_operator = UIHelper.createSelect('custom-filter-select-operator_' + this.getUuid(), TranslationService.instant('SB_FILTERS_DIALOG_OPERATOR'), operators, operators[0]);
                 // setup handler for relaying value update to parent layout
                 $select_operator.addClass('dialog-select').find('input').first()
                     .on('change', (event) => {
@@ -2713,7 +2729,7 @@ export class View {
 
     private async actionSelectionBulkAssign(selection: any) {
         console.debug('View::opening bulk assign dialog');
-        this.$container.find('#'+this.uuid+'_bulk-assign-dialog').trigger('_open');
+        this.$container.find('#bulk-assign-dialog_' + this.getUuid()).trigger('_open');
     }
 
     private async actionSelectionInlineEdit(selection: any) {
@@ -3093,8 +3109,8 @@ export class View {
                     // stack snackbars (LIFO: decreasing timeout)
                     for(let field in errors['INVALID_PARAM']) {
                         // for each field, we handle one error at a time (the first one)
-                        let error_id:string = <string> String((Object.keys(errors['INVALID_PARAM'][field]))[0]);
-                        let msg:string = <string>(Object.values(errors['INVALID_PARAM'][field]))[0];
+                        let error_id: string = <string> String((Object.keys(errors['INVALID_PARAM'][field]))[0]);
+                        let msg: string = <string>(Object.values(errors['INVALID_PARAM'][field]))[0];
                         let translated_msg = TranslationService.resolve(translation, 'error', [], field, msg, error_id);
                         if(translated_msg == msg.replace(/_/g, ' ')) {
                             let translated_error = TranslationService.instant('SB_ERROR_'+error_id.toUpperCase());

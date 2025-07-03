@@ -25,10 +25,10 @@ export class Frame {
     private stack: Array<Context>;
 
     // root context
-    private context:Context;
+    private context: Context;
 
     // DOM selector of the element to which current Frame relates
-    private domContainerSelector:string;
+    private domContainerSelector: string;
 
     // interaction mode ('stacked' or 'popup')
     private display_mode: string;
@@ -45,7 +45,7 @@ export class Frame {
 
     constructor(eq:any, domContainerSelector:string='#sb-container') {
         this.eq = eq;
-        this.context = <Context>{};
+        this.context = <Context> {};
         this.stack = [];
         this.is_active = true;
         // default mode : contexts are displayed in the same container
@@ -477,7 +477,7 @@ export class Frame {
             lang = this.context.getLang();
         }
 
-        let $lang_selector = UIHelper.createSelect('lang-selector', '', this.languages, lang);
+        let $lang_selector = UIHelper.createSelect('lang-selector_' + Math.random().toString(36).substring(2, 10), '', this.languages, lang);
         $lang_selector.addClass('lang-selector');
         $lang_selector.find('.mdc-menu').addClass('mdc-menu-surface--is-open-left');
         $lang_selector.find('.mdc-select__selected-text').css({'text-transform': 'uppercase'}).text(lang);

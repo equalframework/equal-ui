@@ -20,7 +20,7 @@ export default class WidgetSelect extends Widget {
 
         switch(this.mode) {
             case 'edit':
-                this.$elem = UIHelper.createSelect(this.getId(), this.label, this.config.values, value, this.config.description, this.readonly);
+                this.$elem = UIHelper.createSelect('widget-select_' + this.getId(), this.label, this.config.values, value, this.config.description, this.readonly);
                 if(this.config.layout == 'list') {
                     this.$elem.css({"width": "calc(100% - 10px)"});
                 }

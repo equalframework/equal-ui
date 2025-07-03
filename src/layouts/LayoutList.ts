@@ -35,6 +35,17 @@ export class LayoutList extends Layout {
             this.$layout.find('thead').find('th:first-child').find('input').trigger('refresh');
         }
 
+        // auto open (unfold) groups, if requested
+        let group_by = this.view.getGroupBy();
+        if(group_by.length > 0) {
+            let $fold_toggle = this.$layout.find('table thead tr th.sb-group-cell');
+            this.getView().isReady().then( () => {
+                if(typeof group_by[0] === 'object' && group_by[0].hasOwnProperty('open') && group_by[0].open) {
+                    $fold_toggle.trigger('click');
+                }
+            });
+        }
+
         // feed layout with current Model
         let objects = await this.view.getModel().get();
         this.feed(objects);
@@ -98,12 +109,6 @@ export class LayoutList extends Layout {
                         $this.trigger('click');
                     }
                 });
-            });
-
-            this.getView().isReady().then( () => {
-                if(typeof group_by[0] === 'object' && group_by[0].hasOwnProperty('open') && group_by[0].open) {
-                    $fold_toggle.trigger('click');
-                }
             });
         }
 
