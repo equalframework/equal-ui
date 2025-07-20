@@ -131,6 +131,7 @@ export class Layout implements LayoutInterface{
                             value = config.object_id;
                         }
                         if(value === null || value.length == 0) {
+                            console.warn('missing required value for field ' + field);
                             this.markFieldAsInvalid(parseInt(object_id), field, msg);
                             return false;
                         }

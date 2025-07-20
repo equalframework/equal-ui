@@ -238,6 +238,9 @@ export class Model {
         if(schema.hasOwnProperty('status')) {
             fields.push('status');
         }
+        if(schema.hasOwnProperty('order')) {
+            fields.push('order');
+        }
 
         try {
             let body: any = {

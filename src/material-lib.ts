@@ -1051,6 +1051,57 @@ class UIHelper {
             );
 
         // new MDCDataTable($elem);
+        // #todo - add a condition based on widget config or presence of field `order`
+        $tbody.sortable({
+            axis: 'y',
+            update: function (event: any, ui: any) {
+                const $rows = $elem.find('tbody tr');
+
+                // 1. Reconstituer la nouvelle liste visible avec id + order
+                const rowsData = $rows.toArray().map( (element: HTMLElement, index: number) => {
+                    const $row = $(element);
+                    return {
+                        id: parseInt($row.attr('data-id') || '0', 10),
+                        oldOrder: parseInt($row.attr('data-order') || '0', 10),
+                        $el: $row
+                    };
+                }).get();
+
+                // 2. Recalculer les nouvelles valeurs "order"
+                let hasChanges = false;
+                const updates: any[] = [];
+                const baseOrder = 100; // ou autre pas fixe
+                const step = 100;
+
+                rowsData.forEach((row: any, i: number) => {
+                    const newOrder = baseOrder + i * step;
+                    if (row.oldOrder !== newOrder) {
+                        row.$el.attr('data-order', newOrder);
+                        updates.push({
+                            id: row.id,
+                            order: newOrder
+                        });
+                    }
+                });
+
+                // 3. Envoi des requêtes AJAX (une par objet ou en batch)
+                /*
+                updates.forEach(update => {
+                    $.ajax({
+                    url: '/api/update-order',
+                    method: 'POST',
+                    data: {
+                        id: update.id,
+                        order: update.order
+                    },
+                    success: () => console.log('Order updated for', update.id),
+                    error: () => console.error('Error updating order for', update.id)
+                    });
+                });
+                */
+
+            }
+        });
     }
 }
 

@@ -187,7 +187,7 @@ export class LayoutList extends Layout {
 
                         // wait for handling of sort toggle (table decorator)
                         setTimeout( () => {
-                            // change sortname and/or sortorder
+                            // change sort field and/or sort order
                             this.view.setOrder(<string> $this.attr('name'));
                             this.view.setSort(<string> $this.attr('data-sort'));
                             this.view.onchangeView();
@@ -605,7 +605,7 @@ export class LayoutList extends Layout {
             // open form view on click
             .on('click', async (event:any) => {
                 let $this = $(event.currentTarget);
-                if(this.view.getPurpose() == 'add') {
+                if(this.view.getPurpose() == 'add' || this.view.getPurpose() == 'select') {
                     this.addToSelection([object.id]);
                     this.view.triggerAction('ACTION.SELECT');
                     return;
@@ -749,6 +749,10 @@ export class LayoutList extends Layout {
                 let widget = this.model_widgets[object.id][field];
                 widget.change(value);
             });
+
+        if(object.hasOwnProperty('order')) {
+            $row.attr('data-order', object.order);
+        }
 
         // for lists in edit mode (excepted widgets), add a checkbox
         // #todo - in some cases we should be able to perform a custom action on elements from widget lists : use embedded actions (?)

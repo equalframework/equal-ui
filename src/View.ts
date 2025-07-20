@@ -794,7 +794,15 @@ export class View {
     public triggerAction(action: string) {
         console.debug('View::triggerAction - received action: ' + action, this);
         if(action == 'ACTION.SELECT') {
-            this.$headerContainer.find('#' + this.uuid + '_action-add').first().trigger('click');
+            let target = this.$headerContainer.find('#' + this.uuid + '_action-add').first();
+
+            if(!target.length) {
+                target = this.$headerContainer.find('#' + this.uuid + '_action-select').first();
+            }
+
+            if(target.length) {
+                target.trigger('click');
+            }
         }
         else if(action == 'ACTION.EDIT') {
             if(this.mode == 'view') {
@@ -1183,9 +1191,12 @@ export class View {
         // right side : the actions specific to the view, and depending on object status
         let $view_actions = $('<div />').addClass('sb-view-header-actions-view').appendTo($actions_set);
 
+        // select & create are default behavior
         let has_action_select = true;
         let has_action_create = true;
-        let has_action_create_inline = true;
+
+        // create_inline must be explicitly requested
+        let has_action_create_inline = false;
 
         if(this.custom_actions.hasOwnProperty('ACTION.SELECT')) {
             has_action_select = this.isActionEnabled(this.custom_actions['ACTION.SELECT'], this.mode);
@@ -1197,6 +1208,7 @@ export class View {
         if(this.custom_actions.hasOwnProperty('ACTION.CREATE_INLINE') || (header_layout === 'inline' && has_action_create)) {
             // #todo - test, to confirm
             this.purpose = 'view';
+            // create & create_inline are mutually exclusive
             has_action_create = false;
             has_action_create_inline = this.isActionEnabled(this.custom_actions['ACTION.CREATE_INLINE'], this.mode);
         }
