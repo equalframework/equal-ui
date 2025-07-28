@@ -298,11 +298,13 @@ export class LayoutList extends Layout {
 
         let group_by = this.view.getGroupBy();
 
-        let groups:any = {};
+        let groups: any = {};
 
         if(group_by.length > 0) {
             groups = this.feedListGroupObjects(objects, group_by);
         }
+
+        console.debug('LayoutList::feed - groups', groups);
 
         const user = this.view.getUser();
 
@@ -458,6 +460,16 @@ export class LayoutList extends Layout {
         }
 
         UIHelper.decorateTable($elem);
+
+        // handler for reordering through drag n drop
+        $elem.on('_updateOrder', (event: any, updates: any[]) => {
+            for(let object of updates) {
+                // update displayed value of 'order' field (handler will retrieve matching widget)
+                this.$layout.find('tr[data-id="' + object.id + '"]').trigger('_setValue', ['order', object.order]);
+                // #memo - drag n drop is limited to view mode and in view mode _updatedWidget is never triggered
+                ApiService.update(this.view.getEntity(), [object.id], {order: object.order}, true, this.view.getLang());
+            }
+        });
     }
 
     private feedListGroupObjects(objects: any[], group_by: string[]) {
@@ -486,14 +498,21 @@ export class LayoutList extends Layout {
                 }
 
                 let model_def = model_fields[field] ?? null;
-                let key = object[field] ?? null;
 
-                if(!model_def || !key) {
+                if(!model_def) {
                     console.warn('invalid field or value while grouping object on field ' + field, group, object);
                     continue;
                 }
 
-                let label = key;
+                let key = object[field];
+
+                let label: any = key;
+
+                if(key === null || key === undefined || key === '') {
+                    console.debug('empty key found for grouping on field ' + field, group, object);
+                    key = 'no_value';
+                    label = 'empty';
+                }
 
                 if(typeof key == 'object' && key.hasOwnProperty('name')) {
                     label = key.name;
@@ -514,7 +533,6 @@ export class LayoutList extends Layout {
                     key = parseInt(key) - 1;
                     label = moment().month(key).format('MMMM');
                     key = String(key).padStart(2, '0');
-
                 }
                 else if(typeof key === 'string') {
                     // remove special chars (to prevent issue when injecting to [data-id])
@@ -542,12 +560,14 @@ export class LayoutList extends Layout {
                     }
 
                 }
+
                 parent_id = parent_id + key;
                 parent = parent[key];
                 ++level;
             }
             if( parent.hasOwnProperty('_data') && Array.isArray(parent['_data']) ) {
                 parent['_data'].push(object);
+                console.debug('LayoutList::feedListGroupObjects - added object', object.id, 'to group', parent['_id'], 'key', parent['_key']);
             }
         }
         return groups;
@@ -602,6 +622,12 @@ export class LayoutList extends Layout {
             .attr('data-parent-id', parent_group_id)
             .attr('data-id', object.id)
             .attr('data-edit', '0')
+            // dispatch value setter
+            .on('_setValue', (event: any, field: string, value: any) => {
+                console.log('Received _setValue event on row ', object.id, field, value);
+                let widget = this.model_widgets[object.id][field];
+                widget.change(value);
+            })
             // open form view on click
             .on('click', async (event:any) => {
                 let $this = $(event.currentTarget);
@@ -634,7 +660,7 @@ export class LayoutList extends Layout {
                 }
             })
             // toggle mode for all cells in row
-            .on( '_toggle_mode', (event: any, mode: string = 'view') => {
+            .on( '_toggle_mode', async (event: any, mode: string = 'view') => {
                 console.debug('Layout - received toggle_mode', mode);
                 let $this = $(event.currentTarget);
 
@@ -738,16 +764,11 @@ export class LayoutList extends Layout {
                                 }
                             }
 
-                            // propagate model change, without requesting a layout refresh (we're in inline edit and we d'ont want to refresh the whole view)
+                            // propagate model change, without requesting a layout refresh (we're in inline edit and we don't want to refresh the whole view)
                             this.view.onchangeViewModel([object.id], values, false);
                         });
                     }
                 });
-            })
-            // dispatch value setter
-            .on( '_setValue', (event: any, field: string, value: any) => {
-                let widget = this.model_widgets[object.id][field];
-                widget.change(value);
             });
 
         if(object.hasOwnProperty('order')) {
