@@ -806,71 +806,22 @@ class UIHelper {
             $elem.find('.mdc-list-item').eq(selection_index).trigger('click');
         });
 
-        /*
         // #memo - using with MDCMenu involves heavy tweaking of the behavior (abandoned)
+        // let mdcMenu = new MDCMenu($elem[0]);
 
-        let mdcMenu = new MDCMenu($elem[0]);
-        // prevent menu from getting the focus
-        mdcMenu.setDefaultFocusState(DefaultFocusState.NONE);
-
-        // UI elements having a menu do rely on this custom _toggle
-        $elem.on('_toggle', () => {
-            mdcMenu.open = !$elem.hasClass('mdc-menu-surface--open');
-        });
-
-        $elem.on('_open', (event: any) => {
-            console.debug('MDCMenu _open');
-            event.stopPropagation();
-            if(!mdcMenu.open) {
-                $elem.show();
-                mdcMenu.open = true;
-                // prevent tab capture
-                $elem.find('.mdc-list-item').attr('tabindex', -1);
-            }
-            mdcMenu.selectedIndex = 0;
-        });
-
-        $elem.on('_close', (event: any) => {
-            console.debug('MDCMenu _close');
-            // event.stopPropagation();
-            if(mdcMenu.open) {
-                $elem.hide();
-                mdcMenu.open = false;
-            }
-        });
-
-        $elem.on('_moveup', (event:any) => {
-            event.stopPropagation();
-            let index:number = <number> mdcMenu.selectedIndex;
-            mdcMenu.selectedIndex = (index > 0)?index-1:0;
-            // prevent tab capture
-            $elem.find('.mdc-list-item').attr('tabindex', -1);
-        });
-
-        $elem.on('_movedown', (event:any) => {
-            event.stopPropagation();
-            let index:number = <number> mdcMenu.selectedIndex;
-            mdcMenu.selectedIndex = index + 1;
-            // prevent tab capture
-            $elem.find('.mdc-list-item').attr('tabindex', -1);
-        });
-
-        $elem.on('_select', (event:any) => {
-            event.stopPropagation();
-            $elem.find('.mdc-list-item--selected').trigger('click');
-        });
-
-        return mdcMenu;
-        */
     }
 
     public static decorateTabBar($elem:any) {
-        if(!$elem.length) return;
+        if(!$elem.length) {
+            return;
+        }
         new MDCTabBar($elem[0]);
     }
 
     public static decorateTooltip($elem:any) {
-        if(!$elem.length) return;
+        if(!$elem.length) {
+            return;
+        }
         new MDCTooltip($elem[0]);
     }
 
@@ -888,7 +839,7 @@ class UIHelper {
         $tbody.find('td').addClass('mdc-data-table__cell');
     }
 
-    public static decorateTable($elem:any) {
+    public static decorateTable($elem: any) {
         if(!$elem.length) {
             return;
         }
@@ -1050,14 +1001,30 @@ class UIHelper {
                 }
             );
 
+        // #memo - do not attache MDCDataTable event (not compatible with current implementation)
         // new MDCDataTable($elem);
+
+        // add support for drag & drop reordering
         // #todo - add a condition based on widget config or presence of field `order`
         $tbody.sortable({
             axis: 'y',
+            containment: $elem,
+            cancel: 'tr[data-edit!="0"]',
+            helper: function (event: any, ui: any) {
+                ui.children().each(function (this: HTMLElement, index: number) {
+                    const $cell = $(this);
+                    const width = $cell.outerWidth();
+                    $cell.css('width', width + 'px');
+                });
+                ui.css({
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)'
+                });
+                return ui;
+            },
             update: function (event: any, ui: any) {
                 const $rows = $elem.find('tbody tr');
 
-                // 1. Reconstituer la nouvelle liste visible avec id + order
+                // 1. rebuild the list with id + order
                 const rowsData = $rows.toArray().map( (element: HTMLElement, index: number) => {
                     const $row = $(element);
                     return {
@@ -1065,17 +1032,16 @@ class UIHelper {
                         oldOrder: parseInt($row.attr('data-order') || '0', 10),
                         $el: $row
                     };
-                }).get();
+                });
 
-                // 2. Recalculer les nouvelles valeurs "order"
-                let hasChanges = false;
+                // 2. computed new "order" values
                 const updates: any[] = [];
-                const baseOrder = 100; // ou autre pas fixe
-                const step = 100;
+                const baseOrder = 1;
+                const step = 1;
 
                 rowsData.forEach((row: any, i: number) => {
                     const newOrder = baseOrder + i * step;
-                    if (row.oldOrder !== newOrder) {
+                    if(row.oldOrder !== newOrder) {
                         row.$el.attr('data-order', newOrder);
                         updates.push({
                             id: row.id,
@@ -1084,22 +1050,8 @@ class UIHelper {
                     }
                 });
 
-                // 3. Envoi des requêtes AJAX (une par objet ou en batch)
-                /*
-                updates.forEach(update => {
-                    $.ajax({
-                    url: '/api/update-order',
-                    method: 'POST',
-                    data: {
-                        id: update.id,
-                        order: update.order
-                    },
-                    success: () => console.log('Order updated for', update.id),
-                    error: () => console.error('Error updating order for', update.id)
-                    });
-                });
-                */
-
+                // 3. relay change to parent table
+                $elem.trigger('_updateOrder', [updates]);
             }
         });
     }
