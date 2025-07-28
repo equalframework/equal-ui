@@ -144,8 +144,8 @@ class EventsListener {
         let name = 'default';
         if( view_id.length ) {
             let parts = view_id.split('.');
-            if(parts.length) type = <string>parts.shift();
-            if(parts.length) name = <string>parts.shift();
+            if(parts.length) type = <string> parts.shift();
+            if(parts.length) name = <string> parts.shift();
         }
 
         let config:any = {
