@@ -2147,11 +2147,12 @@ export class View {
                                     force: false,
                                     lang: this.getLang()
                                 });
-                            //const response = await ApiService.update(this.entity, [object['id']], this.model.export(object), false, this.getLang());
                             if(response && response.length) {
                                 // merge object with response (state and name fields might have changed)
                                 object = {...object, ...response[0]};
                             }
+                            // remove any beforeunload callback that might have been installed (no change pending anymore)
+                            window.removeEventListener('beforeunload', window.beforeUnloadListener);
                             return {selection: [object.id], objects: [object]};
                         }
                         catch(response) {
@@ -2450,7 +2451,7 @@ export class View {
         $dialog.on('_accept', () => {
             // assign value to currently selected items
             for(let object_id of this.selected_ids) {
-                this.$layoutContainer.find('tr[data-id="'+object_id+'"]').trigger('_setValue', [selected_field, selected_value]);
+                this.$layoutContainer.find('tr[data-id="' + object_id + '"]').trigger('_setValue', [selected_field, selected_value]);
             }
         });
 
