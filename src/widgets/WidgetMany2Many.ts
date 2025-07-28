@@ -112,7 +112,7 @@ export default class WidgetMany2Many extends Widget {
             // add join condition for limiting list to the current object
             // this is only valid on the first rendering, afterward the layout controls the ids
             if(['one2many', 'many2many'].indexOf(this.config.type) > -1 && this.config.hasOwnProperty('foreign_field')) {
-                if(this.config.type == 'one2many') {
+                if(this.config.type == 'one2many' && this.config.hasOwnProperty('object_id') && this.config.object_id) {
                     domain.merge(new Domain([this.config.foreign_field, '=', this.config.object_id]));
                 }
                 else {
