@@ -206,6 +206,11 @@ class WidgetFactory {
         let def = model_fields[field];
 
         let label = (item.hasOwnProperty('label')) ? item.label : field;
+
+        if(def.hasOwnProperty('label')) {
+            label = def.label;
+        }
+
         // #todo - handle help and relay to Context
         let helper = (item.hasOwnProperty('help')) ? item.help : ( (def.hasOwnProperty('help')) ? def['help'] : '' );
         let description = (item.hasOwnProperty('description')) ? item.description : ( (def.hasOwnProperty('description')) ? def['description'] : '' );
