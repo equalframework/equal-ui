@@ -78,10 +78,11 @@ export default class WidgetDateTime extends Widget {
     }
     public render(): JQuery {
         console.debug('WidgetDateTime::render', this);
+        const locale = this.getLayout().getEnv().locale;
         // #memo - this.value is expected to be either null or a valid ISO date string at all times
         let value_str: string = '';
-        let moment_format: string = '';
-        const locale = this.getLayout().getEnv().locale;
+        // set default moment format to en: mm/dd/yy hh:ii ; fr: dd/mm/yy hh:ii
+        let moment_format: string = this.jqueryToMomentFormat(jqlocale[locale].dateFormat + ' ' + jqlocale[locale].timeFormat);
 
         switch(this.mode) {
             case 'edit':
