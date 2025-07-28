@@ -9,11 +9,27 @@ export default class WidgetString extends Widget {
         super(layout, label, value, config);
     }
 
+    /**
+     * This method is meant to be used for updating the value of the widget from the View or the Layout.
+     * It is meant for edit mode, support for view mode is partial.
+     */
     public change(value: any) {
+        console.log('WidgetString::change', value, this);
         if(typeof value == 'string') {
             value = value.replace(/"/g, "&quot;");
         }
-        this.$elem.find('input').val(value).trigger('change');
+        if(this.mode === 'edit') {
+            this.$elem.find('input').val(value).trigger('change');
+        }
+        else {
+            const has_input = this.$elem.find('input').length;
+            if(has_input) {
+                this.$elem.find('input').val(value);
+            }
+            else {
+                this.$elem.html(value);
+            }
+        }
     }
 
     public render(): JQuery {
@@ -45,9 +61,11 @@ export default class WidgetString extends Widget {
                 // #memo - not dealing with keydown is preferred in order to avoid confusion with special keys
                 // #memo - use of 'change' event to cover float and integers changes with up and down buttons (same timeout)
                 $input.on('change', (event:any) => {
+                    console.log('WidgetString::$input:change', event);
                     let $this = $(event.currentTarget);
 
                     if(this.value != $this.val()) {
+                        // value changed, relaying _updatedWidget
                         this.value = $this.val();
                         this.$elem.trigger('_updatedWidget', [false]);
                     }
@@ -100,7 +118,8 @@ export default class WidgetString extends Widget {
                                     document:  {icon: "description", color: "grey"}
                                 };
 
-                            this.$elem = $('<div />');
+                            this.$elem = $('<div />').attr('id', 'widget-string_' + this.getId());
+
                             if(map_icons.hasOwnProperty(value)) {
                                 this.$elem.append( $('<span class="material-icons">' + map_icons[value].icon + '</span>').css({color: map_icons[value].color}) );
                             }
@@ -118,6 +137,7 @@ export default class WidgetString extends Widget {
                     else {
                         this.$elem = UIHelper.createInputView('widget-string_' + this.getId(), this.label, value, this.config.description);
                     }
+
                     this.applyStyling(this.$elem);
                     this.$elem.attr('title', value);
                 }
