@@ -1166,6 +1166,7 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
 
 .mdc-data-table__table-container {
     overflow-y: scroll;
+    overflow-x: hidden !important;
     scrollbar-gutter: stable;
 }
 
