@@ -4,6 +4,7 @@ import { View, Layout } from "../equal-lib";
 import { UIHelper } from '../material-lib';
 
 import Quill from "quill";
+import QuillBetterTable from "quill-better-table";
 
 export default class WidgetText extends Widget {
 
@@ -75,6 +76,8 @@ export default class WidgetText extends Widget {
                         Quill.register(SizeStyle, true);
                         Quill.register(AlignStyle, true);
 
+                        Quill.register({'modules/better-table': QuillBetterTable}, true);
+
                         const Inline = Quill.import('blots/inline');
                         class SmallBlot extends Inline {
                             static blotName = 'small';
@@ -105,8 +108,22 @@ export default class WidgetText extends Widget {
                                         { 'color': ['#000000', '#e60000', '#ff9900', '#ffff00', '#008a00', '#0066cc', false] },
                                         { 'background': ['#fff59d', '#fd4444', '#a5d6a7', '#81d4fa', '#ffccbc', false] }
                                     ],
+                                    ['table'],
                                     ['fullscreen']
-                                ]
+                                ],
+                                'better-table': {
+                                    operationMenu: {
+                                        items: {
+                                            unmergeCells: {
+                                                text: 'Unmerge cells'
+                                            }
+                                        },
+                                        color: {
+                                            colors: ['#fff', 'red', 'green'],
+                                            text: 'Background Colors'
+                                        }
+                                    }
+                                }
                             }
                         });
 
@@ -136,8 +153,7 @@ export default class WidgetText extends Widget {
 
                         this.$elem.data('quill', editor);
 
-                        // editor.root.innerHTML = value;
-                        editor.clipboard.dangerouslyPasteHTML(value)
+                        editor.root.innerHTML = value;
 
                         let timeout: any;
                         let initial_change = true;
