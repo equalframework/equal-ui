@@ -1451,7 +1451,7 @@ export class View {
 
         // for creating a quick filter based on name
         let $filters_search = $('<div />').addClass('sb-view-header-list-filters-search');
-        let $search_input = UIHelper.createInput('sb-view-header-search', TranslationService.instant('SB_FILTERS_SEARCH'), '', '', '', false, 'outlined', 'close').appendTo($filters_search);
+        let $search_input = UIHelper.createInput('sb-view-header-search_' + this.getUuid(), TranslationService.instant('SB_FILTERS_SEARCH'), '', '', '', false, 'outlined', 'close').appendTo($filters_search);
 
         $search_input.addClass('dialog-select').find('.mdc-text-field__icon').on('click', async (e) => {
             // reset input value
@@ -1560,7 +1560,7 @@ export class View {
             let label = (item.hasOwnProperty('label')) ? item.label : (item.value.charAt(0).toUpperCase() + item.value.slice(1));
             let visible = (item.hasOwnProperty('visible')) ? item.visible : true;
 
-            UIHelper.createListItemCheckbox('sb-fields-toggle-checkbox-'+item.value, label)
+            UIHelper.createListItemCheckbox('sb-fields-toggle-checkbox_' + this.getUuid() + '_' + item.value, label)
                 .appendTo($fieldsToggleList)
                 .find('input')
                 .on('change', (event) => {
