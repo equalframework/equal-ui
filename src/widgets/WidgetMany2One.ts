@@ -27,6 +27,35 @@ export default class WidgetMany2One extends Widget {
         let $button_open = UIHelper.createButton('m2o-actions-open-'+this.id, '', 'icon', 'open_in_new');
         let $button_create = UIHelper.createButton('m2o-actions-create-'+this.id, '', 'icon', 'add');
 
+
+// #todo - add support for button_action (when config.component is set
+/*
+expected structure is as follow :
+	"component": {
+		"name": "createOwner",
+		"data": {
+			"condo_id": "object.condo_id",
+			"ownership_id": "object.id",
+		}
+	}
+-> we must
+    - disable other buttons
+    - inject values in relayed data (using config.object)
+    - add a callback for receiving result
+
+    Example of component invocation:
+            window.dispatchEvent(new CustomEvent('App:open-component', {
+                detail: {
+                    component: 'createOwner', // name registered in components registry
+                    data: {
+                        ...
+                    },
+                    onSuccess: () => console.log('Success callback'),
+                    onError: () => console.error('Error callback'),
+                }
+            }));
+*/
+
         switch(this.mode) {
 
             case 'edit':
@@ -35,15 +64,15 @@ export default class WidgetMany2One extends Widget {
 
                 let $button_reset = UIHelper.createButton('m2o-actions-reset-'+this.id, '', 'icon', 'close').css({"position": "absolute", "right": "45px", "top": "5px", "z-index": "1"}).hide();
 
-                let $select = UIHelper.createInput('m2o-input-'+this.id, this.label, value, this.config.description, '', this.readonly)
+                let $select = UIHelper.createInput('m2o-input-' + this.id, this.label, value, this.config.description, '', this.readonly)
                     .addClass('mdc-menu-surface--anchor')
                     .css({"width": "100%", "display": "inline-block"});
 
                 let $input = $select.find('input');
-                let $menu = UIHelper.createMenu('m2o-menu-'+this.id).appendTo($select);
-                let $menu_list = UIHelper.createList('m2o-menu-list-'+this.id).appendTo($menu);
-                let $link_search = UIHelper.createListItem('m2o-actions-search-'+this.id, '<a style="text-decoration: underline;">'+TranslationService.instant('SB_WIDGETS_MANY2ONE_ADVANCED_SEARCH')+'</a>');
-                let $link_instant = UIHelper.createListItem('m2o-actions-instant-'+this.id, '<a style="text-decoration: underline;">'+TranslationService.instant('SB_ACTIONS_BUTTON_CREATE')+' "{value}"'+'</a>');
+                let $menu = UIHelper.createMenu('m2o-menu-' + this.id).appendTo($select);
+                let $menu_list = UIHelper.createList('m2o-menu-list-' + this.id).appendTo($menu);
+                let $link_search = UIHelper.createListItem('m2o-actions-search-' + this.id, '<a style="text-decoration: underline;">' + TranslationService.instant('SB_WIDGETS_MANY2ONE_ADVANCED_SEARCH')+'</a>');
+                let $link_instant = UIHelper.createListItem('m2o-actions-instant-' + this.id, '<a style="text-decoration: underline;">' + TranslationService.instant('SB_ACTIONS_BUTTON_CREATE')+' "{value}"'+'</a>');
 
                 if(this.config.has_action_open || this.config.has_action_create) {
                     $select.css({"width": "calc(100% - 48px)"});
@@ -453,7 +482,7 @@ export default class WidgetMany2One extends Widget {
             case 'view':
             default:
                 this.$elem = $('<div />');
-                let $viewInput = UIHelper.createInputView('', this.label, value, this.config.description);
+                let $viewInput = UIHelper.createInputView('m2o_' + this.id, this.label, value, this.config.description);
 
                 switch(this.config.layout) {
                     case 'form':
@@ -467,7 +496,7 @@ export default class WidgetMany2One extends Widget {
                             $button_open.on('click', async () => {
                                 if(this.config.hasOwnProperty('object_id') && this.config.object_id && this.config.object_id > 0) {
                                     let view_type = 'form';
-                                    let view_name = (this.config.hasOwnProperty('view_name'))?this.config.view_name:'default';
+                                    let view_name = (this.config.hasOwnProperty('view_name')) ? this.config.view_name : 'default';
                                     this.getLayout().openContext({
                                         entity: this.config.foreign_object,
                                         type: view_type,
