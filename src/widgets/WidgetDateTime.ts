@@ -136,7 +136,7 @@ export default class WidgetDateTime extends Widget {
                     .on('change', (event) => {
                         let $this = $(event.currentTarget);
                         let date_str: string = <string> $this.val();
-                        let moment_format = this.jqueryToMomentFormat(datepickerConfig.dateFormat);
+                        let moment_format = this.jqueryToMomentFormat(datepickerConfig.dateFormat + ' ' + datepickerConfig.timeFormat);
                         console.debug('WidgetDateTime::input:change', event, date_str);
 
                         if(this.isValidStringDate(date_str, moment_format)) {

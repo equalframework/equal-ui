@@ -117,7 +117,8 @@
                 uidptitle.parent().append($('<div />').addClass('ui-datepicker-header-time-switch').append(time_button));
 
                 time_button.on('click', function() {
-                    $.datepicker._toggleDisplay('#' + inst.id, 4); return false;
+                    $.datepicker._toggleDisplay('#' + inst.id, 4);
+                    return false;
                 });
 
                 inst.dpDiv.append(this._generateTimePicker(inst));
@@ -125,7 +126,10 @@
             }
 
 			var uidptitle_link = uidptitle.wrapInner('<a href="#"/>');
-			uidptitle_link.on('click', function(){$.datepicker._toggleDisplay('#' + inst.id, 2); return false;});
+			uidptitle_link.on('click', function() {
+                $.datepicker._toggleDisplay('#' + inst.id, 2);
+                return false;
+            });
 
 		},
 
@@ -133,11 +137,12 @@
 		_instInputFocus_MYP: function(inst) {
 			//code copied from datePicker's _updateDatepicker()
 			if (inst == $.datepicker._curInst && $.datepicker._datepickerShowing && inst.input &&
-					// #6694 - don't focus the input if it's already focused
-					// this breaks the change event in IE
-					inst.input.is(':visible') && !inst.input.is(':disabled') && inst.input[0] != document.activeElement)
+				    // #6694 - don't focus the input if it's already focused
+				    // this breaks the change event in IE
+				    inst.input.is(':visible') && !inst.input.is(':disabled') && inst.input[0] != document.activeElement
+            ) {
 				inst.input.focus();
-
+            }
 		},
 
 		_generateMonthPickerHTML_MonthYearPicker: function(inst, minDate, maxDate, drawMonth, inMinYear, inMaxYear) {
