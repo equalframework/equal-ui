@@ -825,6 +825,7 @@ class UIHelper {
         new MDCTooltip($elem[0]);
     }
 
+    // #deprecated
     public static decorateTableStatic($elem:any) {
         if(!$elem.length) {
             return;
@@ -839,7 +840,7 @@ class UIHelper {
         $tbody.find('td').addClass('mdc-data-table__cell');
     }
 
-    public static decorateTable($elem: any) {
+    public static decorateTable($elem: any, view_schema: any) {
         if(!$elem.length) {
             return;
         }
@@ -1001,12 +1002,11 @@ class UIHelper {
                 }
             );
 
-        // #memo - do not attache MDCDataTable event (not compatible with current implementation)
+        // #memo - do not attach MDCDataTable event (not compatible with current implementation)
         // new MDCDataTable($elem);
 
-        // add support for drag & drop reordering
-        // #todo - add a condition based on widget config or presence of field `order`
-        $tbody.sortable({
+        // add support for drag & drop reordering (suppose presence of an `order` field)
+        view_schema.draggable && $tbody.sortable({
             axis: 'y',
             containment: $elem,
             cancel: 'tr[data-edit!="0"]',

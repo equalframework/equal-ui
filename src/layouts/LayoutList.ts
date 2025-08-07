@@ -261,7 +261,7 @@ export class LayoutList extends Layout {
             $elem.append($operations);
         }
 
-        UIHelper.decorateTable($elem);
+        UIHelper.decorateTable($elem, view_schema);
 
         if(view_schema.hasOwnProperty('actions')) {
             if(view_schema.actions.length) {
@@ -459,7 +459,7 @@ export class LayoutList extends Layout {
             }
         }
 
-        UIHelper.decorateTable($elem);
+        UIHelper.decorateTable($elem, view_schema);
 
         // handler for reordering through drag n drop
         $elem.on('_updateOrder', (event: any, updates: any[]) => {
