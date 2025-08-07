@@ -448,6 +448,9 @@ export class View {
                                                 action['params'] = {};
                                             }
 
+                                            // inject params of current view as (sub) params
+                                            action.params['params'] = this.getParams();
+
                                             let object:any = {};
                                             let parent:any = {};
 
@@ -472,6 +475,7 @@ export class View {
                                             // inject referenced values in the resulting params
                                             for(let param of Object.keys(action.params)) {
                                                 let ref = new Reference(action.params[param]);
+                                                // #todo - add support for env
                                                 resulting_params[param] = ref.parse(object, user, parent);
                                             }
 
