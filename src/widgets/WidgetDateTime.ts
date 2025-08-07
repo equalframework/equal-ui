@@ -101,7 +101,7 @@ export default class WidgetDateTime extends Widget {
                         },
                         onSelect: (date_str: string) => {
                             console.log('WidgetDateTime::datepicker:onSelect', date_str);
-                            if(this.isValidStringDate(date_str, this.jqueryToMomentFormat(datepickerConfig.dateFormat))) {
+                            if(this.isValidStringDate(date_str, this.jqueryToMomentFormat(datepickerConfig.dateFormat + ' ' + datepickerConfig.timeFormat))) {
                                 console.debug('WidgetDateTime::datepicker:onSelect valid date received', date_str);
                                 // assign input but do not relay change event (done only in `onClose`)
                                 this.$elem.find('input').first().val(date_str).trigger('input');
@@ -165,7 +165,7 @@ export default class WidgetDateTime extends Widget {
                     .on('focus click', () => {
                         let $input = this.$elem.find('input').first();
                         let val: string = <string> $input.val();
-                        let moment_format = this.jqueryToMomentFormat(datepickerConfig.dateFormat);
+                        let moment_format = this.jqueryToMomentFormat(datepickerConfig.dateFormat + ' ' + datepickerConfig.timeFormat);
                         // upon opening of the date picker, if input is empty, assign current date
                         if(!val.length) {
                             let date = new Date();
