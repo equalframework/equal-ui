@@ -13,6 +13,11 @@
  */
 
 /*!
+ * Signature Pad v5.0.10 | https://github.com/szimek/signature_pad
+ * (c) 2025 Szymon Nowak | Released under the MIT license
+ */
+
+/*!
  * Sizzle CSS Selector Engine v2.3.6
  * https://sizzlejs.com/
  *
@@ -526,6 +531,8 @@ PERFORMANCE OF THIS SOFTWARE.
 
 /*! ./widgets/WidgetSelect */
 
+/*! ./widgets/WidgetSignature */
+
 /*! ./widgets/WidgetString */
 
 /*! ./widgets/WidgetText */
@@ -679,6 +686,8 @@ PERFORMANCE OF THIS SOFTWARE.
 /*! quill */
 
 /*! regenerator-runtime */
+
+/*! signature_pad */
 
 /*! tslib */
 
@@ -872,6 +881,10 @@ PERFORMANCE OF THIS SOFTWARE.
 
 /*!******************************************!*\
   !*** ./build/widgets/WidgetMany2Many.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./build/widgets/WidgetSignature.js ***!
   \******************************************/
 
 /*!******************************************!*\
@@ -2008,6 +2021,10 @@ PERFORMANCE OF THIS SOFTWARE.
 
 /*!**************************************************************!*\
   !*** ./node_modules/chart.js/dist/chunks/helpers.segment.js ***!
+  \**************************************************************/
+
+/*!**************************************************************!*\
+  !*** ./node_modules/signature_pad/dist/signature_pad.umd.js ***!
   \**************************************************************/
 
 /*!***************************************************************!*\

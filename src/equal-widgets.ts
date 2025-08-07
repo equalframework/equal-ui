@@ -18,6 +18,7 @@ import WidgetMany2Many from "./widgets/WidgetMany2Many";
 import WidgetLabel from "./widgets/WidgetLabel";
 import WidgetPdf from "./widgets/WidgetPdf";
 import WidgetUpload from "./widgets/WidgetUpload";
+import WidgetSignature from "./widgets/WidgetSignature";
 
 import { View, Layout } from "./equal-lib";
 
@@ -30,14 +31,11 @@ class WidgetFactory {
     Widgets are based on final type either ORM types or special View types
     widgets support two modes : view & edit, and are responsible for rendering accordingly
 
-
     A widget has a type, a mode and a value (displayed according to type and  mode)
     and also holds decorator info: a label and a helper (optional).
 
-    les widgets sont liés à des éléments (layout items) qui ont un type propre (fields, label, button, ...)
-
-    les widgets liés à d'autres éléments que des fields disposent d'un ID qui permet de faire le lien avec la View parente et les infos additionnelles (aide, traduction)
-
+    The widgets are associated with layout items that have their own type, such as fields, labels, buttons, etc.
+    Widgets linked to elements other than fields have an ID that allows for a connection with the parent view and additional information like help and translation.
 
     config: {
         id:
@@ -80,8 +78,12 @@ class WidgetFactory {
             case 'link':
                 return new WidgetLink(layout, label, value, config);
             case 'binary':
+                // #deprecated - `file` shouldn't be used as type
             case 'file':
                 if(config.hasOwnProperty('usage') && config.usage.substring(0, 5) == 'image') {
+                    if(config.usage.includes('.signature')) {
+                        return new WidgetSignature(layout, label, value, config);
+                    }
                     return new WidgetImage(layout, label, value, config);
                 }
                 return new WidgetFile(layout, label, value, config);
