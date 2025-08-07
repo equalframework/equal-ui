@@ -1487,7 +1487,7 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     margin-top: 6px;
     font-size: 14px;
     /* datepicker should be above any other absolute elements */
-    z-index: 3 !important;
+    z-index: 9999 !important;
     font-family: "Roboto";
 }
 
