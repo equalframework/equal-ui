@@ -34,9 +34,9 @@ export default class WidgetBoolean extends Widget {
             default:
                 /*
                 let value:string = (this.value)?'true':'false';
-                $elem = UIHelper.createInputView('', this.label, value);
+                $elem = UIHelper.createInputView('bool_' + this.id, this.label, value);
                 */
-                this.$elem = UIHelper.createSwitch('', this.label, this.value, this.config.description, '', true);
+                this.$elem = UIHelper.createSwitch('bool_' + this.id, this.label, this.value, this.config.description, '', true);
                 break;
         }
         return this.$elem

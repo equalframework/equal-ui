@@ -40,7 +40,7 @@ export default class WidgetFile extends Widget {
 
                 let $button = UIHelper.createButton(this.getId()+'_upload-button', TranslationService.instant('SB_ACTIONS_BUTTON_SELECT'), 'raised', '', 'primary').css({"margin-left": "10px"});
 
-                let $text = UIHelper.createInputView('', this.label, this.meta?.name ?? '', this.config.description);
+                let $text = UIHelper.createInputView('file_' + this.id, this.label, this.meta?.name ?? '', this.config.description);
 
                 $text.on('click', () => $input.trigger('click') );
                 $button.on('click', () => $input.trigger('click') );
@@ -75,7 +75,7 @@ export default class WidgetFile extends Widget {
 
                     let filename = <string> val.split('\\').pop();
                     $text.remove();
-                    $text = UIHelper.createInputView('', this.label, filename, this.config.description);
+                    $text = UIHelper.createInputView('file_' + this.id, this.label, filename, this.config.description);
                     this.$elem.prepend($text);
                 });
 

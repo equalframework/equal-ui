@@ -42,7 +42,7 @@ export default class WidgetText extends Widget {
         switch(mode) {
             case 'edit':
                 if(this.config.layout == 'list') {
-                    this.$elem = UIHelper.createInput('', this.label, value, this.config.description, '', this.readonly);
+                    this.$elem = UIHelper.createInput('text_' + this.id, this.label, value, this.config.description, '', this.readonly);
                     this.$elem.css({"width": "calc(100% - 10px)"});
                     // setup handler for relaying value update to parent layout
                     this.$elem.find('input').on('change', (event) => {
@@ -182,7 +182,7 @@ export default class WidgetText extends Widget {
             default:
                 if(this.config.layout == 'list') {
                     value = $("<div/>").html(value).text();
-                    this.$elem = UIHelper.createInputView('', this.label, value, this.config.description);
+                    this.$elem = UIHelper.createInputView('text_' + this.id, this.label, value, this.config.description);
                     this.$elem.attr('title', value);
                 }
                 else {

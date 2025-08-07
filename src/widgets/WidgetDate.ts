@@ -247,7 +247,7 @@ export default class WidgetDate extends Widget {
                     this.$elem = $('<div />').addClass('is-first').text(value_str);
                 }
                 else {
-                    this.$elem = UIHelper.createInputView('', this.label, value_str, this.config.description);
+                    this.$elem = UIHelper.createInputView('date_' + this.id, this.label, value_str, this.config.description);
                 }
                 break;
         }

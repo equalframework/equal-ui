@@ -57,7 +57,7 @@ export default class WidgetTime extends Widget {
                         'overflow': 'hidden'});
                 }
                 else {
-                    this.$elem = UIHelper.createInputView('', this.label, value, this.config.description);
+                    this.$elem = UIHelper.createInputView('time_' + this.id, this.label, value, this.config.description);
                 }
                 this.$elem.attr('title', value);
                 break;

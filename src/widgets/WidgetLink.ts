@@ -31,12 +31,12 @@ export default class WidgetLink extends Widget {
         switch(this.mode) {
             case 'edit':
                 if(this.config.layout == 'list') {
-                    this.$elem = UIHelper.createInput('', this.label, value, this.config.description, '', this.readonly);
+                    this.$elem = UIHelper.createInput('link_' + this.id, this.label, value, this.config.description, '', this.readonly);
                     this.$elem.css({"width": "calc(100% - 10px)"});
                 }
                 else {
                     this.$elem = $('<div />');
-                    let $input = UIHelper.createInput('', this.label, value, this.config.description, '', this.readonly).css({"width": "calc(100% - 48px)", "display": "inline-block"});
+                    let $input = UIHelper.createInput('link_' + this.id, this.label, value, this.config.description, '', this.readonly).css({"width": "calc(100% - 48px)", "display": "inline-block"});
                     this.$elem.append($input).append($button_open);
                 }
                 // setup handler for relaying value update to parent layout
@@ -67,7 +67,7 @@ export default class WidgetLink extends Widget {
                     }
                 }
                 else {
-                    let $input = UIHelper.createInputView('', this.label, value, this.config.description).css({"width": "calc(100% - 48px)", "display": "inline-block"});
+                    let $input = UIHelper.createInputView('link_' + this.id, this.label, value, this.config.description).css({"width": "calc(100% - 48px)", "display": "inline-block"});
                     this.$elem.append($input).append($button_open);
                 }
                 break;
