@@ -136,7 +136,8 @@ export default class WidgetText extends Widget {
 
                         this.$elem.data('quill', editor);
 
-                        editor.root.innerHTML = value;
+                        // editor.root.innerHTML = value;
+                        editor.clipboard.dangerouslyPasteHTML(value)
 
                         let timeout: any;
                         let initial_change = true;

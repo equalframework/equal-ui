@@ -179,19 +179,37 @@
 
         _incrementTime: function(inst, targetClass, operator) {
             if (targetClass.endsWith('hours')) {
-                this.setHours(inst, eval(this.getHours(inst) + operator + '1'));
+                this.setHours(inst, this.getHours(inst) + (operator === '+' ? 1 : -1) );
             }
             else if (targetClass.endsWith('minutes')) {
-                this.setMinutes(inst, eval(this.getMinutes(inst) + operator + '1'));
+                this.setMinutes(inst, this.getMinutes(inst) + (operator === '+' ? 1 : -1));
             }
             else if (targetClass.endsWith('seconds')) {
-                this.setSeconds(inst, eval(this.getSeconds(inst) + operator + '1'));
+                this.setSeconds(inst, this.getSeconds(inst) + (operator === '+' ? 1 : -1));
             }
             else {
                 this.setMeridiem(inst);
             }
             this.setText(inst);
-            if(inst.input && inst.input.hasClass('hasDatepicker')) {
+
+		    const onSelect = this._get( inst, "onSelect" );
+		    if(typeof onSelect === 'function') {
+                const dateFormat = this._get(inst, "dateFormat") || "mm/dd/yy";
+                const timeFormat = this._get(inst, "timeFormat") || "hh:ii";
+                const date = this._getDateDatepicker(inst.input[0], true);
+                var dateStr = $.datepicker.formatDate(dateFormat, date, inst.settings);
+
+                const pad = n => String(n).padStart(2, '0');
+                const timeStr = timeFormat
+                    .replace(/hh/, pad(this.getHours(inst)))
+                    .replace(/ii/, pad(this.getMinutes(inst)))
+                    .replace(/ss/, pad(this.getSeconds(inst)))
+
+                dateStr += ' ' + timeStr.trim();
+                // trigger custom callback
+			    onSelect.apply( ( inst.input ? inst.input[ 0 ] : null ), [ dateStr, inst ] );
+            }
+            else if(inst.input) {
                 inst.input.change();
             }
         },
