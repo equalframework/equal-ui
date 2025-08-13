@@ -4,7 +4,6 @@ import { View, Layout } from "../equal-lib";
 import { UIHelper } from '../material-lib';
 
 import Quill from "quill";
-import QuillBetterTable from "quill-better-table";
 
 export default class WidgetText extends Widget {
 
@@ -76,7 +75,6 @@ export default class WidgetText extends Widget {
                         Quill.register(SizeStyle, true);
                         Quill.register(AlignStyle, true);
 
-                        Quill.register({'modules/better-table': QuillBetterTable}, true);
 
                         const Inline = Quill.import('blots/inline');
                         class SmallBlot extends Inline {
@@ -108,22 +106,8 @@ export default class WidgetText extends Widget {
                                         { 'color': ['#000000', '#e60000', '#ff9900', '#ffff00', '#008a00', '#0066cc', false] },
                                         { 'background': ['#fff59d', '#fd4444', '#a5d6a7', '#81d4fa', '#ffccbc', false] }
                                     ],
-                                    ['table'],
                                     ['fullscreen']
-                                ],
-                                'better-table': {
-                                    operationMenu: {
-                                        items: {
-                                            unmergeCells: {
-                                                text: 'Unmerge cells'
-                                            }
-                                        },
-                                        color: {
-                                            colors: ['#fff', 'red', 'green'],
-                                            text: 'Background Colors'
-                                        }
-                                    }
-                                }
+                                ]
                             }
                         });
 
@@ -204,7 +188,12 @@ export default class WidgetText extends Widget {
                 }
                 else {
                     this.$elem = $('<div class="sb-ui-textarea" />');
-                    this.$elem.append( $('<div class="textarea-content" />').html(value.replace(/(?:\r\n|\r|\n)/g, '<br />')) );
+                    // convert breaks to <br /> only if usage is text/plain
+                    let html_value = value;
+                    if(this.config.hasOwnProperty('usage') && this.config.usage.startsWith('text/plain') ) {
+                        html_value = value.replace(/(?:\r\n|\r|\n)/g, '<br />');
+                    }
+                    this.$elem.append( $('<div class="textarea-content" />').html(html_value) );
                     if(this.config.hasOwnProperty('height') && this.config.height > 0) {
                         this.$elem.css({height: this.config.height + 'px'});
                     }
