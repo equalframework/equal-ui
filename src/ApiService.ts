@@ -27,10 +27,28 @@ export class _ApiService {
 
     constructor() {
         $.ajaxSetup({
-            cache: true,            // allow browser to cache the responses
-            beforeSend: (xhr) => {
+            // let browser to handle responses cache
+            cache: true,
+            beforeSend: (xhr, settings) => {
+                const isMutation = /^(POST|PUT|PATCH|DELETE)$/i.test(settings.type || 'GET');
+
+                // #todo - not sure to limit the CSRF token to mutation requests
+
+                // inject CSRF token if present
+
+                const csrf_token = window.localStorage.getItem('csrf_token');
+                if(csrf_token) {
+                    xhr.setRequestHeader('X-CSRF-Token', csrf_token);
+                }
+
+                // for all requests, inject CSRF nonce if present
+                const csrf_nonce = window.localStorage.getItem('csrf_nonce');
+                if(csrf_nonce) {
+                    xhr.setRequestHeader('X-Nonce', csrf_nonce);
+                }
+
                 /*
-                // #removed for XSS protection (we use httpOnly cookie instead)
+                // #memo - we use httpOnly cookie
                 let access_token = this.getCookie('access_token');
                 if(access_token) {
                     xhr.setRequestHeader('Authorization', "Basic " + access_token);
@@ -112,7 +130,7 @@ export class _ApiService {
             this.views[package_name][class_name][view_id] = $.Deferred();
             EnvService.getEnv().then( (environment:any) => {
                 $.get({
-                    url: environment.backend_url+'?get=model_view&entity='+entity+'&view_id='+view_id
+                    url: environment.backend_url + '?get=model_view&entity='+entity+'&view_id='+view_id
                 })
                 .then( (json_data) => {
                     this.views[package_name][class_name][view_id].resolve(json_data);
