@@ -1,5 +1,6 @@
 import Widget from "./Widget";
 import { View, Layout } from "../equal-lib";
+import { UIHelper } from '../material-lib';
 import SignaturePad from "signature_pad";
 
 export default class WidgetSignature extends Widget {
@@ -39,7 +40,7 @@ export default class WidgetSignature extends Widget {
                         background: '#fff',
                     });
 
-                let $clearButton = $('<button type="button">Effacer</button>').css({ 'margin-top': '8px' });
+                let $clearButton = UIHelper.createButton('clear-button_' + this.id, 'Effacer', 'outlined').css({ 'margin-top': '8px' });
 
                 this.$elem.append($canvas, $clearButton);
 

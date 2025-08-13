@@ -219,16 +219,21 @@ class EventsListener {
         }
         this.frames[config.target].setActive(true);
 
-        await this.frames[config.target]._openContext(config);
-
-        // run callback of subscribers
-        if(this.subscribers.hasOwnProperty('open') && this.subscribers['open'].length && !this.mute) {
-            for(let callback of this.subscribers['open']) {
-                if( ({}).toString.call(callback) === '[object Function]' ) {
-                    callback(config);
+        try {
+            await this.frames[config.target]._openContext(config);
+            // run callback of subscribers
+            if(this.subscribers.hasOwnProperty('open') && this.subscribers['open'].length && !this.mute) {
+                for(let callback of this.subscribers['open']) {
+                    if( ({}).toString.call(callback) === '[object Function]' ) {
+                        callback(config);
+                    }
                 }
             }
         }
+        catch(error) {
+            // an error occurred while attempting to open context
+        }
+
     }
 
     /**

@@ -656,85 +656,90 @@ export class Frame {
 
         this.showLoader();
 
-        const environment = await EnvService.getEnv();
-        // extend default params with received config
-        config = {...{
-            entity:     '',
-            type:       'list',
-            name:       'default',
-            domain:     [],
-            mode:       'view',             // view, edit
-            purpose:    'view',             // view, select, add, create
-            lang:       environment.lang,
-            locale:     environment.locale,
-            callback:   null
-        }, ...config};
-
-        if(config.hasOwnProperty('display_mode')) {
-            this.display_mode = config.display_mode;
-        }
-
-        if(config.hasOwnProperty('close_button')) {
-            this.close_button = config.close_button;
-        }
-
-        // if there is a current context, use its lang for the new context
-        if(this.context.hasOwnProperty('$container')) {
-            config.lang = this.context.getLang();
-        }
-
-        // force consistency between mode and purpose
-        if(['create', 'update'].indexOf(config.purpose) > -1) {
-            config.mode = 'edit';
-        }
-
-        // create a draft object if required: Edition is based on asynchronous creation:
-        //   a draft is created (or recycled) and will be turned into an instance if 'update' action is triggered within view.
-        if(config.purpose == 'create') {
-            try {
-                console.debug('requesting draft object');
-                let defaults    = await this.getNewObjectDefaults(config.entity, config.domain);
-                let object      = await ApiService.create(config.entity, defaults);
-                config.domain   = [ ['id', '=', object.id] ];
-            }
-            catch(response) {
-                console.warn('unable to create object', response);
-                this.hideLoader();
-                throw response;
-            }
-        }
-
-        let context: Context = new Context(this, config.entity, config.type, config.name, config.domain, config.mode, config.purpose, config.lang, config.callback, config);
-
-        // stack current (previous) context
-        this.stack.push(this.context);
-
-        this.context = context;
-
-        // push new state to local history
-        // #memo - 'allow_history_change' is used to ignore calls resulting from popstate handler
-        this.pushState();
-
         try {
-            await this.context.isReady();
-            console.debug('context ready');
+            const environment = await EnvService.getEnv();
+            // extend default params with received config
+            config = {...{
+                entity:     '',
+                type:       'list',
+                name:       'default',
+                domain:     [],
+                mode:       'view',             // view, edit
+                purpose:    'view',             // view, select, add, create
+                lang:       environment.lang,
+                locale:     environment.locale,
+                callback:   null
+            }, ...config};
 
-            this.hideLoader();
+            if(config.hasOwnProperty('display_mode')) {
+                this.display_mode = config.display_mode;
+            }
 
-            for(let ctx of this.stack) {
-                if(ctx && typeof ctx.getContainer === 'function') {
-                    // containers are hidden and not detached in order to maintain the listeners
-                    ctx.getContainer().hide();
+            if(config.hasOwnProperty('close_button')) {
+                this.close_button = config.close_button;
+            }
+
+            // if there is a current context, use its lang for the new context
+            if(this.context.hasOwnProperty('$container')) {
+                config.lang = this.context.getLang();
+            }
+
+            // force consistency between mode and purpose
+            if(['create', 'update'].indexOf(config.purpose) > -1) {
+                config.mode = 'edit';
+            }
+
+            // create a draft object if required: Edition is based on asynchronous creation:
+            //   a draft is created (or recycled) and will be turned into an instance if 'update' action is triggered within view.
+            if(config.purpose == 'create') {
+                try {
+                    console.debug('requesting draft object');
+                    let defaults    = await this.getNewObjectDefaults(config.entity, config.domain);
+                    let object      = await ApiService.create(config.entity, defaults);
+                    config.domain   = [ ['id', '=', object.id] ];
+                }
+                catch(response) {
+                    console.warn('unable to create object', response);
+                    throw response;
                 }
             }
-            $(this.domContainerSelector).append(this.context.getContainer());
-            // relay event to the outside
-            $(this.domContainerSelector).show().trigger('_open', [{context: config}]);
-            this.updateHeader(config);
+
+            let context: Context = new Context(this, config.entity, config.type, config.name, config.domain, config.mode, config.purpose, config.lang, config.callback, config);
+
+            // stack current (previous) context
+            this.stack.push(this.context);
+
+            this.context = context;
+
+            // push new state to local history
+            // #memo - 'allow_history_change' is used to ignore calls resulting from popstate handler
+            this.pushState();
+
+            try {
+                await this.context.isReady();
+                console.debug('context ready');
+
+                for(let ctx of this.stack) {
+                    if(ctx && typeof ctx.getContainer === 'function') {
+                        // containers are hidden and not detached in order to maintain the listeners
+                        ctx.getContainer().hide();
+                    }
+                }
+                $(this.domContainerSelector).append(this.context.getContainer());
+                // relay event to the outside
+                $(this.domContainerSelector).show().trigger('_open', [{context: config}]);
+                this.updateHeader(config);
+            }
+            catch(error) {
+                console.warn('unexpected error while waiting for context readiness', error);
+                throw error;
+            }
         }
         catch(error) {
             console.warn('unexpected error', error);
         }
+
+        this.hideLoader();
     }
 
     public async closeAll() {

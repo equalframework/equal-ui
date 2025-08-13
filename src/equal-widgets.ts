@@ -19,6 +19,7 @@ import WidgetLabel from "./widgets/WidgetLabel";
 import WidgetPdf from "./widgets/WidgetPdf";
 import WidgetUpload from "./widgets/WidgetUpload";
 import WidgetSignature from "./widgets/WidgetSignature";
+import WidgetSignaturePkcs from "./widgets/WidgetSignaturePkcs";
 
 import { View, Layout } from "./equal-lib";
 
@@ -77,9 +78,14 @@ class WidgetFactory {
                 return new WidgetFloat(layout, label, value, config);
             case 'link':
                 return new WidgetLink(layout, label, value, config);
-            case 'binary':
-                // #deprecated - `file` shouldn't be used as type
+
+            // #temp - tests
+            case 'signature':
+                return new WidgetSignaturePkcs(layout, label, value, config);
+
+            // #deprecated - `file` shouldn't be used as type - use `binary`
             case 'file':
+            case 'binary':
                 if(config.hasOwnProperty('usage') && config.usage.substring(0, 5) == 'image') {
                     if(config.usage.includes('.signature')) {
                         return new WidgetSignature(layout, label, value, config);
@@ -281,7 +287,7 @@ class WidgetFactory {
         config.locale = view.getLocale();
 
         // #todo - this appears to be done too late and prevents forcing the usage in the views (see workaround above)
-        // (previsouly assigned type, based on usage is therefore subjet to change)
+        // (previously assigned type, based on usage is therefore subject to change)
         if(item.hasOwnProperty('widget')) {
             // overload config with widget config, if any
             config = {...config, ...item.widget};

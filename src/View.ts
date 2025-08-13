@@ -334,7 +334,7 @@ export class View {
             if(!Object.keys(view).length) {
                 // #memo - fallback to default view is performed in the back-end
                 console.warn("no result for " + this.entity + "." + this.type + "." + this.name + ", stop processing");
-                return;
+                throw new Error('unable to retrieve specified view: ' + this.entity + "." + this.type + "." + this.name);
             }
             this.view_schema = this.deepCopy(view);
 

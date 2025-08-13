@@ -28,34 +28,6 @@ export default class WidgetMany2One extends Widget {
         let $button_create = UIHelper.createButton('m2o-actions-create-'+this.id, '', 'icon', 'add');
 
 
-// #todo - add support for button_action (when config.component is set
-/*
-expected structure is as follow :
-	"component": {
-		"name": "createOwner",
-		"data": {
-			"condo_id": "object.condo_id",
-			"ownership_id": "object.id",
-		}
-	}
--> we must
-    - disable other buttons
-    - inject values in relayed data (using config.object)
-    - add a callback for receiving result
-
-    Example of component invocation:
-            window.dispatchEvent(new CustomEvent('App:open-component', {
-                detail: {
-                    component: 'createOwner', // name registered in components registry
-                    data: {
-                        ...
-                    },
-                    onSuccess: () => console.log('Success callback'),
-                    onError: () => console.error('Error callback'),
-                }
-            }));
-*/
-
         switch(this.mode) {
 
             case 'edit':
@@ -152,63 +124,148 @@ expected structure is as follow :
                     // open creation form in new context
                     $button_create.on('click', async () => {
                         console.debug('WidgetMany2one:: received click on button create', this.config);
-                        let view_type = 'form';
-                        let view_name = (this.config.hasOwnProperty('view_name')) ? this.config.view_name : 'default';
-                        let domain: any = [];
-                        if(this.config.hasOwnProperty('domain')) {
-                            domain = this.config.domain;
-                        }
-                        let contextDomain = new Domain(domain);
-                        let value: string = <string> $select.find('input').val();
-                        if(value.length > 0) {
-                            contextDomain.merge(new Domain(['name', '=', value]));
-                        }
-                        if(this.config.hasOwnProperty('header')) {
-                            if(this.config.header.hasOwnProperty('actions') && this.config.header.actions.hasOwnProperty('ACTION.CREATE') ) {
-                                if(this.config.header.actions['ACTION.CREATE'] && Array.isArray(this.config.header.actions['ACTION.CREATE'])) {
-                                    let action: any = this.config.header.actions['ACTION.CREATE'][0];
-                                    if(action.hasOwnProperty('domain')) {
-                                        let tmpDomain = new Domain(action.domain);
-                                        tmpDomain.parse(this.config?.object ?? {}, this.getLayout().getView().getUser(), {}, this.getLayout().getEnv());
-                                        contextDomain.merge(new Domain(tmpDomain.toArray()));
-                                    }
-                                    if(action.hasOwnProperty('view')) {
-                                        let parts = action.view.split('.');
-                                        if(parts.length) {
-                                            view_type = <string> parts.shift();
+
+                        /*
+                            Expected structure is as follow :
+                            "component": {
+                                "name": "createOwner",
+                                "data": {
+                                    "condo_id": "object.condo_id",
+                                    "ownership_id": "object.id",
+                                }
+                            }
+
+                            Example of component invocation:
+                                    window.dispatchEvent(new CustomEvent('App:open-component', {
+                                        detail: {
+                                            component: 'createOwner', // name registered in components registry
+                                            data: {
+                                                ...
+                                            },
+                                            onSuccess: () => console.log('Success callback'),
+                                            onError: () => console.error('Error callback'),
                                         }
-                                        if(parts.length) {
-                                            view_name = <string> parts.shift();
+                                    }));
+                        */
+
+                        // a) A dedicated component if referenced
+                        if(this.config.hasOwnProperty('component')) {
+                            let data = {...this.config.component?.data};
+
+                            // inject data & interpolate with object if provided
+                            if(this.config.object) {
+                                Object.keys(data).forEach((key) => {
+                                    const val = data[key];
+                                    if(typeof val === 'string' && val.includes('object.')) {
+                                        // Replace the value with the direct reference if it's "object.x", otherwise keep the original value
+                                        const objectFieldMatch = /^object\.([a-zA-Z0-9_]+)$/.exec(val);
+                                        if(objectFieldMatch) {
+                                            const field = objectFieldMatch[1];
+                                            const target = (this.config.object && this.config.object.hasOwnProperty(field)) ? this.config.object[field] : null;
+                                            if(target && typeof target === 'object' && target.hasOwnProperty('id')) {
+                                                data[key] = target.id;
+                                            }
+                                            else if(target !== null && target !== undefined) {
+                                                data[key] = target;
+                                            }
+                                            else {
+                                                data[key] = val;
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+
+                            const handleError = (err: any) => {
+                                console.log('call to component returned as cancelled (or error)');
+                            };
+
+                            const handleSuccess = (data: any) => {
+                                if(data && data.selection && data.objects && data.selection.length) {
+                                    $button_create.hide();
+                                    $button_open.show();
+                                    // m2o relations are always loaded as an object with {id:, name:}
+                                    let object = data.objects.find( (o:any) => o.id == data.selection[0] );
+                                    this.value = {id: object.id, name: object.name};
+                                    // update widget displayed value in case it is not part of a view (e.g. filters)
+                                    $select.find('input').val(object.name).trigger('change');
+                                    this.$elem.trigger('_updatedWidget');
+                                }
+                            };
+
+                            // dispatcher event (to be handled by target app `App`)
+                            window.dispatchEvent(
+                                new CustomEvent('App:open-component', {
+                                    detail: {
+                                        component: this.config.component.name,
+                                        data: data,
+                                        onSuccess: (res: any) => handleSuccess(res),
+                                        onError: (err: any) => handleError(err)
+                                    }
+                                })
+                            );
+
+                        }
+                        // b) use ORM for new object creation
+                        else {
+                            let view_type = 'form';
+                            let view_name = (this.config.hasOwnProperty('view_name')) ? this.config.view_name : 'default';
+                            let domain: any = [];
+                            if(this.config.hasOwnProperty('domain')) {
+                                domain = this.config.domain;
+                            }
+                            let contextDomain = new Domain(domain);
+                            let value: string = <string> $select.find('input').val();
+                            if(value.length > 0) {
+                                contextDomain.merge(new Domain(['name', '=', value]));
+                            }
+                            if(this.config.hasOwnProperty('header')) {
+                                if(this.config.header.hasOwnProperty('actions') && this.config.header.actions.hasOwnProperty('ACTION.CREATE') ) {
+                                    if(this.config.header.actions['ACTION.CREATE'] && Array.isArray(this.config.header.actions['ACTION.CREATE'])) {
+                                        let action: any = this.config.header.actions['ACTION.CREATE'][0];
+                                        if(action.hasOwnProperty('domain')) {
+                                            let tmpDomain = new Domain(action.domain);
+                                            tmpDomain.parse(this.config?.object ?? {}, this.getLayout().getView().getUser(), {}, this.getLayout().getEnv());
+                                            contextDomain.merge(new Domain(tmpDomain.toArray()));
+                                        }
+                                        if(action.hasOwnProperty('view')) {
+                                            let parts = action.view.split('.');
+                                            if(parts.length) {
+                                                view_type = <string> parts.shift();
+                                            }
+                                            if(parts.length) {
+                                                view_name = <string> parts.shift();
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                        try {
-                            await this.getLayout().openContext({
-                                entity: this.config.foreign_object,
-                                type: view_type,
-                                mode: 'edit',
-                                purpose: 'create',
-                                domain: contextDomain.toArray(),
-                                name: view_name,
-                                callback: (data:any) => {
-                                    if(data && data.selection && data.objects && data.selection.length) {
-                                        $button_create.hide();
-                                        $button_open.show();
-                                        // m2o relations are always loaded as an object with {id:, name:}
-                                        let object = data.objects.find( (o:any) => o.id == data.selection[0] );
-                                        this.value = {id: object.id, name: object.name};
-                                        // update widget displayed value in case it is not part of a view (e.g. filters)
-                                        $select.find('input').val(object.name).trigger('change');
-                                        this.$elem.trigger('_updatedWidget');
+                            try {
+                                await this.getLayout().openContext({
+                                    entity: this.config.foreign_object,
+                                    type: view_type,
+                                    mode: 'edit',
+                                    purpose: 'create',
+                                    domain: contextDomain.toArray(),
+                                    name: view_name,
+                                    callback: (data:any) => {
+                                        if(data && data.selection && data.objects && data.selection.length) {
+                                            $button_create.hide();
+                                            $button_open.show();
+                                            // m2o relations are always loaded as an object with {id:, name:}
+                                            let object = data.objects.find( (o:any) => o.id == data.selection[0] );
+                                            this.value = {id: object.id, name: object.name};
+                                            // update widget displayed value in case it is not part of a view (e.g. filters)
+                                            $select.find('input').val(object.name).trigger('change');
+                                            this.$elem.trigger('_updatedWidget');
+                                        }
                                     }
-                                }
-                            });
-                        }
-                        catch(response) {
-                            console.warn('request failed', response);
-                            this.getLayout().getView().displayErrorFeedback(this.getLayout().getView().getTranslation(), response);
+                                });
+                            }
+                            catch(response) {
+                                console.warn('request failed', response);
+                                this.getLayout().getView().displayErrorFeedback(this.getLayout().getView().getTranslation(), response);
+                            }
                         }
                     });
                 }

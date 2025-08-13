@@ -458,6 +458,9 @@ export class LayoutForm extends Layout {
                         }
 
                         if(type == 'many2one') {
+                            // for m2o, in some cases, we need the reference to the current object (refs in header domain)
+                            config.object = object;
+
                             if(object[field]) {
                                 // by convention, `name` subfield is always loaded for relational fields
                                 value = object[field]['name'];
@@ -465,14 +468,12 @@ export class LayoutForm extends Layout {
                                 if(typeof value === 'string' && value.trim() === '') {
                                     value = String(object[field]['id']);
                                 }
+                                // #todo - improve distinction of target for object_id between m2m & m2o
                                 config.object_id = object[field]['id'];
-                                // in some cases, we need the reference to the current object (refs in header domain)
-                                config.object = object;
                             }
                             // config.object_id might have been modified by selection : remove it if not present or empty
                             else if(config.hasOwnProperty('object_id')) {
                                 delete config.object_id;
-                                config.object = null;
                             }
                         }
                         else if(type == 'many2many' || type == 'one2many') {
