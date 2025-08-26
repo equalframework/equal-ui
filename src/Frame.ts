@@ -470,7 +470,8 @@ export class Frame {
         // lang selector controls the current context and is used for opening subsequent contexts
         const environment = await EnvService.getEnv();
 
-        let lang = environment.lang;
+        // #todo - add support for lang with locale (format xx_XX)
+        let lang = environment.lang.slice(0, 2);
 
         // if there is a current context, use its lang
         if(this.context.hasOwnProperty('$container')) {
