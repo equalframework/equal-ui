@@ -3054,7 +3054,7 @@ export class View {
                     content_type = response_descr['content-type'];
                 }
 
-                const result = await ApiService.fetch("/", {do: action.controller, ...params}, content_type);
+                const result = await ApiService.call("/", {do: action.controller, ...params}, content_type);
 
                 const status = ApiService.getLastStatus();
                 const headers = ApiService.getLastHeaders();
