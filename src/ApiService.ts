@@ -483,7 +483,7 @@ export class _ApiService {
                 entity: entity,
                 ids: ids,
                 fields: fields,
-                lang: (lang.length)?lang:environment.lang,
+                lang: (lang.length) ? lang : environment.lang,
                 force: force
             };
             const response = await $.post({
