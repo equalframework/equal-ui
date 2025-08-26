@@ -24,8 +24,8 @@ export default class WidgetMany2One extends Widget {
         // #todo : display many2one as sub-forms
 
         // on right side of widget, add an icon to open the target object (current selection) into a new context
-        let $button_open = UIHelper.createButton('m2o-actions-open-'+this.id, '', 'icon', 'open_in_new');
-        let $button_create = UIHelper.createButton('m2o-actions-create-'+this.id, '', 'icon', 'add');
+        let $button_open = UIHelper.createButton('m2o-actions-open-' + this.id, '', 'icon', 'open_in_new');
+        let $button_create = UIHelper.createButton('m2o-actions-create-' + this.id, '', 'icon', 'add');
 
 
         switch(this.mode) {
@@ -34,7 +34,7 @@ export default class WidgetMany2One extends Widget {
                 let objects: Array<any> = [];
                 this.$elem = $('<div />');
 
-                let $button_reset = UIHelper.createButton('m2o-actions-reset-'+this.id, '', 'icon', 'close').css({"position": "absolute", "right": "45px", "top": "5px", "z-index": "1"}).hide();
+                let $button_reset = UIHelper.createButton('m2o-actions-reset-' + this.id, '', 'icon', 'close').css({"position": "absolute", "right": "45px", "top": "5px", "z-index": "1"}).hide();
 
                 let $select = UIHelper.createInput('m2o-input-' + this.id, this.label, value, this.config.description, '', this.readonly)
                     .addClass('mdc-menu-surface--anchor')
@@ -94,13 +94,15 @@ export default class WidgetMany2One extends Widget {
                     }
                     // open targeted object in new context
                     $button_open.on('click', async () => {
-                        if(this.config.hasOwnProperty('object_id')) {
+                        const object_id = parseInt($select.attr('data-selected') ?? '0');
+                        console.debug('WidgetMany2one: received open request for object', object_id);
+                        if(object_id > 0) {
                             await this.getLayout().openContext({
                                 entity: this.config.foreign_object,
                                 type: view_type,
                                 mode: 'edit',
                                 name: view_name,
-                                domain: ['id', '=', this.config.object_id],
+                                domain: ['id', '=', object_id],
                                 callback: (data:any) => {
                                     if(data && data.selection && data.objects && data.selection.length) {
                                         // we should have received a single (partial) object with up-to-date name and id
@@ -148,7 +150,7 @@ export default class WidgetMany2One extends Widget {
                                     }));
                         */
 
-                        // a) A dedicated component if referenced
+                        // a) reference to a dedicated component is present
                         if(this.config.hasOwnProperty('component')) {
                             let data = {...this.config.component?.data};
 
@@ -364,7 +366,7 @@ export default class WidgetMany2One extends Widget {
                                     .attr('id', object.id)
                                     // #memo - a handler is set on item click as well in the menu
                                     .on('click', (event) => {
-                                        console.log('WidgetMany2one: received click on item', object.id);
+                                        console.debug('WidgetMany2one: received click on item', object.id);
                                         $select.attr('data-selected', object.id);
                                         $input.val(object.name).trigger('change');
                                         $button_reset.show();
