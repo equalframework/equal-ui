@@ -67,28 +67,6 @@ export default class WidgetSignaturePkcs extends Widget {
                 let $signButton = UIHelper.createButton('sign-button_' + this.id, 'Sign', 'outlined').css({ 'margin-top': '8px' });
                 this.$elem.append($signButton);
 
-                const supportedSignatureAlgorithms = [
-                    {
-                        "cryptoAlgorithm":"ECC",
-                        "hashFunction":"SHA-224",
-                        "paddingScheme":"NONE"
-                    },
-                    {
-                        "cryptoAlgorithm":"ECC",
-                        "hashFunction":"SHA-256",
-                        "paddingScheme":"NONE"
-                    },
-                    {
-                        "cryptoAlgorithm":"ECC",
-                        "hashFunction":"SHA-384",
-                        "paddingScheme":"NONE"
-                    },
-                    {
-                        "cryptoAlgorithm":"ECC",
-                        "hashFunction":"SHA-512",
-                        "paddingScheme":"NONE"
-                    }
-                ];
                 $signButton.on('click', async () => {
 
                         // Liste des algorithmes supportés côté système (application)
