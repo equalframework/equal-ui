@@ -98,7 +98,7 @@ export class _ApiService {
 
             EnvService.getEnv().then( (environment:any) => {
                 $.get({
-                    url: environment.backend_url+'?get=model_schema&entity=' + entity + '&domain=' + JSON.stringify(domain)
+                    url: environment.backend_url + '?get=model_schema&entity=' + entity + '&domain=' + JSON.stringify(domain)
                 })
                 .then( (json_data) => {
                     this.schemas[package_name][class_name].resolve(json_data);
@@ -167,7 +167,7 @@ export class _ApiService {
             EnvService.getEnv().then( (environment:any) => {
                 // #todo change to ?get=translation (requires equal2.0)
                 $.get({
-                    url: environment.backend_url+'?get=config_i18n&entity='+entity+'&lang='+lang
+                    url: environment.backend_url + '?get=config_i18n&entity='+entity+'&lang='+lang
                 })
                 .then( (json_data) => {
                     this.translations[package_name][class_name][lang].resolve(json_data);
@@ -306,7 +306,7 @@ export class _ApiService {
         });
     }
 
-    public call(route:string, body:any = {}, content_type:string = 'application/json') {
+    public call(route:string, body:any = {}, content_type: string = 'application/json') {
         return new Promise<any>( async (resolve, reject) => {
             try {
                 const environment = await EnvService.getEnv();
@@ -341,6 +341,9 @@ export class _ApiService {
                         reject(xhr.response)
                     }
                     else {
+                        if(xhr.getResponseHeader('X-Total-Count')) {
+                            this.last_count = parseInt( <string> xhr.getResponseHeader('X-Total-Count') );
+                        }
                         resolve(xhr.response);
                     }
                 };
@@ -363,7 +366,7 @@ export class _ApiService {
             };
 
             const response = await $.get({
-                url: environment.backend_url+'?do=model_create',
+                url: environment.backend_url + '?do=model_create',
                 dataType: 'json',
                 data: params,
                 contentType: 'application/x-www-form-urlencoded; charset=utf-8'
@@ -393,7 +396,7 @@ export class _ApiService {
                 lang: (lang.length)?lang:environment.lang
             };
             const response = await $.get({
-                url: environment.backend_url+'?get=model_read',
+                url: environment.backend_url + '?get=model_read',
                 dataType: 'json',
                 data: params,
                 contentType: 'application/x-www-form-urlencoded; charset=utf-8'
@@ -416,7 +419,7 @@ export class _ApiService {
                     permanent: permanent
                 };
             const response = await $.get({
-                    url: environment.backend_url+'?do=model_delete',
+                    url: environment.backend_url + '?do=model_delete',
                     dataType: 'json',
                     data: params,
                     contentType: 'application/x-www-form-urlencoded; charset=utf-8'
@@ -444,7 +447,7 @@ export class _ApiService {
                 ids: ids
             };
             const response = await $.get({
-                url: environment.backend_url+'?do=model_archive',
+                url: environment.backend_url + '?do=model_archive',
                 dataType: 'json',
                 data: params,
                 contentType: 'application/x-www-form-urlencoded; charset=utf-8'
@@ -484,7 +487,7 @@ export class _ApiService {
                 force: force
             };
             const response = await $.post({
-                url: environment.backend_url+'?do=model_update',
+                url: environment.backend_url + '?do=model_update',
                 dataType: 'json',
                 data: params,
                 contentType: 'application/x-www-form-urlencoded; charset=utf-8'
@@ -513,7 +516,7 @@ export class _ApiService {
                 lang: environment.lang
             };
             const response = await $.get({
-                url: environment.backend_url+'?do=model_clone',
+                url: environment.backend_url + '?do=model_clone',
                 dataType: 'json',
                 data: params,
                 contentType: 'application/x-www-form-urlencoded; charset=utf-8'
@@ -561,7 +564,7 @@ export class _ApiService {
                 limit: limit
             };
             const response = await $.get({
-                    url: environment.backend_url+'?get=model_collect',
+                    url: environment.backend_url + '?get=model_collect',
                     dataType: 'json',
                     data: params,
                     contentType: 'application/x-www-form-urlencoded; charset=utf-8'
@@ -601,7 +604,7 @@ export class _ApiService {
                 limit: limit
             };
             const response = await $.get({
-                url: environment.backend_url+'?get=model_search',
+                url: environment.backend_url + '?get=model_search',
                 dataType: 'json',
                 data: params,
                 contentType: 'application/x-www-form-urlencoded; charset=utf-8'
