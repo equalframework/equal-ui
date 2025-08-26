@@ -146,6 +146,7 @@ export default class WidgetDate extends Widget {
                         let $this = $(event.currentTarget);
                         let date_str: string = <string> $this.val();
                         let moment_format = this.jqueryToMomentFormat(datepickerConfig.dateFormat);
+                        date_str = this.autoFormatDateInput(date_str, moment_format);
                         console.debug('WidgetDate::input:change', event, date_str);
 
                         if(this.isValidStringDate(date_str, moment_format)) {
@@ -263,6 +264,22 @@ export default class WidgetDate extends Widget {
             .attr('data-type', this.config.type)
             .attr('data-field', this.config.field)
             .attr('data-usage', this.config.usage||'');
+    }
+
+    private autoFormatDateInput(date_str: string, moment_format: string): string {
+        const digits = date_str.replace(/\D/g, '');
+        const parts = moment_format.split(/[^A-Za-z]/);
+        const sep = moment_format.match(/[^A-Za-z]/)?.[0];
+
+        if(!sep || parts.length < 2) {
+            return digits;
+        }
+
+        let i = 0;
+        return parts
+            .map(p => digits.slice(i, i += p.length))
+            .filter(Boolean)
+            .join(sep);
     }
 
 }
