@@ -280,164 +280,228 @@ export class Layout implements LayoutInterface{
                 return;
             }
 
-            try {
-                let resulting_params: any = {};
-                let missing_params: any = {};
-                let user = this.view.getUser();
-                let parent: any = {};
+            // a) reference to a dedicated component is present
+            if(action.hasOwnProperty('component')) {
+                let data = {...action.component?.data};
 
-                // 1) pre-feed with params from the action, if any
-
-                if(!action.hasOwnProperty('params')) {
-                    action['params'] = {};
+                let $action_button = $button;
+                if($button.prop('nodeName') != 'BUTTON') {
+                    $action_button = $button.closest('.mdc-menu-surface--anchor').find('.mdc-button');
                 }
+                $disable_overlay.show();
+                $action_button.addClass('mdc-button--spinner');
 
-                // inject params of current view as (sub) params
-                action.params['params'] = this.getView().getParams();
-
-                // by convention, add current object id as reference
-                if(object.hasOwnProperty('id') && !action.params.hasOwnProperty('id')) {
-                    action.params['id'] = 'object.id';
-                }
-                // if there is no `id`, add the domain of the current view, if any
-                else {
-                    action.params['domain'] = JSON.stringify(this.view.getDomain());
-                }
-
-                // if view is a widget, add parent object reference
-                if(this.view.getContext().getView() != this.view) {
-                    let parentView:View = this.view.getContext().getView();
-                    let parent_objects = await parentView.getModel().get();
-                    parent = parent_objects[0];
-                }
-
-                for(let param of Object.keys(action.params)) {
-                    let ref = new Reference(action.params[param]);
-                    resulting_params[param] = ref.parse(object, user);
-                }
-
-                // 2) retrieve announcement from the target action controller
-                const result = await ApiService.fetch("/", {do: action.controller, announce: true, ...resulting_params});
-                let params: any = {};
-                let response_descr:any = {};
-                let description:string = '';
-
-                if(result.hasOwnProperty('announcement')) {
-                    if(result.announcement.hasOwnProperty('params')) {
-                        params = result.announcement.params;
-                    }
-                    for(let param of Object.keys(params)) {
-                        if(Object.keys(resulting_params).indexOf(param) < 0) {
-                            if(params[param].hasOwnProperty('required') && params[param].required) {
-                                missing_params[param] = params[param];
+                // inject data & interpolate with object if provided
+                Object.keys(data).forEach((key) => {
+                    const val = data[key];
+                    if(typeof val === 'string' && val.includes('object.')) {
+                        // Replace the value with the direct reference if it's "object.x", otherwise keep the original value
+                        const objectFieldMatch = /^object\.([a-zA-Z0-9_]+)$/.exec(val);
+                        if(objectFieldMatch) {
+                            const field = objectFieldMatch[1];
+                            const target = (object && object.hasOwnProperty(field)) ? object[field] : null;
+                            if(target && typeof target === 'object' && target.hasOwnProperty('id')) {
+                                data[key] = target.id;
                             }
-                            else if(action.hasOwnProperty('confirm') && action.confirm) {
-                                missing_params[param] = params[param];
+                            else if(target !== null && target !== undefined) {
+                                data[key] = target;
+                            }
+                            else {
+                                data[key] = val;
                             }
                         }
                     }
-                    if(result.announcement.hasOwnProperty('response')) {
-                        response_descr = result.announcement.response;
-                    }
-                    if(result.announcement.hasOwnProperty('description')) {
-                        description = result.announcement.description;
-                    }
-                }
+                });
 
-                // 3) retrieve translation related to action, if any
-                let translation = await ApiService.getTranslation(action.controller.replaceAll('_', '\\'));
-
-                // check presence of description and fallback to controller description
-                if(action.hasOwnProperty('description')) {
-                    description = action.description;
-                }
-
-                let translated_description = TranslationService.resolve(translation, '', [], '', description, 'description');
-                // no translation was found for controller
-                if(translated_description == description) {
-                    // fallback to current view translation
-                    description = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, description, 'description');
-                }
-                else {
-                    description = translated_description;
-                }
-
-                let defer = $.Deferred();
-                let $description = $('<p />').html(description.replace(/\n/g, "<br />"));
-
-                if(action.hasOwnProperty('confirm') && action.confirm) {
-                    // params dialog
-                    if(Object.keys(missing_params).length) {
-                        let $dialog = UIHelper.createDialog(this.view.getUuid()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
-                        $dialog.find('.mdc-dialog__content').append($description);
-                        await this.view.decorateActionDialog($dialog, action, missing_params, object, user, parent);
-                        $dialog.addClass('sb-view-dialog').appendTo(this.view.getContainer());
-                        $dialog
-                            .on('_accept', () => defer.resolve($dialog.data('result')))
-                            .on('_reject', () => defer.reject() );
-                        $dialog.trigger('Dialog:_open');
-                    }
-                    // confirm dialog
-                    else {
-                        // display confirmation dialog with checkbox for archive
-                        let $dialog = UIHelper.createDialog(this.view.getUuid()+'_'+action.id+'_confirm-action-dialog', TranslationService.instant('SB_ACTIONS_CONFIRM'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
-                        $dialog.find('.mdc-dialog__content').append($description);
-                        $dialog.appendTo(this.view.getContainer());
-                        $dialog
-                            .on('_accept', () => defer.resolve())
-                            .on('_reject', () => defer.reject() );
-                        $dialog.trigger('Dialog:_open');
-                    }
-                }
-                else {
-                    // params dialog
-                    if(Object.keys(missing_params).length) {
-                        let $dialog = UIHelper.createDialog(this.view.getUuid()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
-                        $dialog.find('.mdc-dialog__content').append($description);
-                        await this.view.decorateActionDialog($dialog, action, missing_params, object, user, parent);
-                        $dialog.addClass('sb-view-dialog').appendTo(this.view.getContainer());
-                        $dialog
-                            .on('_accept', () => defer.resolve($dialog.data('result')))
-                            .on('_reject', () => defer.reject() );
-                        $dialog.trigger('Dialog:_open');
-                    }
-                    // perform action
-                    else {
-                        defer.resolve();
-                    }
-                }
-
-                defer.promise().then( async (result:any) => {
-                    // mark action button as loading
-                    let $action_button = $button;
-                    if($button.prop('nodeName') != 'BUTTON') {
-                        $action_button = $button.closest('.mdc-menu-surface--anchor').find('.mdc-button');
-                    }
-                    $disable_overlay.show();
-                    $action_button.addClass('mdc-button--spinner');
-                    try {
-                        await this.view.performAction(action, {...resulting_params, ...result}, response_descr);
-                    }
-                    catch(response) {
-                        console.debug('unexpected error while performing action', response);
-                    }
-                    // restore action button
+                const handleError = (err: any) => {
+                    console.log('call to component returned as cancelled (or error)');
                     $action_button.removeClass('mdc-button--spinner');
                     setTimeout( () => $disable_overlay.hide(), 1000);
-                })
-                .catch( () => {
-                    $button.closest('button').removeClass('mdc-button--spinner');
+                };
+
+                const handleSuccess = (data: any) => {
+                    /*
+                    if(data) {
+                        // #todo - refresh view if requested
+                    }
+                    */
+                    $action_button.removeClass('mdc-button--spinner');
                     setTimeout( () => $disable_overlay.hide(), 1000);
-                });
+                };
+
+                // dispatcher event (to be handled by target app `App`)
+                window.dispatchEvent(
+                    new CustomEvent('App:open-component', {
+                        detail: {
+                            component: action.component.name,
+                            data: data,
+                            onSuccess: (res: any) => handleSuccess(res),
+                            onError: (err: any) => handleError(err)
+                        }
+                    })
+                );
             }
-            catch(response) {
-                console.warn('unknown error', response);
-                // make sure to restore action button
-                setTimeout( () => {
-                        $disable_overlay.hide();
+            // b) invoke controller referenced in action
+            else {
+                try {
+                    let resulting_params: any = {};
+                    let missing_params: any = {};
+                    let user = this.view.getUser();
+                    let parent: any = {};
+
+                    // 1) pre-feed with params from the action, if any
+
+                    if(!action.hasOwnProperty('params')) {
+                        action['params'] = {};
+                    }
+
+                    // inject params of current view as (sub) params
+                    action.params['params'] = this.getView().getParams();
+
+                    // by convention, add current object id as reference
+                    if(object.hasOwnProperty('id') && !action.params.hasOwnProperty('id')) {
+                        action.params['id'] = 'object.id';
+                    }
+                    // if there is no `id`, add the domain of the current view, if any
+                    else {
+                        action.params['domain'] = JSON.stringify(this.view.getDomain());
+                    }
+
+                    // if view is a widget, add parent object reference
+                    if(this.view.getContext().getView() != this.view) {
+                        let parentView: View = this.view.getContext().getView();
+                        let parent_objects = await parentView.getModel().get();
+                        parent = parent_objects[0];
+                    }
+
+                    for(let param of Object.keys(action.params)) {
+                        let ref = new Reference(action.params[param]);
+                        resulting_params[param] = ref.parse(object, user);
+                    }
+
+                    // 2) retrieve announcement from the target action controller
+                    const result = await ApiService.fetch("/", {do: action.controller, announce: true, ...resulting_params});
+                    let params: any = {};
+                    let response_descr:any = {};
+                    let description:string = '';
+
+                    if(result.hasOwnProperty('announcement')) {
+                        if(result.announcement.hasOwnProperty('params')) {
+                            params = result.announcement.params;
+                        }
+                        for(let param of Object.keys(params)) {
+                            if(Object.keys(resulting_params).indexOf(param) < 0) {
+                                if(params[param].hasOwnProperty('required') && params[param].required) {
+                                    missing_params[param] = params[param];
+                                }
+                                else if(action.hasOwnProperty('confirm') && action.confirm) {
+                                    missing_params[param] = params[param];
+                                }
+                            }
+                        }
+                        if(result.announcement.hasOwnProperty('response')) {
+                            response_descr = result.announcement.response;
+                        }
+                        if(result.announcement.hasOwnProperty('description')) {
+                            description = result.announcement.description;
+                        }
+                    }
+
+                    // 3) retrieve translation related to action, if any
+                    let translation = await ApiService.getTranslation(action.controller.replaceAll('_', '\\'));
+
+                    // check presence of description and fallback to controller description
+                    if(action.hasOwnProperty('description')) {
+                        description = action.description;
+                    }
+
+                    let translated_description = TranslationService.resolve(translation, '', [], '', description, 'description');
+                    // no translation was found for controller
+                    if(translated_description == description) {
+                        // fallback to current view translation
+                        description = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, description, 'description');
+                    }
+                    else {
+                        description = translated_description;
+                    }
+
+                    let defer = $.Deferred();
+                    let $description = $('<p />').html(description.replace(/\n/g, "<br />"));
+
+                    if(action.hasOwnProperty('confirm') && action.confirm) {
+                        // params dialog
+                        if(Object.keys(missing_params).length) {
+                            let $dialog = UIHelper.createDialog(this.view.getUuid()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
+                            $dialog.find('.mdc-dialog__content').append($description);
+                            await this.view.decorateActionDialog($dialog, action, missing_params, object, user, parent);
+                            $dialog.addClass('sb-view-dialog').appendTo(this.view.getContainer());
+                            $dialog
+                                .on('_accept', () => defer.resolve($dialog.data('result')))
+                                .on('_reject', () => defer.reject() );
+                            $dialog.trigger('Dialog:_open');
+                        }
+                        // confirm dialog
+                        else {
+                            // display confirmation dialog with checkbox for archive
+                            let $dialog = UIHelper.createDialog(this.view.getUuid()+'_'+action.id+'_confirm-action-dialog', TranslationService.instant('SB_ACTIONS_CONFIRM'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
+                            $dialog.find('.mdc-dialog__content').append($description);
+                            $dialog.appendTo(this.view.getContainer());
+                            $dialog
+                                .on('_accept', () => defer.resolve())
+                                .on('_reject', () => defer.reject() );
+                            $dialog.trigger('Dialog:_open');
+                        }
+                    }
+                    else {
+                        // params dialog
+                        if(Object.keys(missing_params).length) {
+                            let $dialog = UIHelper.createDialog(this.view.getUuid()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
+                            $dialog.find('.mdc-dialog__content').append($description);
+                            await this.view.decorateActionDialog($dialog, action, missing_params, object, user, parent);
+                            $dialog.addClass('sb-view-dialog').appendTo(this.view.getContainer());
+                            $dialog
+                                .on('_accept', () => defer.resolve($dialog.data('result')))
+                                .on('_reject', () => defer.reject() );
+                            $dialog.trigger('Dialog:_open');
+                        }
+                        // perform action
+                        else {
+                            defer.resolve();
+                        }
+                    }
+
+                    defer.promise().then( async (result:any) => {
+                        // mark action button as loading
+                        let $action_button = $button;
+                        if($button.prop('nodeName') != 'BUTTON') {
+                            $action_button = $button.closest('.mdc-menu-surface--anchor').find('.mdc-button');
+                        }
+                        $disable_overlay.show();
+                        $action_button.addClass('mdc-button--spinner');
+                        try {
+                            await this.view.performAction(action, {...resulting_params, ...result}, response_descr);
+                        }
+                        catch(response) {
+                            console.debug('unexpected error while performing action', response);
+                        }
+                        // restore action button
+                        $action_button.removeClass('mdc-button--spinner');
+                        setTimeout( () => $disable_overlay.hide(), 1000);
+                    })
+                    .catch( () => {
                         $button.closest('button').removeClass('mdc-button--spinner');
-                    }, 100);
-                await this.view.displayErrorFeedback(this.view.getTranslation(), response);
+                        setTimeout( () => $disable_overlay.hide(), 1000);
+                    });
+                }
+                catch(response) {
+                    console.warn('unknown error', response);
+                    // make sure to restore action button
+                    setTimeout( () => {
+                            $disable_overlay.hide();
+                            $button.closest('button').removeClass('mdc-button--spinner');
+                        }, 100);
+                    await this.view.displayErrorFeedback(this.view.getTranslation(), response);
+                }
             }
         });
     }
@@ -445,6 +509,7 @@ export class Layout implements LayoutInterface{
     /**
      * @deprecated
      */
+    /*
     protected async decorateViewActionDialog($dialog: JQuery, action: any, params: any) {
         let $elem = $('<div />');
 
@@ -499,6 +564,7 @@ export class Layout implements LayoutInterface{
         });
 
     }
+    */
 
     /**
      * @deprecated
@@ -511,7 +577,7 @@ export class Layout implements LayoutInterface{
                 content_type = response_descr['content-type'];
             }
 
-            const result = await ApiService.fetch("/", {do: action.controller, ...params}, content_type);
+            const result = await ApiService.call("/", {do: action.controller, ...params}, content_type);
             const status = ApiService.getLastStatus();
             const headers = ApiService.getLastHeaders();
             // handle binary data response
