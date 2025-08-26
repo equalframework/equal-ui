@@ -290,6 +290,7 @@ export class LayoutForm extends Layout {
                 $status_container.find('.status-value').empty().append($('<b>'+status_value+'</b>'));
             }
 
+            // #memo - actions are only visible/actionable in view mode
             if(view_schema.hasOwnProperty('actions') && this.view.getMode() === 'view') {
                 // filter actions and keep only visible ones (based on 'visible' and 'access' properties)
                 let actions = [];
@@ -545,7 +546,7 @@ export class LayoutForm extends Layout {
                             // for binary fields, relay only meta data
                             // if value is over 1k, do not relay onchange to server
                             // #todo - choose a proportionate (objectivable) limit
-                            if(['file', 'upload', 'image'].includes(widget.getType()) || widget.toString().length < 1000) {
+                            if(['file', 'binary', 'upload', 'image'].includes(widget.getType()) || widget.toString().length < 1000) {
                                 try {
                                     let params: any = {
                                         entity: this.view.getEntity(),
@@ -554,8 +555,8 @@ export class LayoutForm extends Layout {
                                         values: {},
                                         lang: this.view.getLang()
                                     };
-                                    // for `file` wdgets, we relay only meta instead of full binary data (see below)
-                                    if(['file', 'upload', 'image'].includes(widget.getType())) {
+                                    // for `file` widgets, we relay only meta instead of full binary data (see below)
+                                    if(['file', 'binary', 'upload', 'image'].includes(widget.getType())) {
                                         params.changes[field] = widget.getMeta();
                                     }
                                     else {
