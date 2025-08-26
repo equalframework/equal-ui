@@ -1006,7 +1006,7 @@ class UIHelper {
         // new MDCDataTable($elem);
 
         // add support for drag & drop reordering (suppose presence of an `order` field)
-        view_schema.draggable && $tbody.sortable({
+        view_schema.hasOwnProperty('draggable') && view_schema.draggable && $tbody.sortable({
             axis: 'y',
             containment: $elem,
             cancel: 'tr[data-edit!="0"]',
