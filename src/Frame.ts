@@ -367,9 +367,9 @@ export class Frame {
         let prepend_contexts_count = 0;
 
         if(total_text_width > available_width) {
-            let char_width = total_text_width / current_purpose_string.length;
+            let char_width = (total_text_width / current_purpose_string.length) + 2;
             let max_chars = available_width / char_width;
-            current_purpose_string = current_purpose_string.substring(0, max_chars-1) + '...';
+            current_purpose_string = current_purpose_string.substring(0, max_chars-1) + '…';
         }
         else {
             // use all contexts in stack (loop in reverse order)
