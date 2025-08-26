@@ -157,6 +157,7 @@ class WidgetFactory {
             case 'time/plain.short':
                 result = 'time';
                 break;
+            case 'text/json.short':
             case 'text/plain.short':
                 result = 'string';
                 break;
@@ -166,6 +167,10 @@ class WidgetFactory {
             case 'text/plain.small':
             case 'text/plain.medium':
             case 'text/plain.long':
+            case 'text/json':
+            case 'text/json.small':
+            case 'text/json.medium':
+            case 'text/json.long':
             case 'text/html':
             case 'markup/html':
                 result = 'text';
