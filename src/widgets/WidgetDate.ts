@@ -33,7 +33,7 @@ export default class WidgetDate extends Widget {
      * Uses moment.js for the formatting.
      *
      * @param date
-     * @param format
+     * @param moment_format
      */
     private dateToString(date: Date, moment_format: string): string {
         return moment(date).format(moment_format);
@@ -79,7 +79,7 @@ export default class WidgetDate extends Widget {
 
     public render(): JQuery {
         console.debug('WidgetDate::render', this);
-        const locale = this.getLayout().getEnv().locale;
+        const locale = this.getLayout().getEnv().locale.slice(0, 2);
         // #memo - this.value is expected to be either null or a valid ISO date string at all times
         let value_str: string = '';
         // set default moment format is 'll': en = "Jul 8, 2023"; fr = "8 juil. 2023"
