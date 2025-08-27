@@ -2417,8 +2417,13 @@ export class View {
                     // daterange selector
                     $select_value = UIHelper.createInput('bulk-assign-select-value_' + this.getUuid(), TranslationService.instant('SB_FILTERS_DIALOG_VALUE'), '');
 
+                    let locale: string = 'en';
+                    if(this.config.locale) {
+                        locale = this.config.locale.slice(0, 2);
+                    }
+
                     $select_value.find('input').datepicker({
-                        ...jqlocale[this.config.locale],
+                        ...jqlocale[locale],
                         onClose: () => {
                             $select_value.find('input').trigger('focus');
                         }

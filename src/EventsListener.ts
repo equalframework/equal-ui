@@ -356,20 +356,22 @@ class EventsListener {
 
         const environment = await EnvService.getEnv();
 
+        const locale = environment.locale.slice(0, 2);
+
         // init locale (fallback to en)
-        console.debug('Setting locale', environment.locale);
+        console.debug('Setting locale', locale);
         // #memo - this is necessary because by default moment switches to the latest imported locale file
         moment.locale('en');
 
-        if(environment.locale != 'en') {
+        if(locale != 'en') {
             // #memo - this is the full list of locales for which a related moment locale `.js` file exists.
             // var valid_locales = ['af','ar-dz','ar-kw','ar-ly','ar-ma','ar-sa','ar-tn','ar','az','be','bg','bm','bn','bo','br','bs','ca','cs','cv','cy','da','de-at','de-ch','de','dv','el','en-au','en-ca','en-gb','en-ie','en-il','en-nz','en-SG','eo','es-do','es-us','es','et','eu','fa','fi','fo','fr-ca','fr-ch','fr','fy','ga','gd','gl','gom-latn','gu','he','hi','hr','hu','hy-am','id','is','it-ch','it','ja','jv','ka','kk','km','kn','ko','ku','ky','lb','lo','lt','lv','me','mi','mk','ml','mn','mr','ms-my','ms','mt','my','nb','ne','nl-be','nl','nn','pa-in','pl','pt-br','pt','ro','ru','sd','se','si','sk','sl','sq','sr-cyrl','sr','ss','sv','sw','ta','te','tet','tg','th','tl-ph','tlh','tr','tzl','tzm-latn','tzm','ug-cn','uk','ur','uz-latn','uz','vi','x-pseudo','yo','zh-cn','zh-hk','zh-tw'];
 
             const accepted_locales = ['fr', 'nl', 'es'];
 
-            if(accepted_locales.indexOf(environment.locale) > -1) {
-                if(moment.locale(environment.locale) == environment.locale) {
-                    console.debug('Locale set to '+environment.locale);
+            if(accepted_locales.indexOf(locale) > -1) {
+                if(moment.locale(locale) == locale) {
+                    console.debug('Locale set to '+locale);
                 }
                 else {
                     console.warn('Unable to load requested locale');
