@@ -34,7 +34,9 @@ export default class WidgetMany2One extends Widget {
                 let objects: Array<any> = [];
                 this.$elem = $('<div />');
 
-                let $button_reset = UIHelper.createButton('m2o-actions-reset-' + this.id, '', 'icon', 'close').css({"position": "absolute", "right": "45px", "top": "5px", "z-index": "1"}).hide();
+                let $button_reset = UIHelper.createButton('m2o-actions-reset-' + this.id, '', 'icon', 'close')
+                    .css({"position": "absolute", "right": "45px !important", "top": "5px", "z-index": "1"})
+                    .hide();
 
                 let $select = UIHelper.createInput('m2o-input-' + this.id, this.label, value, this.config.description, '', this.readonly)
                     .addClass('mdc-menu-surface--anchor')
@@ -352,12 +354,18 @@ export default class WidgetMany2One extends Widget {
                         tmpDomain.parse(this.config?.object ?? {}, this.getLayout().getView().getUser(), {}, this.getLayout().getEnv());
 
                         // fetch first objects from config.foreign_object (use config.domain) + add an extra line ("advanced search...")
-                        let limit = (this.config.hasOwnProperty('limit') && this.config.limit) ? this.config.limit : 5;
-                        let order = (this.config.hasOwnProperty('order') && this.config.order) ? this.config.order : 'id';
-                        let sort  = (this.config.hasOwnProperty('sort') && this.config.sort) ? this.config.sort : 'asc';
-
                         try {
-                            let response = await ApiService.collect(this.config.foreign_object, tmpDomain.toArray(), ['id', 'name'], order, sort, 0, limit, this.config.lang);
+                            let response = await ApiService.collect(
+                                    this.config.foreign_object,
+                                    tmpDomain.toArray(),
+                                    ['id', 'name'],
+                                    this.config.order ?? 'id',
+                                    this.config.sort ?? 'asc',
+                                    0,
+                                    this.config.limit ?? 5,
+                                    this.config.lang ?? '',
+                                    this.config.controller ?? 'model_collect'
+                                );
                             objects = response;
                             $menu_list.empty();
                             for(let object of objects) {
