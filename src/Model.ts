@@ -180,17 +180,12 @@ export class Model {
         return result;
     }
 
-    /**
-     * Update model by requesting data from server using parent View parameters
-    */
-    public async refresh(full: boolean = false) {
-        console.debug('Model::refresh');
-
+    public getFieldsProjection(): string[] {
         // fetch fields that are present in the parent View
         let view_fields: any = this.view.getViewFields();
         let schema = this.view.getModelFields();
 
-        let fields = [];
+        let fields: string[] = [];
 
         for(let field in view_fields) {
 
@@ -242,11 +237,20 @@ export class Model {
             fields.push('order');
         }
 
+        return fields;
+    }
+
+    /**
+     * Update model by requesting data from server using parent View parameters
+    */
+    public async refresh(full: boolean = false) {
+        console.debug('Model::refresh');
+
         try {
             let body: any = {
                     get: this.view.getController(),
                     entity: this.view.getEntity(),
-                    fields: fields,
+                    fields: this.getFieldsProjection(),
                     domain: this.view.getDomain(),
                     ...this.view.getParams()
                 };
