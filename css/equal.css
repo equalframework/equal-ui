@@ -841,10 +841,11 @@ body, html {
 /* reduce size of inner icon buttons (widgets) in edit mode */
 .sb-view-layout-list .sb-widget.sb-widget-mode-edit button.mdc-icon-button {
     position: absolute;
-    padding: 3px 5px;
+    /* padding: 3px 5px; */
     /* height: auto; */
     /* width: auto; */
     top: -10px !important;
+    right: 0px !important;
     transform: scale(0.85);
 }
 
@@ -872,6 +873,7 @@ body, html {
     bottom: 5px;
     z-index: -1;
     opacity: 0;
+    max-width: 10px;
 }
 
 
@@ -1039,6 +1041,12 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
 
 .sb-view-layout.sb-view-layout-list tr.sb-view-layout-list-row:last-child td.mdc-data-table__cell {
     border-bottom: none;
+}
+
+/* minimize visual changes due to padding when switching from view mode to edit mode for inline edition */
+.sb-view-layout.sb-view-layout-list tr.sb-view-layout-list-row td .sb-widget.sb-widget-mode-view {
+    padding-top: 2px;
+    padding-left: 4px;
 }
 
 .sb-view-layout-list .sb-group-row {
