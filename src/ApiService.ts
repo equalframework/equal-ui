@@ -300,8 +300,8 @@ export class _ApiService {
                     }
                 };
             }
-            catch(error:any) {
-                reject(error);
+            catch(response: any) {
+                reject(response);
             }
         });
     }
@@ -548,6 +548,42 @@ export class _ApiService {
      * @param lang
      * @returns     Promise     Upon success, the promise is resolved into an Array holding matching objects (collection).
      */
+    public async collect(
+        entity: string,
+        domain: any[] = [],
+        fields: any[] = [],
+        order: string = '',
+        sort: string = '',
+        start: number = 0,
+        limit: number = 0,
+        lang: string = '',
+        controller: string = 'model_collect'
+    ) {
+        console.debug('ApiService::collect', controller, entity, domain, fields, order, sort, start, limit);
+
+        try {
+            const environment = await EnvService.getEnv();
+            const params = {
+                get: controller,
+                entity,
+                domain,
+                fields,
+                lang: lang.length ? lang : environment.lang,
+                order,
+                sort,
+                start,
+                limit
+            };
+
+            const response = await this.fetch('', params, 'application/json');
+            return response as any[];
+        }
+        catch(response: any) {
+            throw response;
+        }
+    }
+
+/*
     public async collect(entity:string, domain:any[], fields:any[], order:string, sort:string, start:number, limit:number, lang: string = '') {
         console.debug('ApiService::collect', entity, domain, fields, order, sort, start, limit);
         var result = [];
@@ -579,6 +615,7 @@ export class _ApiService {
         }
         return result;
     }
+*/
 
     /**
      * Search for objects matching the given domain and return a list of identifiers.
