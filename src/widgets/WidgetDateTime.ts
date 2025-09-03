@@ -13,7 +13,7 @@ export default class WidgetDateTime extends Widget {
     }
 
     private jqueryToMomentFormat(format: string): string {
-        let result: string = format;
+        let result: string = (format ?? 'dd/mm/yy hh:ii');
         const formatAdapter : any = {
             'dd': 'DD',
             'mm': 'MM',
@@ -78,7 +78,7 @@ export default class WidgetDateTime extends Widget {
     }
     public render(): JQuery {
         console.debug('WidgetDateTime::render', this);
-        const locale = this.getLayout().getEnv().locale;
+        const locale = this.getLayout().getEnv().locale.slice(0,2);
         // #memo - this.value is expected to be either null or a valid ISO date string at all times
         let value_str: string = '';
         // set default moment format to en: mm/dd/yy hh:ii ; fr: dd/mm/yy hh:ii
@@ -182,7 +182,9 @@ export default class WidgetDateTime extends Widget {
                     $button_open.css({"top": "2px"});
                 }
 
-                $button_open.insertAfter($input);
+                if(!this.readonly) {
+                    $button_open.insertAfter($input);
+                }
 
                 $datetimepicker.datepicker(datepickerConfig)
                     .on('keydown', (event: any) => {
