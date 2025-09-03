@@ -2890,7 +2890,7 @@ export class View {
             let response = await ApiService.create(this.entity, objectDefaults);
             let object_id: number = response.id;
 
-            response = await ApiService.read(this.entity, [object_id], Object.keys(this.model_fields), this.getLang());
+            response = await ApiService.read(this.entity, [object_id], this.model.getFieldsProjection(), this.getLang());
             let newObject = response[0];
 
             // inject object into model
@@ -3097,8 +3097,8 @@ export class View {
                 await this.displayErrorFeedback(translation, response);
             }
         }
-        catch(response) {
-            console.warn('unexpected error : unable to request translation');
+        catch(error) {
+            console.warn('unexpected error', error);
         }
     }
 
@@ -3126,12 +3126,28 @@ export class View {
                     // stack snackbars (LIFO: decreasing timeout)
                     for(let field in errors['INVALID_PARAM']) {
                         // for each field, we handle one error at a time (the first one)
-                        let error_id: string = <string> String((Object.keys(errors['INVALID_PARAM'][field]))[0]);
-                        let msg: string = <string>(Object.values(errors['INVALID_PARAM'][field]))[0];
+                        let error_id: string = <string> String( (Object.keys(errors['INVALID_PARAM'][field]))[0] );
+                        let msg: string = '';
+                        let value: any = errors['INVALID_PARAM'][field][error_id];
+
+                        if(value) {
+                            if(typeof value !== 'object') {
+                                msg = value;
+                            }
+                            else {
+                                if(Array.isArray(value)) {
+                                    msg = String(value[0] ?? '');
+                                }
+                                else {
+                                    msg = (Object.keys(value))[0];
+                                }
+                            }
+                        }
+
                         let translated_msg = TranslationService.resolve(translation, 'error', [], field, msg, error_id);
                         if(translated_msg == msg.replace(/_/g, ' ')) {
-                            let translated_error = TranslationService.instant('SB_ERROR_'+error_id.toUpperCase());
-                            if(translated_error != 'SB_ERROR_'+error_id.toUpperCase()) {
+                            let translated_error = TranslationService.instant('SB_ERROR_' + error_id.toUpperCase());
+                            if(translated_error != ('SB_ERROR_' + error_id.toUpperCase())) {
                                 translated_msg = translated_error;
                             }
                         }
