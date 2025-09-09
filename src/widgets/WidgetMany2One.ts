@@ -34,8 +34,9 @@ export default class WidgetMany2One extends Widget {
                 let objects: Array<any> = [];
                 this.$elem = $('<div />');
 
+                // #memo - style is set on .sb-widget.sb-widget-mode-edit.sb-widget-type-many2one .mdc-icon-button
                 let $button_reset = UIHelper.createButton('m2o-actions-reset-' + this.id, '', 'icon', 'close')
-                    .css({"position": "absolute", "right": "45px !important", "top": "5px", "z-index": "1"})
+                    .addClass('sb-button-inner')
                     .hide();
 
                 let $select = UIHelper.createInput('m2o-input-' + this.id, this.label, value, this.config.description, '', this.readonly)
