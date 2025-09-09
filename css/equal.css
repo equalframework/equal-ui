@@ -1134,6 +1134,20 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     margin-top: 0;
 }
 
+.sb-widget.sb-widget-mode-view.sb-widget-type-many2one .mdc-icon-button {
+    top: 1px;
+}
+
+.sb-widget.sb-widget-mode-edit.sb-widget-type-many2one .mdc-icon-button {
+    position: absolute;
+    top: 5px;
+    z-index: 1;
+}
+
+.sb-view-layout-form .sb-widget.sb-widget-mode-edit.sb-widget-type-many2one .mdc-icon-button.sb-button-inner {
+    right: 45px !important;
+}
+
 .sb-widget.sb-widget-mode-edit .sb-ui-menu.mdc-menu-surface--is-open-below {
     /*margin-top: 80px !important;*/
 }
