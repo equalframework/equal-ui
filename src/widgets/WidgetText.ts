@@ -190,8 +190,13 @@ export default class WidgetText extends Widget {
                     this.$elem = $('<div class="sb-ui-textarea" />');
                     // convert breaks to <br /> only if usage is text/plain
                     let html_value = value;
-                    if(this.config.hasOwnProperty('usage') && this.config.usage.startsWith('text/plain') ) {
-                        html_value = value.replace(/(?:\r\n|\r|\n)/g, '<br />');
+                    if(this.config.hasOwnProperty('usage')) {
+                        if(this.config.usage.startsWith('text/plain')) {
+                            html_value = value.replace(/(?:\r\n|\r|\n)/g, '<br />');
+                        }
+                        if(this.config.usage.startsWith('text/json') || this.config.usage.startsWith('application/json')) {
+                            html_value = this.jsonToHtml(value);
+                        }
                     }
                     this.$elem.append( $('<div class="textarea-content" />').html(html_value) );
                     if(this.config.hasOwnProperty('height') && this.config.height > 0) {
@@ -214,4 +219,13 @@ export default class WidgetText extends Widget {
             .attr('data-usage', this.config.usage || '');
     }
 
+
+    private jsonToHtml(json: string): string {
+        const escaped = json
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+
+        return `<pre><code class="language-json">${escaped}</code></pre>`;
+    }
 }
