@@ -114,7 +114,17 @@ class WidgetFactory {
                         'lightblue',        // light blue
                         'thistle',          // light mauve/grey
                         'honeydew',         // very pale green
-                        'mistyrose'         // very light pink
+                        'mistyrose',        // very light pink
+                        'peachpuff',        // pale peach
+                        'palegoldenrod',    // soft yellow
+                        'plum',             // soft violet
+                        'darkkhaki',        // deep yellow-green
+                        'gainsboro',        // soft grey
+                        'rosybrown',        // muted rose
+                        'darkseagreen',     // deeper green
+                        'steelblue',        // deep blue-grey
+                        'indianred',        // soft strong red
+                        'slateblue',        // vibrant purple-blue
                     ];
                     return new WidgetSelect(layout, label, value, config);
                 }
