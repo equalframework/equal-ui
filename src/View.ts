@@ -1210,8 +1210,6 @@ export class View {
         }
 
         if(this.custom_actions.hasOwnProperty('ACTION.CREATE_INLINE') || (header_layout === 'inline' && has_action_create)) {
-            // #todo - test, to confirm
-            this.purpose = 'view';
             // create & create_inline are mutually exclusive
             has_action_create = false;
             has_action_create_inline = this.isActionEnabled(this.custom_actions['ACTION.CREATE_INLINE'], this.mode);
@@ -1222,16 +1220,18 @@ export class View {
         // append view actions, if requested
         if(this.config.show_actions) {
             switch(this.purpose) {
+                // #memo - buttons can be displayed for widgets (handled at the widget level, since a callback must be set to fetch the resulting value)
+                case 'widget':
                 case 'view':
                     if(has_action_create) {
                         let $createActionButton: JQuery;
 
                         if(header_layout === 'full') {
-                            $createActionButton = UIHelper.createButton(this.uuid + '_action-edit', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'raised');
+                            $createActionButton = UIHelper.createButton(this.uuid + '_action-create', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'raised');
                             $std_actions.prepend($createActionButton);
                         }
                         else {
-                            $createActionButton = UIHelper.createButton(this.uuid + '_action-edit', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'mini-fab', 'add');
+                            $createActionButton = UIHelper.createButton(this.uuid + '_action-create', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'mini-fab', 'add');
                             $std_actions_inline.append($createActionButton);
                         }
 
@@ -1277,11 +1277,11 @@ export class View {
                         let $createActionButton: JQuery;
 
                         if(header_layout === 'full') {
-                            $createActionButton = UIHelper.createButton(this.uuid + '_action-edit', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'raised');
+                            $createActionButton = UIHelper.createButton(this.uuid + '_action-create', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'raised');
                             $std_actions.prepend($createActionButton);
                         }
                         else {
-                            $createActionButton = UIHelper.createButton(this.uuid + '_action-edit', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'mini-fab', 'add');
+                            $createActionButton = UIHelper.createButton(this.uuid + '_action-create', TranslationService.instant('SB_ACTIONS_BUTTON_CREATE'), 'mini-fab', 'add');
                             $std_actions_inline.append($createActionButton);
                         }
 
@@ -1399,9 +1399,6 @@ export class View {
                 case 'create':
                     break;
                 case 'update':
-                    break;
-                case 'widget':
-                    // no buttons are displayed for widgets : these are handled at the widget level, since a callback must be set to fetch the resulting value
                     break;
                 default:
                     break;
@@ -2756,77 +2753,98 @@ export class View {
 
     private async actionSelectionInlineEdit(selection: any) {
         if(selection.length && !this.$container.find('.sb-view-header-list-actions-selected-edit').length) {
+            const header_layout = ( (this.config.header?.layout ?? 'full') === 'inline') ? 'inline' : 'full';
+
             this.$headerContainer.find('#'+'SB_ACTION_ITEM-'+'SB_ACTIONS_BUTTON_INLINE_UPDATE').hide();
             this.$headerContainer.find('#'+'SB_ACTION_ITEM-'+'SB_ACTIONS_BUTTON_BULK_ASSIGN').show();
 
             let $action_set = this.$container.find('.sb-view-header-actions-std');
 
-            let $action_set_selected_edit_actions = $('<div/>').addClass('sb-view-header-list-actions-selected-edit');
+            if(header_layout !== 'full') {
+                $action_set = this.$container.find('.sb-view-header-actions-inline');
+            }
 
-            let $button_save = UIHelper.createButton('action-selected-edit-save', TranslationService.instant('SB_ACTIONS_BUTTON_SAVE'), 'raised', '', 'secondary').appendTo($action_set_selected_edit_actions);
-            let $button_cancel = UIHelper.createButton('action-selected-edit-cancel', TranslationService.instant('SB_ACTIONS_BUTTON_CANCEL'), 'outlined').appendTo($action_set_selected_edit_actions);
+            let $action_set_selected_edit_actions = $('<div />').addClass('sb-view-header-list-actions-selected-edit');
+
+            let $button_save = UIHelper.createButton(
+                    this.uuid + '_action-selected-edit-save',
+                    TranslationService.instant('SB_ACTIONS_BUTTON_SAVE'),
+                    'raised',
+                    '',
+                    'secondary'
+                )
+                .appendTo($action_set_selected_edit_actions);
+
+            let $button_cancel = UIHelper.createButton(
+                    this.uuid + '_action-selected-edit-cancel',
+                    TranslationService.instant('SB_ACTIONS_BUTTON_CANCEL'),
+                    'outlined'
+                )
+                .appendTo($action_set_selected_edit_actions);
 
             $action_set.append($action_set_selected_edit_actions);
 
 
             $button_save.on('click', () => {
-                // handle changed objects
-                let objects = this.model.getChanges(selection);
+                // wait for the model to be updated and run the action
+                setTimeout( () => {
+                    // handle changed objects
+                    let objects = this.model.getChanges(selection);
+                    console.debug('received inline edit button_save:click with changes objects lists : ', selection, objects);
 
-                let promises = [];
+                    let promises = [];
 
-                for(let object_id of selection) {
-                    let promise = new Promise( async (resolve, reject) => {
-                        let object = objects.find( o => o.id == object_id );
-                        this.$layoutContainer.find('tr[data-id="'+object_id+'"]').each( async (i: number, tr: any) => {
-                            let $tr = $(tr);
-                            if(!object) {
-                                $tr.trigger('_toggle_mode', 'view');
-                                $tr.attr('data-edit', '0');
-                                resolve(true);
-                            }
-                            else {
-                                try {
-                                    const response = await ApiService.update(this.entity, [object_id], this.model.export(object), false, this.getLang());
+                    for(let object_id of selection) {
+                        let promise = new Promise( async (resolve, reject) => {
+                            let object = objects.find( o => o.id == object_id );
+                            this.$layoutContainer.find('tr[data-id="' + object_id + '"]').each( async (i: number, tr: any) => {
+                                let $tr = $(tr);
+                                if(!object) {
                                     $tr.trigger('_toggle_mode', 'view');
                                     $tr.attr('data-edit', '0');
-                                    // update the modified field otherwise a confirmation will be displayed at next update
-                                    if(Array.isArray(response) && response.length) {
-                                        this.model.reset(object_id, response[0]);
-                                    }
                                     resolve(true);
                                 }
-                                catch(response) {
+                                else {
                                     try {
-                                        const res = await this.displayErrorFeedback(this.translation, response, object, true);
-                                        if(res === false ) {
-                                            reject();
+                                        const response = await ApiService.update(this.entity, [object_id], this.model.export(object), false, this.getLang());
+                                        $tr.trigger('_toggle_mode', 'view');
+                                        $tr.attr('data-edit', '0');
+                                        // update the modified field otherwise a confirmation will be displayed at next update
+                                        if(Array.isArray(response) && response.length) {
+                                            this.model.reset(object_id, response[0]);
                                         }
-                                        else {
-                                            resolve(true);
-                                        }
+                                        resolve(true);
                                     }
                                     catch(response) {
-                                        reject();
+                                        try {
+                                            const res = await this.displayErrorFeedback(this.translation, response, object, true);
+                                            if(res === false ) {
+                                                reject();
+                                            }
+                                            else {
+                                                resolve(true);
+                                            }
+                                        }
+                                        catch(response) {
+                                            reject();
+                                        }
                                     }
                                 }
-                            }
+                            });
                         });
-                    });
-                    promises.push(promise);
-                }
+                        promises.push(promise);
+                    }
 
+                    Promise.all(promises)
+                        .then( () => {
+                            $action_set_selected_edit_actions.remove();
+                            this.$headerContainer.find('#' + 'SB_ACTION_ITEM-' + 'SB_ACTIONS_BUTTON_INLINE_UPDATE').show();
+                            this.$headerContainer.find('#' + 'SB_ACTION_ITEM-' + 'SB_ACTIONS_BUTTON_BULK_ASSIGN').hide();
+                        })
+                        .catch( () => {
 
-                Promise.all(promises)
-                .then( () => {
-                    $action_set_selected_edit_actions.remove();
-                    this.$headerContainer.find('#'+'SB_ACTION_ITEM-'+'SB_ACTIONS_BUTTON_INLINE_UPDATE').show();
-                    this.$headerContainer.find('#'+'SB_ACTION_ITEM-'+'SB_ACTIONS_BUTTON_BULK_ASSIGN').hide();
-                })
-                .catch( () => {
-
-                })
-
+                        });
+                }, 250);
             });
 
             $button_cancel.on('click', () => {
@@ -2860,7 +2878,7 @@ export class View {
 
         for(let object_id of selection ) {
 
-            this.$layoutContainer.find('tr[data-id="'+object_id+'"]').each( async (i: number, tr: any) => {
+            this.$layoutContainer.find('tr[data-id="' + object_id + '"]').each( async (i: number, tr: any) => {
                 let $tr = $(tr);
                 $tr.addClass('sb-widget');
                 // not already in edit mode
@@ -2881,6 +2899,7 @@ export class View {
         }
     }
 
+    // #todo - this should be in LayoutList
     private async actionCreateInline() {
 
         if(this.is_editing) {
