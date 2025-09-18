@@ -16,18 +16,12 @@ export default class WidgetText extends Widget {
         // this.$elem.find('textarea').val(value).trigger('change');
         if(this.$elem.data('quill')) {
             let editor = this.$elem.data('quill');
-            editor.root.innerHTML = value;
+            editor.root.innerHTML = this.adaptIn(value);
         }
     }
 
     private updateWidget() {
-        const usage = this.config.usage;
-        if(this.$elem.data('quill')) {
-            const editor = this.$elem.data('quill');
-            if(!usage.startsWith('text/html') && !usage.startsWith('html')) {
-                this.value = editor.getText().trim();
-            }
-        }
+        this.value = this.adaptOut();
         this.$elem.trigger('_updatedWidget', [false]);
     }
 
@@ -137,7 +131,7 @@ export default class WidgetText extends Widget {
 
                         this.$elem.data('quill', editor);
 
-                        editor.root.innerHTML = value;
+                        editor.root.innerHTML = this.adaptIn(value);
 
                         let timeout: any;
                         let initial_change = true;
@@ -182,23 +176,14 @@ export default class WidgetText extends Widget {
             case 'view':
             default:
                 if(this.config.layout == 'list') {
-                    value = $("<div/>").html(value).text();
+                    value = $("<div/>").html(this.adaptIn(value)).text();
                     this.$elem = UIHelper.createInputView('text_' + this.id, this.label, value, this.config.description);
                     this.$elem.attr('title', value);
                 }
                 else {
                     this.$elem = $('<div class="sb-ui-textarea" />');
                     // convert breaks to <br /> only if usage is text/plain
-                    let html_value = value;
-                    if(this.config.hasOwnProperty('usage')) {
-                        if(this.config.usage.startsWith('text/plain')) {
-                            html_value = value.replace(/(?:\r\n|\r|\n)/g, '<br />');
-                        }
-                        if(this.config.usage.startsWith('text/json') || this.config.usage.startsWith('application/json')) {
-                            html_value = this.jsonToHtml(value);
-                        }
-                    }
-                    this.$elem.append( $('<div class="textarea-content" />').html(html_value) );
+                    this.$elem.append( $('<div class="textarea-content" />').html(this.adaptIn(value)) );
                     if(this.config.hasOwnProperty('height') && this.config.height > 0) {
                         this.$elem.css({height: this.config.height + 'px'});
                     }
@@ -219,13 +204,90 @@ export default class WidgetText extends Widget {
             .attr('data-usage', this.config.usage || '');
     }
 
-
-    private jsonToHtml(json: string): string {
-        const escaped = json
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;");
-
-        return `<pre><code class="language-json">${escaped}</code></pre>`;
+    private getUsage(): string {
+        let usage: string = 'text/plain';
+        if(this.config.hasOwnProperty('usage')) {
+            // extract type/subtype, ignoring any tree.subtree:params
+            const usageMatch = String(this.config.usage).match(/^([^.:]+)/);
+            if(usageMatch) {
+                usage = usageMatch[1].trim();
+            }
+        }
+        return usage;
     }
+
+    /**
+     * Adapt received to HTML (that will be processed by Quill)
+     */
+    private adaptIn(value: string): string {
+        let result: string = value;
+        let usage: string = this.getUsage();
+        let mode = (this.readonly && this.config.layout == 'form') ? 'view' : this.mode;
+
+        switch(mode) {
+            case 'edit':
+                if(usage === 'text/html') {
+                    // #memo - if generated at the back-end, it will be converted only once
+                    result = result.trim()
+                        // normalize CRLF
+                        .replace(/\r\n?/g, '\n');
+
+                    // convert <br> to end/start of paragraph
+                    result = result.replace(/<br\s*\/?>/gi, '</p><p>');
+
+                    // ensure everything is within a paragraph
+                    if (!/^<p[\s>]/i.test(result)) {
+                        result = `<p>${result}`;
+                    }
+                    if (!/<\/p>\s*$/i.test(result)) {
+                        result = `${result}</p>`;
+                    }
+                }
+                break;
+            case 'view':
+                // #memo - we don't use Quill here
+                if(usage === 'text/plain') {
+                    result = value.replace(/(?:\r\n|\r|\n)/g, '<br />');
+                }
+                else if(usage === 'text/json') {
+                    const escaped = result
+                        .replace(/&/g, "&amp;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;");
+                    result = `<pre><code class="language-json">${escaped}</code></pre>`;
+                }
+                break;
+        }
+
+        return result;
+    }
+
+    /**
+     * Here Mode is implicitly 'edit'
+     */
+    private adaptOut(): string {
+        let result: string = this.value;
+        let usage: string = this.getUsage();
+
+        if(this.$elem.data('quill')) {
+            const editor = this.$elem.data('quill');
+            if(usage === 'text/html') {
+                // leave unchanged : this will not require any Quill processing at next load
+                /*
+                const container = document.createElement('div');
+                container.innerHTML = result;
+                result = Array.from(container.querySelectorAll('p'))
+                    .map(p => p.innerHTML)
+                    .join('<br/>');
+                */
+            }
+            else {
+                // use getText to remove html tags
+                result = editor.getText().trim();
+            }
+        }
+
+        return result;
+    }
+
 }
