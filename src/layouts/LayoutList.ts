@@ -661,7 +661,7 @@ export class LayoutList extends Layout {
             })
             // toggle mode for all cells in row
             .on( '_toggle_mode', async (event: any, mode: string = 'view') => {
-                console.debug('Layout - received toggle_mode', mode);
+                console.debug('Layout - received toggle_mode', mode, this);
                 let $this = $(event.currentTarget);
 
                 $this.find('td.sb-widget-cell').each( (index: number, elem: any) => {
@@ -697,6 +697,13 @@ export class LayoutList extends Layout {
                     }
 
                     if(mode == 'edit') {
+
+                        if(this.view.getPurpose() == 'widget') {
+                            // selection actions are not shown : add inline action buttons
+                            console.log('we should add action buttons on this line');
+                        }
+
+                        // setup listener for objet changes
                         $widget.on('_updatedWidget', async (event: any, refresh: boolean = true) => {
                             console.debug('Layout - received _updatedWidget event', widget.getValue());
                             let values: any = {};

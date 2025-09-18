@@ -640,6 +640,12 @@ body, html {
     margin-top: 20px;
 }
 
+.sb-widget.sb-ui-textarea code {
+    /* force code inline-block to full width */
+    width: 100%;
+    font-weight: 400;
+}
+
 /* quill editor */
 
 .sb-widget.sb-ui-textarea .ql-toolbar {
@@ -665,6 +671,9 @@ body, html {
 .sb-widget.sb-ui-textarea .ql-container {
     /* force including toolbar in height */
     height: calc(100% - 42px) !important;
+    /* force using same font-size as other material components */
+    font-size: 14px !important;
+    font-family: var(--mdc-typography-font-family, Roboto, sans-serif) !important;
 }
 
 .sb-widget-mode-view.sb-ui-textarea {
@@ -713,7 +722,7 @@ body, html {
     transform-origin: top left;
 }
 
-.sb-widget-mode-view.sb-ui-textarea p {
+.sb-widget.sb-ui-textarea p {
     margin: 0;
 }
 
@@ -721,7 +730,6 @@ body, html {
     color: rgba(0,0,0,0.6) !important;
     font-weight: 400;
 }
-
 
 .sb-view-header-form {
     position: relative;
@@ -735,9 +743,18 @@ body, html {
     padding-top: 10px;
 }
 
-.sb-view-header-actions .sb-view-header-actions-std {
+
+.sb-view-header .sb-view-header-actions .sb-view-header-actions-std {
     flex: 0 1 50%;
     display: flex;
+}
+
+.sb-view-header .sb-view-header-actions-inline {
+    display: flex;
+}
+
+.sb-view-header .sb-view-header-actions-inline .mdc-button {
+    margin-left: 15px;
 }
 
 
@@ -1144,7 +1161,7 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
     z-index: 1;
 }
 
-.sb-view-layout-form .sb-widget.sb-widget-mode-edit.sb-widget-type-many2one .mdc-icon-button.sb-button-inner {
+.sb-widget.sb-widget-mode-edit.sb-widget-type-many2one .mdc-icon-button.sb-button-inner {
     right: 45px !important;
 }
 
