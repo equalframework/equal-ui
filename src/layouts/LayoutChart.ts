@@ -163,7 +163,7 @@ export class LayoutChart extends Layout {
                 }
             }
 
-            UIHelper.decorateTable($elem);
+            UIHelper.decorateTable($elem, view_schema);
         }
         else {
             $elem = $('<canvas/>').css({"width": "100%", "height": "calc(100% - 20px)", "margin-top": "20px"});
