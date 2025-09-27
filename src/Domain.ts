@@ -116,7 +116,7 @@ export class Domain {
      * @returns Domain  Returns current instance with updated values.
      */
     public parse(object: any = {}, user: any = {}, parent: any = {}, env: any = {}) {
-        console.debug('Domain::parse', object, user, parent);
+        console.debug('Domain::parse', object, user, parent, env);
         for(let clause of this.clauses) {
             for(let condition of clause.conditions) {
                 // adapt value according to its syntax ('user.' or 'object.')
