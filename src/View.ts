@@ -2755,8 +2755,8 @@ export class View {
         if(selection.length && !this.$container.find('.sb-view-header-list-actions-selected-edit').length) {
             const header_layout = ( (this.config.header?.layout ?? 'full') === 'inline') ? 'inline' : 'full';
 
-            this.$headerContainer.find('#'+'SB_ACTION_ITEM-'+'SB_ACTIONS_BUTTON_INLINE_UPDATE').hide();
-            this.$headerContainer.find('#'+'SB_ACTION_ITEM-'+'SB_ACTIONS_BUTTON_BULK_ASSIGN').show();
+            this.$headerContainer.find('#' + 'SB_ACTION_ITEM-' + 'SB_ACTIONS_BUTTON_INLINE_UPDATE').hide();
+            this.$headerContainer.find('#' + 'SB_ACTION_ITEM-' + 'SB_ACTIONS_BUTTON_BULK_ASSIGN').show();
 
             let $action_set = this.$container.find('.sb-view-header-actions-std');
 
