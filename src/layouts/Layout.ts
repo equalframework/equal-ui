@@ -51,7 +51,7 @@ export class Layout implements LayoutInterface{
     /*
         Methods from interface, meant to be overloaded in inherited classes
     */
-    public init() {}
+    public async init() {}
 
     public async refresh(full: boolean = false) {}
 
