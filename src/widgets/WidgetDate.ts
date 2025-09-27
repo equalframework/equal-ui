@@ -88,7 +88,7 @@ export default class WidgetDate extends Widget {
         switch(this.mode) {
             case 'edit':
                 console.debug('WidgetDate:: rendering edit mode');
-                let $datetimepicker = $('<input type="text" />').addClass('datepicker sb-widget-datetime-datepicker');
+                let $datetimepicker = $('<input tabindex="-1" type="text" />').addClass('datepicker sb-widget-datetime-datepicker');
 
                 let datepickerConfig = {
                         ...jqlocale[locale],
@@ -175,7 +175,7 @@ export default class WidgetDate extends Widget {
 
                 let $button_open = UIHelper.createButton('date-actions-open_' + this.id, '', 'icon', 'calendar_today')
                     .css({"position": "absolute", "right": "5px", "top": "7px", "z-index": "1"})
-                    .on('focus click', () => {
+                    .on('click', () => {
                         let $input = this.$elem.find('input').first();
                         let val: string = <string> $input.val();
                         let moment_format = this.jqueryToMomentFormat(datepickerConfig.dateFormat);
