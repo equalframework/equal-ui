@@ -97,7 +97,7 @@ export class _TranslationService {
      *
      * @returns The translated value, or the original value if translation fails.
      */
-    public resolve(translation:any, type:string, path: string[], id: string, value: any = '', property:string = 'label') {
+    public resolve(translation: any, type: string, path: string[], id: string, value: any = '', property: string = 'label') {
         let result = value;
 
         if (typeof value === 'string' || value instanceof String) {
