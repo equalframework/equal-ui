@@ -321,6 +321,10 @@ export class LayoutForm extends Layout {
                 if(actions.length == 1) {
                     let action = actions[0];
                     let action_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, action.label);
+                    if(action_title == action.label) {
+                        // no translation found, check default view
+                        action_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getType()+'.default', 'actions'], action.id, action.label);
+                    }
                     let $action_button = UIHelper.createButton(this.uuid+'_actions-button', action_title, 'outlined');
                     $view_actions.append($action_button);
                     this.decorateActionButton($action_button, action, object);
@@ -334,6 +338,10 @@ export class LayoutForm extends Layout {
                     // keep track of empty lists
                     for(let action of actions) {
                         let action_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, action.label);
+                        if(action_title == action.label) {
+                            // no translation found, check default view
+                            action_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getType()+'.default', 'actions'], action.id, action.label);
+                        }
                         let item_id = this.uuid+'_action-' + (''+action.id).replace(/\./g,'_');
                         let $item = UIHelper.createListItem(item_id, action_title);
                         $menu_list.append($item);
