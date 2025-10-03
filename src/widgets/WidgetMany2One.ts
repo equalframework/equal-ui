@@ -60,6 +60,7 @@ export default class WidgetMany2One extends Widget {
                     $select.attr('data-selected', 0);
                     $select.find('input').val('').trigger('change');
                     $button_reset.hide();
+                    $button_open.hide();
                     $select.find('input').prop('readonly', false);
                     this.$elem.trigger('_updatedWidget');
                 });
@@ -67,7 +68,8 @@ export default class WidgetMany2One extends Widget {
                 if(value.length || this.readonly) {
                     $button_create.hide();
                 }
-                else {
+
+                if(!this.value) {
                     $button_open.hide();
                 }
 
