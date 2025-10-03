@@ -2289,8 +2289,11 @@ export class View {
                         $save_button.find('.menu-list').append(
                             UIHelper.createListItem(this.uuid + '_action-' + header_action, TranslationService.instant('SB_ACTIONS_BUTTON_' + header_action))
                             // onclick, save and stay in edit mode (save and go back to list)
-                            .on('click', () => {
+                            .on('click', (event: any) => {
                                 console.debug('View::layoutFormHeader>$save_button[' + i + '].onclick');
+                                // prevent propagation to parent container
+                                event.stopPropagation();
+                                event.stopImmediatePropagation();
                                 // #memo - delay action so that widgets onchange handlers are processed
                                 setTimeout( async () => {
                                     try {
@@ -2317,8 +2320,13 @@ export class View {
                 let header_action = header_actions["ACTION.SAVE"][0].id;
                 if(save_actions.hasOwnProperty(header_action)) {
                     let save_action = save_actions[header_action];
-                    $save_button.on('click', async () => {
+                    $save_button.on('click', async (event: any) => {
                         console.debug('View::layoutFormHeader>$save_button.onclick');
+                        // prevent propagation to children buttons, if any
+                        event.stopPropagation();
+                        event.stopImmediatePropagation();
+                        event.preventDefault();
+
                         // #memo - delay action so that widgets onchange handlers are processed
                         setTimeout( async () => {
                             try {
@@ -2594,7 +2602,6 @@ export class View {
         });
 
     }
-
 
     private decorateDialogDeletionConfirm($dialog: JQuery) {
         let $elem = $('<div />');
