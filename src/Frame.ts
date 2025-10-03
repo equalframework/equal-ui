@@ -591,7 +591,7 @@ export class Frame {
         for(let clause of tmpDomain.getClauses()) {
             for(let condition of clause.getConditions()) {
                 let field  = condition.getOperand();
-                if(field == 'id') continue;
+                if(field == 'id' || field == 'name') continue;
                 if(['ilike', 'like', '=', 'is'].includes(condition.getOperator()) && model_fields.hasOwnProperty(field)) {
                     fields[field] = condition.getValue();
                 }
