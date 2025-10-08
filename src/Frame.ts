@@ -576,7 +576,7 @@ export class Frame {
 
     /**
      * Generate an object mapping fields of current entity with default values, based on current domain.
-     * #todo - use Model class
+     * #todo - use Model class (@see `Model::getModelDefaults()`)
      *
      * @returns Object  A map of fields with their related default values
      */
@@ -591,7 +591,9 @@ export class Frame {
         for(let clause of tmpDomain.getClauses()) {
             for(let condition of clause.getConditions()) {
                 let field  = condition.getOperand();
-                if(field == 'id' || field == 'name') continue;
+                if(field == 'id' || field == 'name' || field == 'status') {
+                    continue;
+                }
                 if(['ilike', 'like', '=', 'is'].includes(condition.getOperator()) && model_fields.hasOwnProperty(field)) {
                     fields[field] = condition.getValue();
                 }

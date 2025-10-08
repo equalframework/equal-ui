@@ -88,7 +88,7 @@ export class Model {
         for(let clause of domain.getClauses()) {
             for(let condition of clause.getConditions()) {
                 let field  = condition.getOperand();
-                if(field == 'id') {
+                if(field == 'id' || field == 'name' || field == 'status') {
                     continue;
                 }
                 if(['ilike', 'like', '=', 'is'].includes(condition.getOperator()) && schema.hasOwnProperty(field)) {
@@ -180,6 +180,9 @@ export class Model {
         return result;
     }
 
+    /**
+     * Retrieve all fields that must be requested to the server, according to current context.
+     */
     public getFieldsProjection(): string[] {
         // fetch fields that are present in the parent View
         let view_fields: any = this.view.getViewFields();
