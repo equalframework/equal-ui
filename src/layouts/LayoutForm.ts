@@ -381,25 +381,29 @@ export class LayoutForm extends Layout {
 
                     $tabs.each( (i: number, elem: any) => {
                         let $tab = $(elem);
+                        // by default, make sure related section is hidden
+                        $group.find('#' + $tab.attr('data-section_id')).hide();
                         const visible = this.isVisible($tab.attr('data-visible') || '', object, user, {}, this.getEnv());
                         if(visible) {
                             $tab.show();
                             visible_tabs.push($tab);
-                            if($tab.hasClass('is-active')) {
+                            if(!$activeTab && $tab.hasClass('is-active')) {
                                 $activeTab = $tab;
+                                $tab.trigger('click');
                             }
                         }
                         else {
                             $tab.hide();
-                            $group.find('#' + $tab.attr('data-section_id')).hide();
                         }
                     });
 
                     // if no active tab is visible, activate the first visible one
                     if(!$activeTab && visible_tabs.length > 0) {
+                        // #memo - click handler is set at tab button creation UIHelper.createTabButton
                         visible_tabs[0].addClass('is-active').trigger('click');
                     }
                 }
+
                 // handle group with a single section
                 /*
                 // #memo -added below with support for all sub elements
