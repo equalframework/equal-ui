@@ -462,6 +462,9 @@ export class LayoutForm extends Layout {
                                         let tmpDomain = new Domain(item.domain);
                                         config.header.actions[id][index].domain = tmpDomain.parse(object, user, {}, this.getEnv()).toArray();
                                     }
+                                    if(item.hasOwnProperty('visible')) {
+                                        config.header.actions[id][index].visible = this.isVisible(item.visible, object, user, {}, this.getEnv());
+                                    }
                                 }
                             }
                         }
