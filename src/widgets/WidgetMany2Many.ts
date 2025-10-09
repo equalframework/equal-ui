@@ -73,6 +73,7 @@ export default class WidgetMany2Many extends Widget {
                         ...this.config,
                         ...{
                             header: {
+                                 ...(this.config.header || {}),
                                 selection: {
                                     default: false,
                                     actions: [{
@@ -323,6 +324,11 @@ export default class WidgetMany2Many extends Widget {
             return action.length > 0;
         }
         if(typeof action === 'object') {
+            if(action.hasOwnProperty('visible')) {
+                if(typeof action.visible === 'boolean') {
+                    return action.visible;
+                }
+            }
             if(Array.isArray(action[mode])) {
                 return action[mode].length > 0;
             }
