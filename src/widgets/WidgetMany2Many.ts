@@ -130,10 +130,10 @@ export default class WidgetMany2Many extends Widget {
 
             // domain is updated based on user actions: an additional clause for + (accept these whatever the other conditions) and additional conditions for - (prevent these whatever the other conditions)
             if(this.config.hasOwnProperty('ids_to_add') && this.config.ids_to_add.length) {
-                domain.addClause(new Clause([new Condition("id", "in", this.config.ids_to_add)]));
+                domain.addClause(new Clause([new Condition('id', 'in', this.config.ids_to_add)]));
             }
             if(this.config.hasOwnProperty('ids_to_del') && this.config.ids_to_del.length) {
-                domain.addCondition(new Condition("id", "not in", this.config.ids_to_del));
+                domain.addCondition(new Condition('id', 'not in', this.config.ids_to_del));
             }
 
             let view = new View(this.getLayout().getView().getContext(), this.config.entity, this.config.view_type, this.config.view_name, domain.toArray(), this.mode, 'widget', this.config.lang, view_config);
@@ -190,11 +190,11 @@ export default class WidgetMany2Many extends Widget {
                     let button_label = TranslationService.instant((this.rel_type == 'many2many') ? 'SB_ACTIONS_BUTTON_ADD' : 'SB_ACTIONS_BUTTON_SELECT');
 
                     if((this.config.header?.layout ?? 'full') === 'full') {
-                        $selectActionButton = UIHelper.createButton(this.getId()+'_action-select', button_label, 'raised');
+                        $selectActionButton = UIHelper.createButton(this.getId() + '_action-select', button_label, 'raised');
                         $actions_set.append($selectActionButton);
                     }
                     else {
-                        $selectActionButton = UIHelper.createButton(this.getId()+'_action-select', button_label, 'mini-fab', 'add');
+                        $selectActionButton = UIHelper.createButton(this.getId() + '_action-select', button_label, 'mini-fab', 'add');
                         $actions_set.prepend($selectActionButton);
                     }
 

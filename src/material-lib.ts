@@ -826,6 +826,7 @@ class UIHelper {
     }
 
     // #deprecated
+    /*
     public static decorateTableStatic($elem:any) {
         if(!$elem.length) {
             return;
@@ -839,6 +840,7 @@ class UIHelper {
         $thead.find('th').addClass('mdc-data-table__header-cell');
         $tbody.find('td').addClass('mdc-data-table__cell');
     }
+    */
 
     public static decorateTable($elem: any, view_schema: any) {
         if(!$elem.length) {

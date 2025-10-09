@@ -374,16 +374,19 @@ export class LayoutForm extends Layout {
 
                     // pass-2 - update tabs visibility, if any
                     let $tabs = $group.find('.sb-view-form-section-tab');
+
                     // when active tab is hidden, the next visible one must be auto selected (always enabled for single tab)
-                    let auto_select: boolean = ($tabs.length == 1);
+                    let visible_tabs: any[] = [];
+                    let $activeTab: JQuery | null = null;
+
                     $tabs.each( (i: number, elem: any) => {
                         let $tab = $(elem);
                         const visible = this.isVisible($tab.attr('data-visible') || '', object, user, {}, this.getEnv());
                         if(visible) {
                             $tab.show();
-                            if(auto_select || $tab.hasClass('is-active')) {
-                                $tab.trigger('click');
-                                auto_select = false;
+                            visible_tabs.push($tab);
+                            if($tab.hasClass('is-active')) {
+                                $activeTab = $tab;
                             }
                         }
                         else {
@@ -391,6 +394,11 @@ export class LayoutForm extends Layout {
                             $group.find('#' + $tab.attr('data-section_id')).hide();
                         }
                     });
+
+                    // if no active tab is visible, activate the first visible one
+                    if(!$activeTab && visible_tabs.length > 0) {
+                        visible_tabs[0].addClass('is-active').trigger('click');
+                    }
                 }
                 // handle group with a single section
                 /*
