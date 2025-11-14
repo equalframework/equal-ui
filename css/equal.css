@@ -458,6 +458,7 @@ body, html {
 
 .sb-view-header-list {
     position: relative;
+    min-height: 66px;
     max-height: 112px;
 }
 
@@ -471,7 +472,8 @@ body, html {
 }
 
 .sb-view.header-inline .sb-view-header-actions {
-    display: none;
+    /* #memo - do not use display none, to preserve top padding */
+    visibility: hidden;
 }
 
 .sb-view-header-list-actions button {
@@ -805,6 +807,7 @@ body, html {
     font-weight: 500;
     width: 100%;
     text-align: left;
+    margin-top: -10px;
 }
 
 .sb-view-form-group {

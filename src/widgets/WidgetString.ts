@@ -104,6 +104,7 @@ export default class WidgetString extends Widget {
                     if(this.config.layout == 'list') {
                         // #todo - improve this support
                         if(usage.indexOf('icon') >= 0 || usage.indexOf('symbol') >= 0) {
+                            // map eQual standard icons with material icons
                             let map_icons:any = {
                                     success:   {icon: "check_circle", color: "green"},
                                     info:      {icon: "info", color: "blue"},
@@ -115,6 +116,9 @@ export default class WidgetString extends Widget {
                                     due:       {icon: "money_off", color: "red"},
                                     valid:     {icon: "check_circle", color: "green"},
                                     invalid:   {icon: "error", color: "red"},
+                                    for:       {icon: "thumb_up", color: "green"},
+                                    against:   {icon: "thumb_down", color: "red"},
+                                    abstain:   {icon: "remove", color: "grey"},
                                     folder:    {icon: "folder", color: "#F8D775"},
                                     file:      {icon: "description", color: "grey"},
                                     document:  {icon: "description", color: "grey"},

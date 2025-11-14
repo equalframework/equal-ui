@@ -372,14 +372,14 @@ export default class WidgetMany2One extends Widget {
                             objects = response;
                             $menu_list.empty();
                             for(let object of objects) {
-                                UIHelper.createListItem(this.id+'-object-'+object.id, object.name.replaceAll(' ', '&nbsp;'))
+                                UIHelper.createListItem(this.id + '-object-' + object.id, (object.name ?? '').replaceAll(' ', '&nbsp;'))
                                     .appendTo($menu_list)
                                     .attr('id', object.id)
                                     // #memo - a handler is set on item click as well in the menu
                                     .on('click', (event) => {
                                         console.debug('WidgetMany2one: received click on item', object.id);
                                         $select.attr('data-selected', object.id);
-                                        $input.val(object.name).trigger('change');
+                                        $input.val(object.name ?? '').trigger('change');
                                         $button_reset.show();
                                         $select.find('input').prop('readonly', true);
                                         $select.trigger('update');
@@ -390,7 +390,7 @@ export default class WidgetMany2One extends Widget {
                                     // if list is exactly 1 object long : auto select
                                     let object = objects[0];
                                     $select.attr('data-selected', object.id);
-                                    $input.val(object.name).trigger('change');
+                                    $input.val(object.name ?? '').trigger('change');
                                     $select.trigger('update');
                                 }
                                 else {
@@ -414,7 +414,7 @@ export default class WidgetMany2One extends Widget {
                     }
 
                     // make the menu sync with its parent width (menu is 'fixed')
-                    $select.find('.mdc-menu-surface').width(<number>$select.width());
+                    $select.find('.mdc-menu-surface').width(<number> $select.width());
                 };
 
                 if(/*this.config.layout == 'form' &&*/ !this.readonly) {
@@ -607,7 +607,6 @@ export default class WidgetMany2One extends Widget {
                 }
                 break;
         }
-
 
         return this.$elem
             .addClass('sb-widget')

@@ -1179,6 +1179,7 @@ export class View {
         );
 
         const header_layout = ( (this.config.header?.layout ?? 'full') === 'inline') ? 'inline' : 'full';
+        const header_actions_disabled = ( typeof this.config.header?.actions === 'boolean' && !this.config.header.actions );
 
         let $elem = this.$headerContainer.find('.sb-view-header-list');
 
@@ -1195,27 +1196,25 @@ export class View {
         // right side : the actions specific to the view, and depending on object status
         let $view_actions = $('<div />').addClass('sb-view-header-actions-view').appendTo($actions_set);
 
-        // select & create are default behavior
-        let has_action_select = true;
-        let has_action_create = true;
-
-        // create_inline must be explicitly requested
-        let has_action_create_inline = false;
+        // assign select & create default behavior
+        let has_action_select = (this.mode === 'view' && (this.purpose === 'select' || this.purpose === 'add'));
+        let has_action_create = (this.type === 'list' && (this.purpose !== 'widget' || this.mode === 'edit'));
+        let has_action_create_inline = (header_layout === 'inline' && !header_actions_disabled);
 
         if(this.custom_actions.hasOwnProperty('ACTION.SELECT')) {
             has_action_select = this.isActionEnabled(this.custom_actions['ACTION.SELECT'], this.mode);
         }
-        if(this.custom_actions.hasOwnProperty('ACTION.CREATE')) {
+        if(this.custom_actions.hasOwnProperty('ACTION.CREATE') && !header_actions_disabled) {
             has_action_create = this.isActionEnabled(this.custom_actions['ACTION.CREATE'], this.mode);
         }
 
-        if(this.custom_actions.hasOwnProperty('ACTION.CREATE_INLINE') || (header_layout === 'inline' && has_action_create)) {
+        if(this.custom_actions.hasOwnProperty('ACTION.CREATE_INLINE') || (header_layout === 'inline' && has_action_create && !header_actions_disabled)) {
             // create & create_inline are mutually exclusive
             has_action_create = false;
             has_action_create_inline = this.isActionEnabled(this.custom_actions['ACTION.CREATE_INLINE'], this.mode);
         }
 
-        console.debug('View::layoutListHeader: resulting = has_action_ ', has_action_select, has_action_create, has_action_create_inline, header_layout, this.custom_actions);
+        console.debug('View::layoutListHeader:resulting = has_action_ ', has_action_select, has_action_create, has_action_create_inline, header_layout, this.custom_actions, this.name, this.getId());
 
         // append view actions, if requested
         if(this.config.show_actions) {
@@ -2634,8 +2633,10 @@ export class View {
      */
     public async onchangeViewModel(ids: Array<any>, values: object, refresh: boolean = true) {
         console.debug('View::onchangeViewModel', ids, values, refresh);
-        // force beforeunload callback, in order to block action if there is unsaved change
-        window.addEventListener('beforeunload', window.beforeUnloadListener);
+        if(this.mode === 'edit') {
+            // force beforeunload callback, in order to block action if there is unsaved change
+            window.addEventListener('beforeunload', window.beforeUnloadListener);
+        }
         this.model.change(ids, values);
         // model has changed : forms need to re-check the visibility attributes
         if(refresh) {
