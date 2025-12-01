@@ -142,7 +142,7 @@ class WidgetFactory {
     public static getTypeFromUsage(usage_str: string, default_type: string) {
         let result = default_type;
         let [usage, length] = usage_str.split(":");
-        if(usage == 'text/plain' && length && parseInt(length) <= 255) {
+        if(usage.includes('text/plain') && length && parseInt(length) <= 255) {
             usage = 'text/plain.short';
         }
         switch(usage) {
@@ -182,14 +182,16 @@ class WidgetFactory {
             case 'text/json.medium':
             case 'text/json.long':
             case 'text/html':
+            case 'text/html.small':
+            case 'text/html.medium':
+            case 'text/html.long':
             case 'markup/html':
                 result = 'text';
                 break;
             case 'url':
             case 'uri/url':
+            case 'uri/url.absolute':
             case 'uri/url.relative':
-            case 'uri/url:http':
-            case 'uri/url:https':
                 result = 'link';
                 break;
             case 'image':

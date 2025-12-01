@@ -226,7 +226,7 @@ export default class WidgetText extends Widget {
 
         switch(mode) {
             case 'edit':
-                if(usage === 'text/html') {
+                if(usage.includes('text/html')) {
                     // #memo - if generated at the back-end, it will be converted only once
                     result = result.trim()
                         // normalize CRLF
@@ -246,10 +246,10 @@ export default class WidgetText extends Widget {
                 break;
             case 'view':
                 // #memo - we don't use Quill here
-                if(usage === 'text/plain') {
+                if(usage.includes('text/plain')) {
                     result = value.replace(/(?:\r\n|\r|\n)/g, '<br />');
                 }
-                else if(usage === 'text/json') {
+                else if(usage.includes('text/json')) {
                     const escaped = result
                         .replace(/&/g, "&amp;")
                         .replace(/</g, "&lt;")
@@ -271,7 +271,7 @@ export default class WidgetText extends Widget {
 
         if(this.$elem.data('quill')) {
             const editor = this.$elem.data('quill');
-            if(usage === 'text/html') {
+            if(usage.includes('text/html')) {
                 // leave unchanged : this will not require any Quill processing at next load
                 /*
                 const container = document.createElement('div');
