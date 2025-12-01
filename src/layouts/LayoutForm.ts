@@ -1,6 +1,8 @@
 import { $ } from "../jquery-lib";
 import { UIHelper } from '../material-lib';
 import { Widget, WidgetFactory } from "../equal-widgets";
+import { View } from '../View';
+import { Context } from '../Context';
 import { Layout } from './Layout';
 import { TranslationService, ApiService, EnvService } from "../equal-services";
 import { Domain, Clause, Condition, Reference } from "../Domain";
@@ -262,18 +264,52 @@ export class LayoutForm extends Layout {
 
         if(objects.length > 0) {
             // #todo - keep internal index of the object to display (with a prev/next navigation in the header)
-            let object:any = objects[0];
+            let object: any = objects[0];
 
             // update actions in view header
             let view_schema = this.view.getViewSchema();
             let $view_actions = this.view.getContainer().find('.sb-view-header-actions-view').first().empty();
+
+            // if Form is a child of a parent List, display navigation actions (prev & next)
+            let parentContext: Context = this.view.getContext().getParent();
+            if(parentContext) {
+                let parentView: View = parentContext.getView();
+                if(parentView.getType() === 'list') {
+
+                    let $navigation_container = $('<div style="margin-left: auto; margin-right: 12px;"></div>').attr('id', this.uuid + '_navigation')
+                        .appendTo($view_actions);
+
+                    $navigation_container
+                        .append(
+                            UIHelper.createButton('pagination-prev_' + this.getUuid(), '', 'icon', 'chevron_left').addClass('sb-view-header-list-pagination-prev_page')
+                            .on('click', async (event: any) => {
+                                await parentView.navigationAction('prev');
+                                const object_id = parentView.getActiveObjectId();
+                                this.view.setDomain(['id', '=', object_id]);
+                                this.view.onchangeView();
+                            })
+                        )
+                        .append(
+                            UIHelper.createButton('pagination-next_' + this.getUuid(), '', 'icon', 'chevron_right').addClass('sb-view-header-list-pagination-next_page')
+                            .on('click', async (event: any) => {
+                                await parentView.navigationAction('next');
+                                const object_id = parentView.getActiveObjectId();
+                                this.view.setDomain(['id', '=', object_id]);
+                                this.view.onchangeView();
+                            })
+                        );
+
+                }
+            }
 
             // show object status, if defined and present
             if(model_fields.hasOwnProperty('status')) {
                 let $status_container = $view_actions.find('#' + this.uuid + '_status');
                 if($status_container.length == 0) {
                     let status_title = TranslationService.resolve(translation, 'model', [], 'status', 'status', 'label');
-                    $status_container = $('<div style="margin-left: auto;"></div>').attr('id', this.uuid + '_status').append( $('<span style="line-height: 46px; margin-right: 12px; text-transform: capitalize;">'+status_title+': <span class="status-value"></span></span>') ).appendTo($view_actions);
+                    $status_container = $('<div style="margin-left: auto; margin-right: 12px;"></div>').attr('id', this.uuid + '_status')
+                        .append( $('<span style="line-height: 46px; text-transform: capitalize;">' + status_title + ': <span class="status-value"></span></span>') )
+                        .appendTo($view_actions);
                 }
 
                 let translated = TranslationService.resolve(translation, 'model', [], 'status', model_fields['status'].selection, 'selection');

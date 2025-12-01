@@ -24,7 +24,7 @@ export class View {
     public type: string;
     public name: string;
 
-    // Mode under which the view is to be displayed ('View' [default], or 'edit')
+    // Mode under which the view is to be displayed ('view' [default], or 'edit')
     public mode: string;
     // Purpose for which the view is to be displayed (this impacts the action buttons in the header)
     public purpose: string;
@@ -54,17 +54,15 @@ export class View {
     private view_fields: any;
     // Map of fields mapping their Model definitions
     private model_fields: any;
-
     // Map of available filters from View definition mapping filters id with their definition
     private filters: any;
-
     // Map of available custom exports with their definition
     private exports: any;
 
-    // custom actions of the view
+    // Custom actions of the view
     private custom_actions: any;
 
-    // config object for setting display of list controls and action buttons
+    // Config object for setting display of list controls and action buttons
     private config: any;
 
     // List of currently selected filters from View definition (for filterable types)
@@ -76,14 +74,16 @@ export class View {
     private subscribers: any = {};
 
     private is_ready_promise: any;
-    private is_editing: boolean = false;
+    private is_inline_editing: boolean = false;
+
+    // for list views, keep track of the active object/row
+    private activeObjectId: number = 0;
 
     public $container: any;
 
     public $headerContainer: any;
     public $layoutContainer: any;
     public $footerContainer: any;
-
 
 
     /**
@@ -785,6 +785,78 @@ export class View {
         }
     }
 
+    public setActiveObjectId(id: number) {
+        this.activeObjectId = id;
+    }
+
+    public getActiveObjectId() {
+        return this.activeObjectId;
+    }
+
+    public async navigationAction(action: string) {
+        let objects = await this.model.get();
+        let index: number = objects.findIndex((obj: any) => obj.id === this.activeObjectId);
+        switch(action) {
+            case 'prev':
+                --index;
+                if(index < 0) {
+                    await this.paginationAction('prev');
+                    objects = await this.model.get();
+                    index = objects.length - 1;
+                }
+                this.setActiveObjectId(objects[index].id);
+                break;
+            case 'next':
+                ++index;
+                if(index >= objects.length) {
+                    await this.paginationAction('next');
+                    objects = await this.model.get();
+                    index = 0;
+                }
+                this.setActiveObjectId(objects[index].id);
+                break;
+        }
+    }
+
+    public async paginationAction(action: string) {
+        const limit = this.getLimit();
+        const start = this.getStart();
+        const total = this.getTotal();
+
+        // last possible valid offset (0 if total = 0)
+        const last_valid_start = (total > 0)
+            ? Math.floor((total - 1) / limit) * limit
+            : 0;
+
+        switch(action) {
+            case 'first':
+                this.setStart(0);
+                // update Model and set active index to last entry of loaded page
+                await this.onchangeView(false, limit - 1);
+                break;
+            case 'prev':
+                this.setStart(Math.max(0, start - limit));
+                // update Model and set active index to last entry of loaded page
+                await this.onchangeView(false, limit - 1);
+                break;
+            case 'next':
+                this.setStart(
+                    Math.min(
+                        last_valid_start,
+                        start + limit
+                    )
+                );
+                // update Model and set active index to first entry of loaded page
+                await this.onchangeView(false, 0);
+                break;
+            case 'last':
+                this.setStart(last_valid_start);
+                // update Model and set active index to first entry of loaded page
+                await this.onchangeView(false, 0);
+                break;
+        }
+    }
+
     /**
      * This is meant to be used by children components, in order to control the View according to specific bahavior
      *
@@ -921,6 +993,7 @@ export class View {
     public setField(field: string, value: any) {
         this.view_fields[field] = value;
     }
+
     public getField(field: string) {
         return this.view_fields[field];
     }
@@ -928,12 +1001,15 @@ export class View {
     public setSort(sort: string) {
         this.sort = sort;
     }
+
     public setOrder(order: string) {
         this.order = order;
     }
+
     public setStart(start: number) {
-        this.start = start;;
+        this.start = start;
     }
+
     public setLimit(limit: number) {
         this.limit = limit;
     }
@@ -960,6 +1036,10 @@ export class View {
 
     public getModelSchema() {
         return this.model_schema;
+    }
+
+    public setDomain(domain: any[]) {
+        this.domain = domain;
     }
 
     /**
@@ -1214,7 +1294,7 @@ export class View {
             has_action_create_inline = this.isActionEnabled(this.custom_actions['ACTION.CREATE_INLINE'], this.mode);
         }
 
-        console.debug('View::layoutListHeader:resulting = has_action_ ', has_action_select, has_action_create, has_action_create_inline, header_layout, this.custom_actions, this.name, this.getId());
+        console.debug('View::layoutListHeader:resulting = has_action_ ', has_action_select, has_action_create, has_action_create_inline, header_layout, this.custom_actions, this.entity, this.getId());
 
         // append view actions, if requested
         if(this.config.show_actions) {
@@ -1415,7 +1495,7 @@ export class View {
                     // retrieve model of the view
                     let model = view.getModel();
                     let objects = await model.get();
-                    let object:any = objects[0];
+                    let object: any = objects[0];
                     // inject object as part of parent View's body for the Model service
                     for(let field in object) {
                         let value = object[field];
@@ -1623,8 +1703,7 @@ export class View {
             $paginationNavigation.append(
                 UIHelper.createButton('pagination-first_' + this.getUuid(), '', 'icon', 'first_page').addClass('sb-view-header-list-pagination-first_page')
                 .on('click', (event: any) => {
-                    this.setStart(0);
-                    this.onchangeView();
+                    this.paginationAction('first');
                 })
             );
         }
@@ -1632,16 +1711,14 @@ export class View {
         $paginationNavigation.append(
                 UIHelper.createButton('pagination-prev_' + this.getUuid(), '', 'icon', 'chevron_left').addClass('sb-view-header-list-pagination-prev_page')
                 .on('click', (event: any) => {
-                    this.setStart(Math.max(0, this.getStart() - this.getLimit()));
-                    this.onchangeView();
+                    this.paginationAction('prev');
                 })
             );
 
         $paginationNavigation.append(
                 UIHelper.createButton('pagination-next_' + this.getUuid(), '', 'icon', 'chevron_right').addClass('sb-view-header-list-pagination-next_page')
                 .on('click', (event: any) => {
-                    this.setStart(Math.min( this.getTotal() - this.getLimit(), this.getStart() + this.getLimit() ));
-                    this.onchangeView();
+                    this.paginationAction('next');
                 })
             );
 
@@ -1649,8 +1726,7 @@ export class View {
             $paginationNavigation.append(
                 UIHelper.createButton('pagination-last_' + this.getUuid(), '', 'icon', 'last_page').addClass('sb-view-header-list-pagination-last_page')
                 .on('click', (event: any) => {
-                    this.setStart(this.getTotal() - this.getLimit());
-                    this.onchangeView();
+                    this.paginationAction('last');
                 })
             );
         }
@@ -2665,25 +2741,37 @@ export class View {
 
     /**
      * Callback for requesting a Model refresh.
-     * Requested either from view: domain has been updated,
-     * or from layout: context has been updated (sort column, sorting order, limit, page, ...)
+     * Request can be issued:
+     *   - either from view: domain has been updated,
+     *   - or from layout: context has been updated (sort column, sorting order, limit, page, ...)
      */
-    public async onchangeView(full: boolean = false) {
+    public async onchangeView(full: boolean = false, next_index: number = 0) {
         console.debug('View::onchangeView', full);
 
-        if(this.is_editing) {
+        if(this.is_inline_editing) {
             return;
         }
 
-        // notify about context update
-        this.context.updatedContext();
+        if(this.getMode() === 'edit') {
+            // notify about context update
+            this.context.updatedContext();
+        }
 
         // reset selection
         this.selected_ids = [];
+
         if(['list', 'chart'].includes(this.type)) {
             this.layout.loading(true);
         }
         await this.model.refresh(full);
+
+        // for list View, update `activeObjectId` based on next_index
+        if(this.type === 'list') {
+            const objects = await this.model.get();
+            if(objects[next_index] ?? null) {
+                this.setActiveObjectId(objects[next_index].id)
+            }
+        }
     }
 
     /**
@@ -2910,11 +2998,11 @@ export class View {
     // #todo - this should be in LayoutList
     private async actionCreateInline() {
 
-        if(this.is_editing) {
+        if(this.is_inline_editing) {
             return;
         }
 
-        this.is_editing = true;
+        this.is_inline_editing = true;
 
         try {
             // create a new object
@@ -2953,8 +3041,8 @@ export class View {
                             $tr.find('.sb-action-cell').empty();
                             // restore header width
                             $actionsHeader.css('width', original_width + 'px');
-                            // toggle is_editing flag
-                            this.is_editing = false;
+                            // toggle is_inline_editing flag
+                            this.is_inline_editing = false;
                             // refresh view (necessary for computed operations)
                             await this.onchangeView();
                         }
@@ -2971,7 +3059,7 @@ export class View {
                         console.debug('cancelled creation', object);
                         this.$layoutContainer.find('tr[data-id="' + object.id + '"]').remove();
                         $tr.remove();
-                        this.is_editing = false;
+                        this.is_inline_editing = false;
                         $actionsHeader.css('width', original_width + 'px');
                     }
                 }
@@ -2992,7 +3080,7 @@ export class View {
                 .trigger('_toggle_mode', 'edit');
         }
         catch(response) {
-            this.is_editing = false;
+            this.is_inline_editing = false;
         }
     }
 

@@ -173,7 +173,7 @@ export class LayoutList extends Layout {
             }
             let width = Math.floor(10 * item.width) / 10;
             let $cell = $('<th/>').attr('name', field)
-                // #memo - by using css, columns are adpated according to additional columns with fixed width, if any (checkbox & actions)
+                // #memo - by using css, columns are adapted according to additional columns with fixed width, if any (checkbox & actions)
                 .css({width: width + '%'})
                 .append(config.title)
                 .on('click', (event:any) => {
@@ -638,6 +638,8 @@ export class LayoutList extends Layout {
                 }
                 // discard click when row is being edited
                 if($this.attr('data-edit') == '0') {
+                    this.view.setActiveObjectId(object.id);
+
                     let childViewSchema = await ApiService.getView(this.view.getEntity(), 'form' + '.' + this.view.getName());
                     // #todo - allow overloading default action ('ACTIONS.UPDATE')
                     // fallback to view mode if `header.actions.ACTION.EDIT` is set to false
@@ -648,7 +650,13 @@ export class LayoutList extends Layout {
                         }
                     }
 
-                    let config: any = {entity: this.view.getEntity(), type: 'form', name: this.view.getName(), mode: mode, domain: ['id', '=', object.id]};
+                    let config: any = {
+                            entity: this.view.getEntity(),
+                            type: 'form',
+                            name: this.view.getName(),
+                            mode: mode,
+                            domain: ['id', '=', object.id]
+                        };
                     // if current list is a widget, reload content after child context has been closed
                     if(this.view.getPurpose() == 'widget') {
                         config.callback = (data: any) => {
@@ -656,6 +664,7 @@ export class LayoutList extends Layout {
                             this.view.onchangeView();
                         };
                     }
+
                     this.openContext(config);
                 }
             })
