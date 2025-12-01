@@ -52,7 +52,7 @@ export default class WidgetText extends Widget {
                     this.$elem = $('<div class="sb-ui-textarea" />');
 
                     if(this.config.hasOwnProperty('height') && this.config.height > 0) {
-                        this.$elem.css({height: this.config.height+'px'});
+                        this.$elem.css({height: this.config.height + 'px'});
                     }
 
                     let $editor = $('<div quill__editor></div>');

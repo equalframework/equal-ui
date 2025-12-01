@@ -10,7 +10,7 @@ export default class WidgetLabel extends Widget {
     }
 
     public render(): JQuery {
-        let value:any = (typeof this.value != undefined && this.value != undefined) ? this.value : '';
+        let value: any = (typeof this.value != undefined && this.value != undefined) ? this.value : '';
         if(typeof value == 'string') {
             value = value.replace(/"/g, "&quot;");
         }
@@ -25,9 +25,13 @@ export default class WidgetLabel extends Widget {
             })
             .appendTo(this.$elem);
 
+        // decorate the widget according to styles present in config
         this.applyStyling($text);
 
-        return this.$elem.addClass('sb-widget').addClass('sb-widget-mode-' + this.mode).attr('id', this.getId());
+        return this.$elem
+            .addClass('sb-widget')
+            .addClass('sb-widget-mode-' + this.mode)
+            .attr('id', this.getId());
     }
 
 

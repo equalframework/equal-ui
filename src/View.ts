@@ -835,7 +835,12 @@ export class View {
                 await this.onchangeView(false, limit - 1);
                 break;
             case 'prev':
-                this.setStart(Math.max(0, start - limit));
+                this.setStart(
+                    Math.max(
+                        0,
+                        start - limit
+                    )
+                );
                 // update Model and set active index to last entry of loaded page
                 await this.onchangeView(false, limit - 1);
                 break;

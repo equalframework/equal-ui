@@ -33,7 +33,7 @@ export default class WidgetString extends Widget {
     }
 
     public render(): JQuery {
-        let value:any = (typeof this.value != undefined && this.value != undefined) ? this.value : '';
+        let value: any = (typeof this.value != undefined && this.value != undefined) ? this.value : '';
         let usage = (this.config.hasOwnProperty('usage')) ? this.config.usage : '';
 
         if(typeof value == 'string') {
@@ -147,7 +147,9 @@ export default class WidgetString extends Widget {
                         this.$elem = UIHelper.createInputView('widget-string_' + this.getId(), this.label, value, this.config.description);
                     }
 
+                    // decorate the widget according to styles present in config
                     this.applyStyling(this.$elem);
+
                     this.$elem.attr('title', value);
                 }
                 break;
