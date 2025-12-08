@@ -196,7 +196,7 @@ export class LayoutSearch extends Layout {
             let $tabs = this.$layout.find('.mdc-tab.sb-view-form-section-tab');
             $tabs.each( (i:number, elem:any) => {
                 let $tab = $(elem);
-                const visible = this.isVisible($tab.attr('data-visible') || '', object, user, {}, this.getEnv());
+                const visible = this.isVisible($tab.attr('data-visible') ?? '', object, user, {}, this.getEnv());
                 if(visible) {
                     $tab.show();
                 }
