@@ -688,6 +688,11 @@ body, html {
     height: 100%;
     overflow-y: auto;
     padding: 0 3px;
+    font-size: 14px;
+}
+
+.sb-widget.sb-ui-textarea .textarea-content:hover {
+    background-color: #f6f6f6
 }
 
 .sb-widget.sb-ui-textarea .textarea-content::-webkit-scrollbar {
@@ -865,7 +870,7 @@ body, html {
     /* height: auto; */
     /* width: auto; */
     top: -10px !important;
-    right: 0px !important;
+    right: 0px;
     transform: scale(0.85);
 }
 
@@ -1165,7 +1170,8 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
 }
 
 .sb-widget.sb-widget-mode-edit.sb-widget-type-many2one .mdc-icon-button.sb-button-inner {
-    right: 45px !important;
+    /* only for reset button - handled in m2o widget */
+    /* right: 45px !important; */
 }
 
 .sb-widget.sb-widget-mode-edit .sb-ui-menu.mdc-menu-surface--is-open-below {
