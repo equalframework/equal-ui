@@ -34,6 +34,10 @@ export default class WidgetMany2One extends Widget {
                 let objects: Array<any> = [];
                 this.$elem = $('<div />');
 
+                if(this.config.layout == 'list') {
+                    this.$elem.css({"width": "calc(100% - 10px)"});
+                }
+
                 // #memo - style is set on .sb-widget.sb-widget-mode-edit.sb-widget-type-many2one .mdc-icon-button
                 let $button_reset = UIHelper.createButton('m2o-actions-reset-' + this.id, '', 'icon', 'close')
                     .addClass('sb-button-inner')
@@ -49,9 +53,9 @@ export default class WidgetMany2One extends Widget {
                 let $link_search = UIHelper.createListItem('m2o-actions-search-' + this.id, '<a style="text-decoration: underline;">' + TranslationService.instant('SB_WIDGETS_MANY2ONE_ADVANCED_SEARCH')+'</a>');
                 let $link_instant = UIHelper.createListItem('m2o-actions-instant-' + this.id, '<a style="text-decoration: underline;">' + TranslationService.instant('SB_ACTIONS_BUTTON_CREATE')+' "{value}"'+'</a>');
 
-                if(this.config.has_action_open || this.config.has_action_create) {
-                    $select.css({"width": "calc(100% - 48px)"});
-                }
+                let has_action_open = this.config.has_action_open;
+                let has_action_create = this.config.has_action_create;
+                let has_action_reset = true;
 
                 UIHelper.decorateMenu($menu);
 
@@ -65,12 +69,22 @@ export default class WidgetMany2One extends Widget {
                     this.$elem.trigger('_updatedWidget');
                 });
 
-                if(value.length || this.readonly) {
+                if(this.readonly) {
+                    has_action_reset = false;
+                }
+
+                if(value.length || this.readonly || !has_action_create) {
+                    has_action_create = false;
                     $button_create.hide();
                 }
 
-                if(!this.value) {
+                if(!this.value || !has_action_open) {
+                    has_action_open = false;
                     $button_open.hide();
+                }
+
+                if(has_action_open || has_action_create) {
+                    $select.css({"width": "calc(100% - 48px)"});
                 }
 
                 this.$elem.append($select);
@@ -79,10 +93,7 @@ export default class WidgetMany2One extends Widget {
                     $select.attr('data-selected', this.config.object_id);
                 }
 
-                if(!this.config.has_action_open) {
-                    $button_open.hide();
-                }
-                else {
+                if(has_action_open) {
                     this.$elem.append($button_open);
                     let view_type = 'form';
                     let view_name = (this.config.hasOwnProperty('view_name')) ? this.config.view_name : 'default';
@@ -123,10 +134,7 @@ export default class WidgetMany2One extends Widget {
                     });
                 }
 
-                if(!this.config.has_action_create || this.readonly) {
-                    $button_create.hide();
-                }
-                else {
+                if(has_action_create) {
                     this.$elem.append($button_create);
                     // open creation form in new context
                     $button_create.on('click', async () => {
@@ -420,12 +428,17 @@ export default class WidgetMany2One extends Widget {
                 if(/*this.config.layout == 'form' &&*/ !this.readonly) {
                     console.debug('WidgetMany2One: setting up listener on $select');
 
-                    if(!this.config.has_action_open && !this.config.has_action_create) {
-                        $button_reset.css({"right": "5px"});
+                    if(!has_action_open && !has_action_create) {
+                        // #memo - reset button uses absolute positioning
+                        $button_reset.css({"right": "-5px"});
+                        $select.find('input').css({'width': 'calc(100% - 40px)'});
+                    }
+                    else {
+                        // make room for reset button
+                        $button_reset.css({"right": "45px"});
+                        $select.find('input').css({'width': 'calc(100% - 50px)'});
                     }
 
-                    // make room for reset button
-                    $select.find('input').css({'width': 'calc(100% - 50px)'});
                     // insert before other buttons, if any, to respect tabindex
                     $button_reset.insertAfter($select);
 
