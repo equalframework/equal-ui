@@ -268,6 +268,32 @@ export class Layout implements LayoutInterface{
         return selectedSections;
     }
 
+    protected async decorateRouteButton($button: JQuery, route: any, object: any = {}) {
+        $button.on('click', async (event: any) => {
+            event.stopPropagation();
+            let target_id: any = 0;
+            if(route.hasOwnProperty('context')) {
+                let context:any = {...route.context};
+                if(context.hasOwnProperty('domain') && Array.isArray(context.domain)) {
+                    let domain = JSON.stringify(context.domain);
+                    for(let object_field of Object.keys(object)) {
+                        target_id = object[object_field];
+                        // handle m2o sub-ojects (assuming id is always loaded)
+                        if(typeof target_id == 'object' && target_id !== null && target_id.hasOwnProperty('id')) {
+                            target_id = target_id.id;
+                        }
+                        domain = domain.replace('object.' + object_field, target_id);
+                    }
+                    context.domain = JSON.parse(domain);
+                }
+                else if(target_id) {
+                    context.domain = ['id', '=', target_id];
+                }
+                this.getView().getContext().getFrame().openContext(context);
+            }
+        });
+    }
+
     protected async decorateActionButton($button: JQuery, action: any, object: any = {}) {
         $button.on('click', async (event: any) => {
             event.stopPropagation();
@@ -625,9 +651,12 @@ export class Layout implements LayoutInterface{
         }
     }
 
-    protected isVisible(visible: string | [], object: any, user: any, parent: any = {}, env: any = {}) {
+    protected isVisible(visible: boolean | string | [], object: any, user: any, parent: any = {}, env: any = {}) {
         console.debug('LayoutForm::isVisible - evaluating visibility', JSON.stringify(visible), object, user, env);
         let result = true;
+        if(typeof visible === 'boolean') {
+            return visible;
+        }
         if(visible.length) {
             if(visible === 'false') {
                 result = false;
