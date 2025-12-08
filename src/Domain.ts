@@ -131,7 +131,7 @@ export class Domain {
                     let has_unknown_field: boolean = false;
 
                     for(const subfield of parts) {
-                        if(!target.hasOwnProperty(subfield)) {
+                        if(target == null || !target.hasOwnProperty(subfield)) {
                             has_unknown_field = true;
                             break;
                         }
@@ -142,7 +142,6 @@ export class Domain {
                     }
                     // target points to an object with subfields
                     if(typeof target === 'object' && !Array.isArray(target)) {
-                        // #memo - this case should never occur (unknown fields are ignored from condition)
                         if(target === null) {
                             value = 'null';
                         }
@@ -177,7 +176,10 @@ export class Domain {
                     let tmp = parent[target];
                     // target points to an object with subfields
                     if(typeof tmp === 'object' && !Array.isArray(tmp)) {
-                        if(tmp.hasOwnProperty('id')) {
+                        if(tmp === null) {
+                            value = 'null';
+                        }
+                        else if(tmp.hasOwnProperty('id')) {
                             value = tmp.id;
                         }
                         else if(tmp.hasOwnProperty('name')) {
@@ -506,7 +508,7 @@ export class Reference {
             if(object && object.hasOwnProperty(target)) {
                 let tmp = object[target];
                 // target points to an object with subfields
-                if(typeof tmp === 'object' && !Array.isArray(tmp)) {
+                if(tmp && typeof tmp === 'object' && !Array.isArray(tmp)) {
                     if(tmp.hasOwnProperty('id')) {
                         result = tmp.id;
                     }
@@ -531,7 +533,7 @@ export class Reference {
             if(parent && parent.hasOwnProperty(target)) {
                 let tmp = parent[target];
                 // target points to an object with subfields
-                if(typeof tmp === 'object' && !Array.isArray(tmp)) {
+                if(tmp && typeof tmp === 'object' && !Array.isArray(tmp)) {
                     if(tmp.hasOwnProperty('id')) {
                         result = tmp.id;
                     }
