@@ -270,38 +270,6 @@ export class LayoutForm extends Layout {
             let view_schema = this.view.getViewSchema();
             let $view_actions = this.view.getContainer().find('.sb-view-header-actions-view').first().empty();
 
-            // if Form is a child of a parent List, display navigation actions (prev & next)
-            let parentContext: Context = this.view.getContext().getParent();
-            if(parentContext) {
-                let parentView: View = parentContext.getView();
-                if(parentView.getType() === 'list') {
-
-                    let $navigation_container = $('<div style="margin-left: auto; margin-right: 12px;"></div>').attr('id', this.uuid + '_navigation')
-                        .appendTo($view_actions);
-
-                    $navigation_container
-                        .append(
-                            UIHelper.createButton('pagination-prev_' + this.getUuid(), '', 'icon', 'chevron_left').addClass('sb-view-header-list-pagination-prev_page')
-                            .on('click', async (event: any) => {
-                                await parentView.navigationAction('prev');
-                                const object_id = parentView.getActiveObjectId();
-                                this.view.setDomain(['id', '=', object_id]);
-                                this.view.onchangeView();
-                            })
-                        )
-                        .append(
-                            UIHelper.createButton('pagination-next_' + this.getUuid(), '', 'icon', 'chevron_right').addClass('sb-view-header-list-pagination-next_page')
-                            .on('click', async (event: any) => {
-                                await parentView.navigationAction('next');
-                                const object_id = parentView.getActiveObjectId();
-                                this.view.setDomain(['id', '=', object_id]);
-                                this.view.onchangeView();
-                            })
-                        );
-
-                }
-            }
-
             // show object status, if defined and present
             if(model_fields.hasOwnProperty('status')) {
                 let $status_container = $view_actions.find('#' + this.uuid + '_status');
@@ -331,7 +299,7 @@ export class LayoutForm extends Layout {
                 // filter actions and keep only visible ones (based on 'visible' and 'access' properties)
                 let actions = [];
                 for(let action of view_schema.actions) {
-                    let visible = this.isVisible(action?.visible || '', object, user, {}, this.getEnv());
+                    let visible = this.isVisible(action?.visible ?? '', object, user, {}, this.getEnv());
                     if(visible && action.hasOwnProperty('access') && action.access.hasOwnProperty('groups') && Array.isArray(action.access.groups)) {
                         visible = false;
                         if(user.hasOwnProperty('groups') && Array.isArray(user.groups)) {
@@ -386,11 +354,43 @@ export class LayoutForm extends Layout {
                 }
             }
 
+            // if form is a child of a parent List, display navigation actions (prev & next)
+            let parentContext: Context = this.view.getContext().getParent();
+            if(parentContext && typeof parentContext.getView === "function") {
+                let parentView: View = parentContext.getView();
+                if(parentView.getType() === 'list' && this.view.getType() === 'form' && parentView.getEntity() === this.view.getEntity()) {
+                    let $navigation_container = $('<div style="margin-left: auto; margin-right: 12px; padding-left: 12px;"></div>').attr('id', this.uuid + '_navigation')
+                        .appendTo($view_actions);
+
+                    // #todo - il faut aussi changer le titre dans le frame
+                    $navigation_container
+                        .append(
+                            UIHelper.createButton('pagination-prev_' + this.getUuid(), '', 'icon', 'chevron_left').addClass('sb-view-header-list-pagination-prev_page')
+                            .on('click', async (event: any) => {
+                                await parentView.navigationAction('prev');
+                                const object_id = parentView.getActiveObjectId();
+                                this.view.setDomain(['id', '=', object_id]);
+                                this.view.onchangeView();
+                            })
+                        )
+                        .append(
+                            UIHelper.createButton('pagination-next_' + this.getUuid(), '', 'icon', 'chevron_right').addClass('sb-view-header-list-pagination-next_page')
+                            .on('click', async (event: any) => {
+                                await parentView.navigationAction('next');
+                                const object_id = parentView.getActiveObjectId();
+                                this.view.setDomain(['id', '=', object_id]);
+                                this.view.onchangeView();
+                            })
+                        );
+
+                }
+            }
+
             // update groups visibility, if any
             let $groups = this.$layout.find('.sb-view-form-group');
             $groups.each( (i: number, elem: any) => {
                 let $group = $(elem);
-                let visible = this.isVisible($group.attr('data-visible') || '', object, user, {}, this.getEnv());
+                let visible = this.isVisible($group.attr('data-visible') ?? '', object, user, {}, this.getEnv());
                 if(!visible) {
                     $group.hide();
                 }
@@ -399,7 +399,7 @@ export class LayoutForm extends Layout {
                     // pass-1 - handle visibility of sub-elements
                     $group.find('.sb-view-form-section, .sb-view-form-row, .sb-view-form-column').each((index: number, elem: any) => {
                         const $elem = $(elem);
-                        const visible = this.isVisible($elem.attr('data-visible') || '', object, user, {}, this.getEnv());
+                        const visible = this.isVisible($elem.attr('data-visible') ?? '', object, user, {}, this.getEnv());
                         if(visible) {
                             $elem.show();
                         }
@@ -419,7 +419,7 @@ export class LayoutForm extends Layout {
                         let $tab = $(elem);
                         // by default, make sure related section is hidden
                         $group.find('#' + $tab.attr('data-section_id')).hide();
-                        const visible = this.isVisible($tab.attr('data-visible') || '', object, user, {}, this.getEnv());
+                        const visible = this.isVisible($tab.attr('data-visible') ?? '', object, user, {}, this.getEnv());
                         if(visible) {
                             $tab.show();
                             visible_tabs.push($tab);
@@ -446,7 +446,7 @@ export class LayoutForm extends Layout {
                 if(parseInt(<string> $group.attr('data-sections_count')) <= 1) {
                     // update section visibility
                     let $section = $group.find('.sb-view-form-section').first();
-                    let visible = this.isVisible($section.attr('data-visible') ||'', object, user, {}, this.getEnv());
+                    let visible = this.isVisible($section.attr('data-visible') ?? '', object, user, {}, this.getEnv());
                     if(visible) {
                         $section.show();
                     }

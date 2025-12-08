@@ -2750,7 +2750,7 @@ export class View {
      *   - either from view: domain has been updated,
      *   - or from layout: context has been updated (sort column, sorting order, limit, page, ...)
      */
-    public async onchangeView(full: boolean = false, next_index: number = 0) {
+    public async onchangeView(full: boolean = false, active_index: number = 0) {
         console.debug('View::onchangeView', full);
 
         if(this.is_inline_editing) {
@@ -2768,13 +2768,14 @@ export class View {
         if(['list', 'chart'].includes(this.type)) {
             this.layout.loading(true);
         }
+
         await this.model.refresh(full);
 
-        // for list View, update `activeObjectId` based on next_index
+        // for list View, update `activeObjectId` based on active_index
         if(this.type === 'list') {
             const objects = await this.model.get();
-            if(objects[next_index] ?? null) {
-                this.setActiveObjectId(objects[next_index].id)
+            if(objects[active_index] ?? null) {
+                this.setActiveObjectId(objects[active_index].id)
             }
         }
     }

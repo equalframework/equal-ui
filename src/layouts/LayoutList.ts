@@ -155,6 +155,7 @@ export class LayoutList extends Layout {
         }
 
         let first_column: boolean = true;
+
         for(let item of view_schema.layout.items) {
             if(!item.hasOwnProperty('value')) {
                 continue;
@@ -213,7 +214,8 @@ export class LayoutList extends Layout {
         this.$layout.append($elem);
 
         if(view_schema.hasOwnProperty('operations')) {
-            console.debug('LayoutList::layout() assigning operations');
+            console.debug(' ');
+
             let $operations = $('<div>').addClass('table-operations');
             for(let operation in view_schema.operations) {
                 let op_descriptor = view_schema.operations[operation];
@@ -263,32 +265,63 @@ export class LayoutList extends Layout {
 
         UIHelper.decorateTable($elem, view_schema);
 
-        if(view_schema.hasOwnProperty('actions')) {
-            if(view_schema.actions.length) {
-                // set action column width according to number of actions
-                $actions_column.css({width: ((view_schema.actions.length * 44) + 10) + 'px'});
-            }
 
+
+        let count_actions_column_items: number = 0;
+        console.debug('LayoutList::layout - testing routes & actions');
+
+        if(view_schema.hasOwnProperty('actions') && view_schema.actions.length) {
+            console.debug('LayoutList::layout - adding actions');
             // #memo actions from view_schema.actions that are relative to a single object can be marked with the "inline" property, in such case they are rendered as buttons on each line (see below)
             // otherwise actions are considered global to the view and are displayed in the top right corner (similar to forms)
             // for actions depending on current selection, use  {view_schema}.header.actions
-            if(this.view.getPurpose() != 'widget') {
-                let $view_actions = this.view.getContainer().find('.sb-view-header-actions-view').first().empty();
+            let $view_actions = this.view.getContainer().find('.sb-view-header-actions-view').first().empty();
 
-                for(let action of view_schema.actions) {
-                    if(action.hasOwnProperty('inline') && action.inline) {
-                        continue;
-                    }
-                    let action_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, action.label);
-                    let $action_button = UIHelper.createButton(this.uuid + '_action-view-' + action.id, action_title, 'outlined');
-                    $action_button.css({'margin-left': '12px'});
-                    $view_actions.append($action_button);
-                    this.decorateActionButton($action_button, action);
+            for(let action of view_schema.actions) {
+                if(action.hasOwnProperty('inline') && action.inline) {
+                    ++count_actions_column_items;
+                    continue;
                 }
-
+                // do not show action buttons for lists as sub-form (widget)
+                if(this.view.getPurpose() === 'widget') {
+                    continue;
+                }
+                let action_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, action.label);
+                let $action_button = UIHelper.createButton(this.uuid + '_action-view-' + action.id, action_title, 'outlined');
+                $action_button.css({'margin-left': '12px'});
+                $view_actions.append($action_button);
+                this.decorateActionButton($action_button, action);
             }
-
         }
+
+        if(view_schema.hasOwnProperty('routes') && view_schema.routes.length) {
+            console.debug('LayoutList::layout - adding routes');
+            // #memo - only inline routes are supported and handled as actions opening the context given in the route
+            for(let route of view_schema.routes) {
+                if(route.hasOwnProperty('inline') && route.inline) {
+                    ++count_actions_column_items;
+                    continue;
+                }
+            }
+        }
+
+        if(count_actions_column_items > 0) {
+            const actions_width = (count_actions_column_items * 44) + 10;
+            // set action column width according to number of actions
+            $actions_column.css({width: actions_width + 'px'});
+            // add a virtual column of same width in operation rows (to maintain alignment)
+            if(view_schema.hasOwnProperty('operations')) {
+                let $op_rows: any = $elem.find('.table-operations').first().find('.operation-row');
+            console.debug('LayoutList::layout - fadding width to op_rows', $op_rows);
+                for(let $op_row of $op_rows) {
+                    $('<div/>')
+                        .addClass('operation-cell mdc-data-table__cell sb-operation-actions-cell')
+                        .css({ width: actions_width + 'px', 'text-align': 'right' })
+                        .appendTo($op_row);
+                }
+            }
+        }
+
     }
 
     protected async feed(objects: any) {
@@ -358,6 +391,26 @@ export class LayoutList extends Layout {
                             $action_button.attr('title', action_title);
                             this.decorateActionButton($action_button, action, object);
                             $actions_cell.append($action_button);
+                        }
+                    }
+
+                    if(view_schema.hasOwnProperty('routes')) {
+                        for(let route of view_schema.routes) {
+                            let visible = true;
+                            if(!route.hasOwnProperty('inline') || !route.inline) {
+                                visible = false;
+                            }
+                            else if(route.hasOwnProperty('visible')) {
+                                visible = this.isVisible(route.visible, object, user, {}, this.getEnv());
+                            }
+                            if(!visible) {
+                                continue;
+                            }
+                            let route_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'routes'], route.id, route.label);
+                            let $route_button = UIHelper.createButton(this.uuid + '_action-view-' + route.id + '-' + object.id, route_title, 'icon', route.icon ?? 'done');
+                            $route_button.attr('title', route_title);
+                            this.decorateRouteButton($route_button, route, object);
+                            $actions_cell.append($route_button);
                         }
                     }
 
@@ -970,8 +1023,16 @@ export class LayoutList extends Layout {
         }
 
         // compute colspan: default to full row
-        let colspan = group['_colspan'] ?? schema.layout.items.length;
-        $row.append( $('<td />').addClass('sb-group-cell').css({'padding-left': '' + (12 + parseInt(level) * 4) + 'px)'}).append( $('<i/>').addClass('material-icons sb-toggle-button').text('chevron_right') ) );
+        let visible_columns = schema.layout.items.filter( (item: any) => item.visible !== false);
+
+        let colspan = group['_colspan'] ?? visible_columns.length;
+
+        $row.append( $('<td />')
+                .addClass('sb-group-cell')
+                .css({'padding-left': '' + (12 + parseInt(level) * 4) + 'px)'})
+                .append( $('<i/>').addClass('material-icons sb-toggle-button').text('chevron_right') )
+            );
+
         $row.append( $('<td/>')
                 .attr('title', prefix + label)
                 .attr('colspan', colspan)
@@ -980,7 +1041,14 @@ export class LayoutList extends Layout {
             );
 
         // append remaining cells, and inject operations, if any
-        for(let i = colspan, n = schema.layout.items.length; i < n; ++i) {
+        for(let i = 0, j = 0, n = schema.layout.items.length; i < n; ++i) {
+            if(schema.layout.items[i].visible === false) {
+                continue;
+            }
+            if(j < colspan) {
+                ++j;
+                continue;
+            }
             let column = schema.layout.items[i].value;
             let type = viewModel.getFinalType(column);
             let value = '';
