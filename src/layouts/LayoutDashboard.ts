@@ -106,7 +106,7 @@ export class LayoutDashboard extends Layout {
                             let available_height = this.getView().getContext().getContainer().height() - (section.rows.length * 24);
                             let height = Math.floor( (parseInt(row.height, 10) / 100) * available_height );
                             $row.css('height', height + 'px');
-                            $row.find('.mdc-layout-grid__cell').css('height', height + 'px');
+                            $row.find('> .mdc-layout-grid__cell, > * > .mdc-layout-grid__cell').css('height', height + 'px');
                         });
                         // do the same when window is resized
                         let timeout: any;
@@ -116,7 +116,7 @@ export class LayoutDashboard extends Layout {
                                 let available_height = this.getView().getContext().getContainer().height() - (section.rows.length * 24);
                                 let height = Math.floor( (parseInt(row.height, 10) / 100) * available_height );
                                 $row.css('height', height + 'px');
-                                $row.find('.mdc-layout-grid__cell').css('height', height + 'px');
+                                $row.find('> .mdc-layout-grid__cell, > * > .mdc-layout-grid__cell').css('height', height + 'px');
                             });
                         });
                     }
@@ -128,34 +128,57 @@ export class LayoutDashboard extends Layout {
                         }
 
                         let $inner_cell = $('<div />').addClass('mdc-layout-grid__cell').appendTo($column);
-                        $column = $('<div />').addClass('mdc-layout-grid__inner').appendTo($inner_cell);
+
+                        $column = $('<div />')
+                            .addClass('mdc-layout-grid__inner')
+                            .css({'height': '100%'})
+                            .appendTo($inner_cell);
+
+                        // count how many items are stacked within the column
+                        let column_stacked_items = Math.max(
+                                1,
+                                Math.ceil(column.items.reduce((sum: number, item: any) => sum + (parseFloat(item.width) || 0 ), 0) / 100)
+                            );
+
+                        if(column_stacked_items > 1) {
+                            $column.css({
+                                    // force items to stack
+                                    'display': 'flex',
+                                    // reduce available height to take gutter under account
+                                    'height': 'calc(100% - ' + ((column_stacked_items - 1) * 24) + 'px)'
+                                });
+                        }
 
                         $.each(column.items, (i, item) => {
                             let $cell = $('<div />').addClass('mdc-layout-grid__cell').appendTo($column);
 
                             // try to resolve the cell title
-                            let cell_title = (item.hasOwnProperty('label'))?item.label:'';
+                            let cell_title = (item.hasOwnProperty('label')) ? item.label : '';
                             if(item.hasOwnProperty('id')) {
                                 cell_title = TranslationService.resolve(translation, 'view', [this.view.getId(), 'layout'], item.id, cell_title);
                             }
                             // append the group title, if any
                             if(cell_title.length) {
-                                $cell.append($('<div/>').addClass('sb-view-dashboard-cell-title').text(cell_title));
+                                $cell.append($('<div />').addClass('sb-view-dashboard-cell-title').text(cell_title));
                             }
 
                             // compute the width (on a 12 columns grid basis), from 1 to 12
-                            let width = (item.hasOwnProperty('width'))?Math.round((parseInt(item.width, 10) / 100) * 12): 12;
+                            let width = (item.hasOwnProperty('width')) ? Math.round((parseInt(item.width, 10) / 100) * 12) : 12;
                             $cell.addClass('mdc-layout-grid__cell--span-' + width);
+
+                            if(item.hasOwnProperty('height')) {
+                                $cell.css({'height': item.height});
+                            }
 
                             if(item.hasOwnProperty('entity') && item.hasOwnProperty('view')) {
 
                                 let config = {...item};
-                                let view_id = (config.hasOwnProperty('view'))?config.view:'list.default';
+                                let view_id = (config.hasOwnProperty('view')) ? config.view : 'list.default';
                                 let parts = view_id.split(".", 2);
-                                let view_type = (parts.length > 1)?parts[0]:'list';
-                                let view_name = (parts.length > 1)?parts[1]:parts[0];
+                                let view_type = (parts.length > 1) ? parts[0] : 'list';
+                                let view_name = (parts.length > 1) ? parts[1] : parts[0];
 
-                                let domain = (config.hasOwnProperty('domain'))?config['domain']:[];
+                                let domain = (config.hasOwnProperty('domain')) ? config['domain'] : [];
 
                                 config.domain = domain;
                                 config.view_type = view_type;
