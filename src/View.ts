@@ -1305,7 +1305,7 @@ export class View {
         console.debug('View::layoutListHeader:resulting = has_action_ ', has_action_select, has_action_create, has_action_create_inline, header_layout, this.custom_actions, this.entity, this.getId());
 
         // append view actions, if requested
-        if(this.config.show_actions) {
+        if(this.config.show_actions && !header_actions_disabled) {
             switch(this.purpose) {
                 // #memo - buttons can be displayed for widgets (handled at the widget level, since a callback must be set to fetch the resulting value)
                 case 'widget':
