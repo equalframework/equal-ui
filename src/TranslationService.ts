@@ -75,7 +75,7 @@ export class _TranslationService {
      * @returns string
      */
     public instant(value:string, _default:string = '') : string {
-        let translation: string = (_default.length)?_default:value;
+        let translation: string = (_default.length) ? _default : value;
         if(this.resolved) {
             if(this.resolved.hasOwnProperty(value)) {
                 translation = this.resolved[value];

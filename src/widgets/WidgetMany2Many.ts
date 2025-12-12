@@ -28,7 +28,7 @@ export default class WidgetMany2Many extends Widget {
             }
 
             // if items are not selectable
-            if (this.config.header?.hasOwnProperty('selection') && !this.config.header.selection) {
+            if(this.config.header?.hasOwnProperty('selection') && this.config.header.selection === false) {
                 view_config = {
                     ...this.config,
                     ...{
@@ -40,7 +40,7 @@ export default class WidgetMany2Many extends Widget {
                 };
             }
             // if default is voided in the header, do not show the remove button
-            else if (this.config.hasOwnProperty('header')
+            else if(this.config.hasOwnProperty('header')
                 && this.config.header.hasOwnProperty('selection')
                 && this.config.header.selection.hasOwnProperty('default')
                 && !this.config.header.selection.default

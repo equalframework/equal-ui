@@ -170,7 +170,6 @@ export class LayoutDashboard extends Layout {
                                 this.model_widgets[0][item.id] = widget;
                                 $cell.append(widget.attach());
                             }
-                            
 
                         });
                     });
@@ -192,9 +191,8 @@ export class LayoutDashboard extends Layout {
 
             let $parent = this.$layout.find('#'+widget.getId()).parent();
             // $parent.empty().append(widget.render());
-            $parent.append(widget.render());            
+            $parent.append(widget.render());
         }
-        
     }
 
 }

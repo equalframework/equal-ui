@@ -557,7 +557,7 @@ export class LayoutList extends Layout {
                     continue;
                 }
 
-                let key = object[field];
+                let key: any = object[field];
 
                 let label: any = key;
 
@@ -577,15 +577,22 @@ export class LayoutList extends Layout {
                     }
                 }
 
-                if(['date', 'datetime'].indexOf(model_def['type']) >= 0) {
-                    label = moment(key).format(moment.localeData().longDateFormat('L'));
+                if(['date', 'datetime'].indexOf(model_def['type']) >= 0 || ['date', 'datetime'].indexOf(model_def['result_type']) >= 0) {
+                    let usage: string = model_def.usage;
+                    if(typeof group == 'object' && group.hasOwnProperty('usage')) {
+                        usage = group.usage;
+                    }
+                    label = moment(key).format(this.getMomentFormatFromUsage(usage));
                     key = moment(key).format('YYYY-MM-DD');
                 }
-                else if(model_def.hasOwnProperty('usage') && model_def.usage == 'date/month') {
-                    // convert ISO8601 month (1-12) to js month  (0-11)
-                    key = parseInt(key) - 1;
-                    label = moment().month(key).format('MMMM');
-                    key = String(key).padStart(2, '0');
+                else if(model_def['type'] == 'integer' || model_def['result_type'] == 'integer') {
+                    // special case for int representing month
+                    if(model_def.hasOwnProperty('usage') && model_def.usage == 'date/month') {
+                        // convert ISO8601 month (1-12) to js month  (0-11)
+                        key = parseInt(key) - 1;
+                        label = moment().month(key).format('MMMM');
+                        key = String(key).padStart(2, '0');
+                    }
                 }
                 else if(typeof key === 'string') {
                     // remove special chars (to prevent issue when injecting to [data-id])
@@ -673,7 +680,7 @@ export class LayoutList extends Layout {
         let $row = $('<tr/>')
             .addClass('sb-view-layout-list-row')
             .attr('data-parent-id', parent_group_id)
-            .attr('data-id', object.id)
+            .attr('data-id', object.id ?? 0)
             .attr('data-edit', '0')
             // dispatch value setter
             .on('_setValue', (event: any, field: string, value: any) => {
@@ -684,6 +691,11 @@ export class LayoutList extends Layout {
             // open form view on click
             .on('click', async (event:any) => {
                 let $this = $(event.currentTarget);
+                // discard virtual objects
+                if(!object.hasOwnProperty('id') || object.id <= 0) {
+                    console.debug('object with no id: ignoring onclick');
+                    return;
+                }
                 if(this.view.getPurpose() == 'add' || this.view.getPurpose() == 'select') {
                     this.addToSelection([object.id]);
                     this.view.triggerAction('ACTION.SELECT');

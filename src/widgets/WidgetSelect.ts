@@ -89,12 +89,15 @@ export default class WidgetSelect extends Widget {
                 break;
             case 'view':
             default:
-                let val:string = Array.isArray(this.config.values) ? value : ( (this.config.values.hasOwnProperty(value)) ? this.config.values[value] : '' );
+                let val: string = Array.isArray(this.config.values) ? value : ( (this.config.values.hasOwnProperty(value)) ? this.config.values[value] : '' );
                 this.$elem = UIHelper.createInputView('select_' + this.id, this.label, val, this.config.description);
 
                 if(usage.indexOf('color') >= 0) {
                     this.$elem.find('input').before( $('<span style="min-height: 20px;min-width: 20px;background: '+value+';border-radius: 50%;margin-right: 10px;transform: translateY(5px);"></span>') );
                 }
+
+                // decorate the widget according to styles present in config
+                this.applyStyling(this.$elem.find('input'));
 
                 break;
         }

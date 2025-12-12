@@ -397,14 +397,14 @@ export class View {
 
             // #memo - actions handling differs from one view type to another (list, form, ...)
             if(this.view_schema.hasOwnProperty('header') && this.view_schema.header.hasOwnProperty('actions')) {
-                for (const [id, item] of Object.entries(this.view_schema.header.actions)) {
+                for(const [id, item] of Object.entries(this.view_schema.header.actions)) {
                     this.custom_actions[id] = item;
                 }
             }
 
             // some custom actions might have been defined in the parent view, if so, override the view schema
             if(this.config.header?.hasOwnProperty('actions')) {
-                for (const [id, item] of Object.entries(this.config.header.actions)) {
+                for(const [id, item] of Object.entries(this.config.header.actions)) {
                     this.custom_actions[id] = item;
                 }
             }
@@ -722,7 +722,7 @@ export class View {
             await this.model.init();
         }
         catch(err) {
-            console.warn('Unable to init view ('+this.entity+'.'+this.getId()+')', err);
+            console.warn('Unable to init view (' + this.entity + '.' + this.getId() + ')', err);
         }
 
         this.$container.show();
@@ -731,7 +731,7 @@ export class View {
         console.debug("View::init - resulting config", this.config);
     }
 
-    private deepCopy(obj:any):any {
+    private deepCopy(obj:any): any {
         var copy:any;
 
         // Handle the 3 simple types, and null or undefined
@@ -765,7 +765,10 @@ export class View {
         throw new Error("Unable to copy obj! Its type isn't supported.");
     }
 
-    private hasAdvancedFilters():boolean {
+    private hasAdvancedFilters(): boolean {
+        if(this.config.header.hasOwnProperty('advanced_search') && !this.config.header.advanced_search) {
+            return false;
+        }
         return (['core_model_collect', 'model_collect'].indexOf(this.controller) < 0);
     }
 
@@ -775,7 +778,7 @@ export class View {
         }
     }
 
-    public addSubscriber(events: string[], callback: (context:any) => void) {
+    public addSubscriber(events: string[], callback: (context: any) => void) {
         for(let event of events) {
             // if(!['open', 'close', 'updated', 'navigate'].includes(event)) continue;
             if(!this.subscribers.hasOwnProperty(event)) {
@@ -2016,7 +2019,7 @@ export class View {
                 let count = this.selected_ids.length;
 
                 let $fields_toggle_button = $('<div/>').addClass('mdc-menu-surface--anchor')
-                    .append( UIHelper.createButton('action-selected', count+' '+TranslationService.instant('SB_ACTIONS_BUTTON_SELECTED'), 'outlined') );
+                    .append( UIHelper.createButton('action-selected', count + ' ' + TranslationService.instant('SB_ACTIONS_BUTTON_SELECTED'), 'outlined') );
 
                 let $list = UIHelper.createList('fields-list');
                 let $menu = UIHelper.createMenu('fields-menu').addClass('sb-view-header-list-fields_toggle-menu');
@@ -2025,22 +2028,24 @@ export class View {
                 $fields_toggle_button.append($menu);
 
                 // add actions defined in view
+                console.debug('View::LayoutListRefresh - Adding selection actions', this.config.selection_actions);
                 for(let item of this.config.selection_actions) {
-                    let item_id = 'SB_ACTION_ITEM-'+item.label;
-                    let item_label = TranslationService.instant(item.label);
+                    let item_id = 'SB_ACTION_ITEM-' + item.label;
+                    // #todo #temp - attempt to translate with label as being a SB_ constant (we should only rely on ID instead)
+                    let translated_label = TranslationService.instant(item.label);
 
                     // look for a translation based on id
-                    if(item.hasOwnProperty('id')) {
-                        item_id = 'SB_ACTION_ITEM-'+item.id;
-                        item_label = TranslationService.resolve(this.translation, 'view', [this.getId(), 'layout'], item.id, item_label);
+                    if(item.hasOwnProperty('id') && translated_label == item.label) {
+                        item_id = 'SB_ACTION_ITEM-' + item.id;
+                        translated_label = TranslationService.resolve(this.translation, 'view', [this.getId(), 'header', 'selection', 'actions'], item.id, item.label);
                     }
-                    let $list_item = UIHelper.createListItem(item_id, item_label, item.icon)
-                        .on( 'click', (event:any) => item.handler(this.selected_ids, item) )
+                    let $list_item = UIHelper.createListItem(item_id, translated_label, item.icon)
+                        .on('click', (event: any) => item.handler(this.selected_ids, item) )
                         .appendTo($list);
 
                     if(item.hasOwnProperty('primary') && item.primary) {
-                        $container.append(UIHelper.createButton('selection-action-'+item.label, item.label, 'icon', item.icon).on('click', (event:any) => item.handler(this.selected_ids, item)));
-                        let $tooltip = UIHelper.createTooltip('selection-action-'+item.label, TranslationService.instant(item.label));
+                        $container.append(UIHelper.createButton('selection-action-' + item.label, item.label, 'icon', item.icon).on('click', (event:any) => item.handler(this.selected_ids, item)));
+                        let $tooltip = UIHelper.createTooltip('selection-action-' + item.label, TranslationService.instant(item.label));
                         $container.append($tooltip);
                         UIHelper.decorateTooltip($tooltip);
                     }

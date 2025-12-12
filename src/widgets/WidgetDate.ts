@@ -222,22 +222,8 @@ export default class WidgetDate extends Widget {
                 break;
             case 'view':
             default:
-                // #todo - adapt and complete based on retrieved locale from equal (@see packages/core/i18n/.../locale.json)
                 if(this.config.hasOwnProperty('usage')) {
-                    if(this.config.usage == 'date' || this.config.usage == 'date/medium' || this.config.usage == 'date/plain.medium') {
-                        // 06/08/2023
-                        moment_format = 'L';
-                    }
-                    else if(this.config.usage == 'date/short' || this.config.usage == 'date/plain.short') {
-                        // 06/08/23
-                        moment_format = (moment.localeData().longDateFormat('L')).replace(/YYYY/g,'YY');
-                    }
-                    else if(this.config.usage == 'date/plain.short.day') {
-                        moment_format = 'dd ' + (moment.localeData().longDateFormat('L')).replace(/YYYY/g,'YY');
-                    }
-                    else if(this.config.usage == 'month' || this.config.usage.indexOf('date/month') == 0) {
-                        moment_format = 'MMM YYYY';
-                    }
+                    moment_format = this.getLayout().getMomentFormatFromUsage(this.config.usage);
                 }
 
                 // convert date to string, according to locale and usage

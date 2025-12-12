@@ -209,6 +209,10 @@ export default class WidgetDateTime extends Widget {
                 break;
             case 'view':
             default:
+                if(this.config.hasOwnProperty('usage')) {
+                    moment_format = this.getLayout().getMomentFormatFromUsage(this.config.usage);
+                }
+
                 // convert date to string, according to locale and usage
                 if(this.isValidIsoStringDate(this.value || '')) {
                     value_str = this.formatIsoStringDate(this.value, moment_format);

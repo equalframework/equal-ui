@@ -1,4 +1,5 @@
 import { $ } from "../jquery-lib";
+import moment from 'moment/moment.js';
 import { Widget, WidgetFactory } from "../equal-widgets";
 import { UIHelper } from '../material-lib';
 import { TranslationService, ApiService, EnvService } from "../equal-services";
@@ -408,8 +409,8 @@ export class Layout implements LayoutInterface{
                     // 2) retrieve announcement from the target action controller
                     const result = await ApiService.fetch("/", {do: action.controller, announce: true, ...resulting_params});
                     let params: any = {};
-                    let response_descr:any = {};
-                    let description:string = '';
+                    let response_descr: any = {};
+                    let description: string = '';
 
                     if(result.hasOwnProperty('announcement')) {
                         if(result.announcement.hasOwnProperty('params')) {
@@ -417,6 +418,9 @@ export class Layout implements LayoutInterface{
                         }
                         for(let param of Object.keys(params)) {
                             if(Object.keys(resulting_params).indexOf(param) < 0) {
+                                if(params[param].hasOwnProperty('visible') && params[param].visible === false) {
+                                    continue;
+                                }
                                 if(params[param].hasOwnProperty('required') && params[param].required) {
                                     missing_params[param] = params[param];
                                 }
@@ -457,7 +461,7 @@ export class Layout implements LayoutInterface{
                     if(action.hasOwnProperty('confirm') && action.confirm) {
                         // params dialog
                         if(Object.keys(missing_params).length) {
-                            let $dialog = UIHelper.createDialog(this.view.getUuid()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
+                            let $dialog = UIHelper.createDialog(this.view.getUuid()+'_' + action.id + '_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
                             $dialog.find('.mdc-dialog__content').append($description);
                             await this.view.decorateActionDialog($dialog, action, missing_params, object, user, parent);
                             $dialog.addClass('sb-view-dialog').appendTo(this.view.getContainer());
@@ -469,7 +473,7 @@ export class Layout implements LayoutInterface{
                         // confirm dialog
                         else {
                             // display confirmation dialog with checkbox for archive
-                            let $dialog = UIHelper.createDialog(this.view.getUuid()+'_'+action.id+'_confirm-action-dialog', TranslationService.instant('SB_ACTIONS_CONFIRM'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
+                            let $dialog = UIHelper.createDialog(this.view.getUuid()+'_' + action.id + '_confirm-action-dialog', TranslationService.instant('SB_ACTIONS_CONFIRM'), TranslationService.instant('SB_DIALOG_ACCEPT'), TranslationService.instant('SB_DIALOG_CANCEL'));
                             $dialog.find('.mdc-dialog__content').append($description);
                             $dialog.appendTo(this.view.getContainer());
                             $dialog
@@ -481,7 +485,7 @@ export class Layout implements LayoutInterface{
                     else {
                         // params dialog
                         if(Object.keys(missing_params).length) {
-                            let $dialog = UIHelper.createDialog(this.view.getUuid()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
+                            let $dialog = UIHelper.createDialog(this.view.getUuid()+'_' + action.id + '_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
                             $dialog.find('.mdc-dialog__content').append($description);
                             await this.view.decorateActionDialog($dialog, action, missing_params, object, user, parent);
                             $dialog.addClass('sb-view-dialog').appendTo(this.view.getContainer());
@@ -593,7 +597,7 @@ export class Layout implements LayoutInterface{
     */
 
     /**
-     * @deprecated
+     * @deprecated - @see View::performAction
      */
     protected async performViewAction(action:any, params:any, translation: any, response_descr: any = {}) {
         try {
@@ -683,6 +687,40 @@ export class Layout implements LayoutInterface{
         }
         console.debug('LayoutForm::isVisible - visibility result', result);
         return result;
+    }
+
+    /**
+     * Meant for date & datetime fields
+     * #todo - adapt and complete based on retrieved locale from equal (@see packages/core/i18n/.../locale.json)
+     */
+    public getMomentFormatFromUsage(usage?: string): string {
+        let moment_format: string = moment.localeData().longDateFormat('L');
+
+        if(!usage) {
+            return moment_format;
+        }
+
+        if(usage === 'date' || usage === 'date/medium' || usage === 'date/plain.medium') {
+            // 06/08/2023
+            moment_format = moment.localeData().longDateFormat('L');
+        }
+        else if(usage === 'date/short' || usage === 'date/plain.short') {
+            // 06/08/23
+            moment_format = (moment.localeData().longDateFormat('L')).replace(/YYYY/g,'YY');
+        }
+        else if(usage === 'date/plain.day') {
+            // Sunday 06/08/2023
+            moment_format = 'dddd ' + moment.localeData().longDateFormat('L');
+        }
+        else if(usage === 'date/plain.short.day') {
+            // Su 06/08/23
+            moment_format = 'dd ' + (moment.localeData().longDateFormat('L')).replace(/YYYY/g,'YY');
+        }
+        else if(usage === 'month' || usage.indexOf('date/month') == 0) {
+            // Aug 2023
+            moment_format = 'MMM YYYY';
+        }
+        return moment_format;
     }
 
 }

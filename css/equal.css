@@ -1426,7 +1426,8 @@ button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-but
 /* #wordpress - added for WP compliance */
 .mdc-text-field input.mdc-text-field__input {
     box-shadow: none !important;
-    background-color: transparent !important;
+    /* #memo - making this !important breaks the ability to customize the layout at widget level */
+    background-color: transparent;
     border: 0 !important;
 }
 

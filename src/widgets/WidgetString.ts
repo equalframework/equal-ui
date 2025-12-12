@@ -106,7 +106,7 @@ export default class WidgetString extends Widget {
                         if(usage.indexOf('icon') >= 0 || usage.indexOf('symbol') >= 0) {
                             // map eQual standard icons with material icons
                             let map_icons:any = {
-                                    success:   {icon: "check_circle", color: "green"},
+                                    success:   {icon: "check_circle", color: "#27b727" /*green*/},
                                     info:      {icon: "info", color: "blue"},
                                     warn:      {icon: "warning", color: "orange"},
                                     major:     {icon: "error", color: "orangered"},

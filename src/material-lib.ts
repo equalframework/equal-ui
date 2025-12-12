@@ -276,7 +276,7 @@ class UIHelper {
                 </div> \
                 <div class="mdc-checkbox__ripple"></div> \
             </div> \
-            <label for="'+id+'">'+label+'</label> \
+            <label for="' + id + '">' + label + '</label> \
         </div>');
 
         return $elem;
@@ -284,8 +284,8 @@ class UIHelper {
 
     public static createListItem(id: string, label: string, icon:string = '') {
         let $elem = $('\
-        <li class="mdc-list-item" tabindex="-1" id="'+id+'"> \
-            <span class="mdc-list-item__text">'+label+'</span> \
+        <li class="mdc-list-item" tabindex="-1" id="' + id + '"> \
+            <span class="mdc-list-item__text">' + label + '</span> \
             <span class="mdc-list-item__ripple"></span> \
         </li>');
 
