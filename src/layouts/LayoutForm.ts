@@ -362,13 +362,13 @@ export class LayoutForm extends Layout {
                     let $navigation_container = $('<div style="margin-left: auto; margin-right: 12px; padding-left: 12px;"></div>').attr('id', this.uuid + '_navigation')
                         .appendTo($view_actions);
 
-                    // #todo - il faut aussi changer le titre dans le frame
                     $navigation_container
                         .append(
                             UIHelper.createButton('pagination-prev_' + this.getUuid(), '', 'icon', 'chevron_left').addClass('sb-view-header-list-pagination-prev_page')
                             .on('click', async (event: any) => {
                                 await parentView.navigationAction('prev');
                                 const object_id = parentView.getActiveObjectId();
+                                // update domain & refresh context
                                 this.view.setDomain(['id', '=', object_id]);
                                 this.view.onchangeView();
                             })
@@ -466,6 +466,8 @@ export class LayoutForm extends Layout {
 
                 let config = widget.getConfig();
 
+                // #todo - parse style here (instead of inside Widget)
+
                 if( config['widget_type'] == 'label') {
                     let visible = true;
                     // handle visibility tests (domain)
@@ -493,7 +495,7 @@ export class LayoutForm extends Layout {
                     if(type && ['one2many', 'many2one', 'many2many'].indexOf(type) > -1) {
                         // if widget has a domain, parse it using current object and user
                         if(config.hasOwnProperty('original_domain')) {
-                            console.debug('LayouForm::feed - parsing domain for widget', field, config);
+                            console.debug('LayoutForm::feed - parsing domain for widget', field, config);
                             let tmpDomain = new Domain(config.original_domain);
                             config.domain = tmpDomain.parse(object, user, {}, this.getEnv()).toArray();
                         }
