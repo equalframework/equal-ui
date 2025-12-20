@@ -696,6 +696,12 @@ export class LayoutList extends Layout {
                     console.debug('object with no id: ignoring onclick');
                     return;
                 }
+                const interactions = view_schema.layout?.interactions ?? (view_schema.interactions ?? {});
+                // #todo - handle other interactions (`click_right`,`ctrl_click`,`ctrl_click_right`,`dblclick`,`dblclick_right`)
+                if(interactions.hasOwnProperty('click') && interactions.click === false) {
+                    console.debug('view with explicit discard of click event');
+                    return;
+                }
                 if(this.view.getPurpose() == 'add' || this.view.getPurpose() == 'select') {
                     this.addToSelection([object.id]);
                     this.view.triggerAction('ACTION.SELECT');
@@ -920,6 +926,28 @@ export class LayoutList extends Layout {
                     config.object_id = object.id;
                 }
             }
+            // scalar field
+            else {
+                // parse widget style in config (if any)
+                if(config.hasOwnProperty('styles') && Array.isArray(config.styles)) {
+                    let resolvedStyles = {};
+                    for(const styleSet of config.styles) {
+                        let visible: boolean = true;
+                        if(typeof styleSet.visible === 'boolean') {
+                            visible = styleSet.visible;
+                        }
+                        else if(Array.isArray(styleSet.visible)) {
+                            const domain = new Domain(styleSet.visible);
+                            visible = domain.evaluate(object, user, {}, this.getEnv());
+                        }
+
+                        if(visible) {
+                            resolvedStyles = { ...resolvedStyles, ...(styleSet.apply ?? {})};
+                        }
+                    }
+                    config.styles = resolvedStyles;
+                }
+            }
 
             let widget: Widget = WidgetFactory.getWidget(this, config.type, '', '', config);
             widget.setValue(value);
@@ -1053,11 +1081,12 @@ export class LayoutList extends Layout {
             );
 
         // append remaining cells, and inject operations, if any
-        for(let i = 0, j = 0, n = schema.layout.items.length; i < n; ++i) {
-            if(schema.layout.items[i].visible === false) {
+        for(let i = 0, j = 1, n = schema.layout.items.length; i < n; ++i) {
+            if(schema.layout.items[i].hasOwnProperty('visible') && schema.layout.items[i].visible === false) {
+                // hidden column
                 continue;
             }
-            if(j < colspan) {
+            if(j <= colspan) {
                 ++j;
                 continue;
             }
@@ -1073,6 +1102,7 @@ export class LayoutList extends Layout {
             $row.append( $('<td/>')
                     .addClass('sb-group-cell sb-group-cell-label sb-widget-cell')
                     .attr('data-type', type)
+                    .attr('data-column', column)
                     .append('<div class="sb-widget-mode-view" style="width: 100%; text-align: ' + align + '; font-weight: bold;">' + value + '</div>')
                 );
         }
