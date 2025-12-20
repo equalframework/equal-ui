@@ -330,53 +330,67 @@ export default class Widget {
 
     protected applyStyling($elem: any){
 
+        // #todo - these first 2 should probably be moved to getWidgetConfig() or layout()
         if(this.config.hasOwnProperty('wrap') && this.config.wrap) {
             this.$elem.addClass('sb-string-wrap');
         }
-
-        if(this.config.hasOwnProperty('text_decoration') && this.config.text_decoration) {
-            if(this.config.text_decoration === 'underline') {
-                $elem.css({'border-bottom': 'solid 1px black'});
-            }
-        }
-
-        if(this.config.hasOwnProperty('text_color') && this.config.text_color) {
-            $elem.css({'color': this.config.text_color});
-        }
-
-        if(this.config.hasOwnProperty('text_weight') && this.config.text_weight) {
-            $elem.css({'font-weight': this.config.text_weight});
-        }
-
-        if(this.config.hasOwnProperty('text_align') && this.config.text_align) {
-            $elem.css({'text-align': this.config.text_align});
-        }
-
-        if(this.config.hasOwnProperty('text_width') && this.config.text_width) {
-            $elem.css({
-                    'width': this.normalizeToPx(this.config.text_width),
-                    'min-width': this.normalizeToPx(this.config.text_width)
-                });
-        }
-
-        if(this.config.hasOwnProperty('background_color') && this.config.background_color) {
-            $elem.css({'background-color': this.config.background_color});
-        }
-
-        if(this.config.hasOwnProperty('border_radius') && this.config.border_radius) {
-            $elem.css({'border-radius': this.normalizeToPx(this.config.border_radius)});
-        }
-
-        if(this.config.hasOwnProperty('border_color') && this.config.border_color) {
-            $elem.css({'border-color': this.config.border_color});
-        }
-
-        if(this.config.hasOwnProperty('padding') && this.config.padding) {
-            $elem.css({'padding': this.config.padding});
-        }
-
         if(this.config.hasOwnProperty('margin') && this.config.margin) {
             $elem.css({'margin': this.config.margin});
         }
+
+
+        if(this.config.hasOwnProperty('styles')) {
+            const styles = this.config.styles;
+
+            if(styles.hasOwnProperty('text_decoration') && styles.text_decoration) {
+                if(styles.text_decoration === 'underline') {
+                    $elem.css({'border-bottom': 'solid 1px black'});
+                }
+            }
+
+            if(styles.hasOwnProperty('text_color') && styles.text_color) {
+                $elem.css({'color': styles.text_color});
+            }
+
+            if(styles.hasOwnProperty('text_weight') && styles.text_weight) {
+                $elem.css({'font-weight': styles.text_weight});
+            }
+
+            if(styles.hasOwnProperty('text_width') && styles.text_width) {
+                $elem.css({
+                        'width': this.normalizeToPx(styles.text_width),
+                        'min-width': this.normalizeToPx(styles.text_width)
+                    });
+            }
+
+            if(styles.hasOwnProperty('text_padding') && styles.text_padding) {
+                $elem.css({'padding': styles.text_padding});
+            }
+
+            if(styles.hasOwnProperty('text_align') && styles.text_align) {
+                $elem.css({'text-align': styles.text_align});
+
+                if(styles.text_align === 'center' && !styles.hasOwnProperty('text_padding')) {
+                    $elem.css({
+                        'padding-left': 0,
+                        'padding-right': 0
+                    });
+                }
+            }
+
+            if(styles.hasOwnProperty('background_color') && styles.background_color) {
+                $elem.css({'background-color': styles.background_color});
+            }
+
+            if(styles.hasOwnProperty('border_radius') && styles.border_radius) {
+                $elem.css({'border-radius': this.normalizeToPx(styles.border_radius)});
+            }
+
+            if(styles.hasOwnProperty('border_color') && styles.border_color) {
+                $elem.css({'border-color': styles.border_color});
+            }
+
+        }
+
     }
 }
