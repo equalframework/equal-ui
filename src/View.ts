@@ -467,7 +467,7 @@ export class View {
 
                                             // if view is a widget, add parent object reference
                                             if(this.getContext().getView() != this) {
-                                                let parentView:View = this.getContext().getView();
+                                                let parentView: View = this.getContext().getView();
                                                 let parent_objects = await parentView.getModel().get();
                                                 parent = parent_objects[0];
                                             }
@@ -1068,7 +1068,9 @@ export class View {
             }
         }
 
-        return (new Domain(this.domain)).merge(filters_domain).parse({}, this.getUser()).toArray();
+        let resulting_array: any[] = (new Domain(this.domain)).merge(filters_domain).parse({}, this.getUser()).toArray();
+        console.debug('View::getDomain - resulting array', resulting_array);
+        return resulting_array;
     }
 
     public getParams() {
@@ -1294,6 +1296,10 @@ export class View {
         }
         if(this.custom_actions.hasOwnProperty('ACTION.CREATE') && !header_actions_disabled) {
             has_action_create = this.isActionEnabled(this.custom_actions['ACTION.CREATE'], this.mode);
+            if(!has_action_create) {
+                // explicit disabling of create implies no create_inline as well
+                has_action_create_inline = false;
+            }
         }
 
         if(this.custom_actions.hasOwnProperty('ACTION.CREATE_INLINE') || (header_layout === 'inline' && has_action_create && !header_actions_disabled)) {
@@ -1563,9 +1569,8 @@ export class View {
                         "description": TranslationService.instant('SB_FILTERS_SEARCH_ON_NAME'),
                         "clause": ['name', '=', value]
                     };
-                    // #todo - add support for name as alias field
-                    if(this.model_schema.fields['name'].type == 'string' || (this.model_schema.fields['name'].hasOwnProperty('result_type') && this.model_schema.fields['name'].result_type == 'string')) {
-                        filter['clause'] = ['name', 'ilike', '%'+value+'%'];
+                    if(this.model_schema.fields['name'].result_type === 'string') {
+                        filter['clause'] = ['name', 'ilike', '%' + value + '%'];
                     }
                     // add filter to available filters
                     this.filters[filter.id] = filter;
@@ -1594,7 +1599,7 @@ export class View {
         }
 
         // fields toggle menu : button for displaying the filters menu
-        let $filters_button = $('<div/>').addClass('sb-view-header-list-filters mdc-menu-surface--anchor')
+        let $filters_button = $('<div />').addClass('sb-view-header-list-filters mdc-menu-surface--anchor')
             .append( UIHelper.createButton('view-filters', 'filters', 'icon', 'filter_list') );
 
         // create floating menu for filters selection
@@ -1939,6 +1944,7 @@ export class View {
         end = (total) ? Math.min(end, start + this.model.ids().length - 1) : 0;
 
         const header_layout = this.config.header?.layout ?? 'full';
+        const header_exports_disabled = ( typeof this.config.header?.exports === 'boolean' && !this.config.header.exports );
 
         this.$headerContainer.find('.sb-view-header-list-pagination-total').html(total);
         this.$headerContainer.find('.sb-view-header-list-pagination-start').html(start);
@@ -1968,7 +1974,7 @@ export class View {
 
         // do not show the actions menu for 'add' and 'select' purposes
         if(['view', 'widget'].indexOf(this.purpose) > -1) {
-            if(this.purpose == 'view') {
+            if(this.purpose == 'view' && !header_exports_disabled) {
                 // create export menu (always visible: no selection means "export all")
                 let $export_actions_menu_button = $('<div />').addClass('sb-view-header-list-actions-export mdc-menu-surface--anchor')
                     .append(UIHelper.createButton('selection-action-' + 'SB_ACTIONS_BUTTON_EXPORT', 'export', 'icon', 'file_download'))
@@ -2081,7 +2087,7 @@ export class View {
             if(this.purpose == 'view') {
                 // create export menu (always visible: no selection means "export all")
                 let $export_actions_menu_button = $('<div/>').addClass('sb-view-header-list-actions-export mdc-menu-surface--anchor')
-                .append(UIHelper.createButton('selection-action-'+'SB_ACTIONS_BUTTON_EXPORT', 'export', 'icon', 'file_download'))
+                .append(UIHelper.createButton('selection-action-' + 'SB_ACTIONS_BUTTON_EXPORT', 'export', 'icon', 'file_download'))
                 .appendTo($std_actions);
 
                 let $export_actions_menu = UIHelper.createMenu('export-actions-menu').addClass('sb-view-header-list-export-menu').appendTo($export_actions_menu_button);
@@ -2656,10 +2662,10 @@ export class View {
 
             if(selected_operator == 'like') {
                 operator = 'ilike';
-                value = '%'+value+'%';
+                value = '%' + value + '%';
             }
             else if(selected_operator == 'in' || selected_operator == 'not in') {
-                value = '['+value+']';
+                value = '[' + value + ']';
             }
 
             let tmpDomain = new Domain([operand, operator, value]);
@@ -2759,13 +2765,10 @@ export class View {
         console.debug('View::onchangeView', full);
 
         if(this.is_inline_editing) {
+            // prevent refresh while inline editing
             return;
         }
 
-        if(this.getMode() === 'edit') {
-            // notify about context update
-            this.context.updatedContext();
-        }
 
         // reset selection
         this.selected_ids = [];
@@ -2783,6 +2786,19 @@ export class View {
                 this.setActiveObjectId(objects[active_index].id)
             }
         }
+
+        // #memo - this needs to be done after model change (it case it impacts context header)
+        // #todo - for now only possible domain change is relayed
+        // relay domain to the changes made to context
+        this.context.updatedContext({domain: this.getDomain()});
+        /*
+        // not sure why limited to edit
+        if(this.getMode() === 'edit') {
+            // notify about context update
+            this.context.updatedContext();
+        }
+        */
+
     }
 
     /**
@@ -2825,7 +2841,7 @@ export class View {
      *       "description": "Utilisateurs parlant français",
      *       "clause": ["language", "=", "fr"]
      */
-    private async applyFilter(filter_id:string) {
+    private async applyFilter(filter_id: string) {
         this.applied_filters_ids.push(filter_id);
         this.showFilter(filter_id);
         this.setStart(0);
@@ -3677,7 +3693,7 @@ export class View {
     }
 
     private extractFieldsFromDomain(domain_array: any): string[] {
-        const result: string[] = [];
+        const result: Set<string> = new Set();
 
         if (!Array.isArray(domain_array) || domain_array.length === 0) {
             return [];
@@ -3687,14 +3703,47 @@ export class View {
 
         for(let clause of domain.getClauses()) {
             for(let condition of clause.getConditions()) {
-                let value = condition.getValue();
-                if(typeof value === "string" && value.startsWith("object.")) {
-                    result.push(value);
+                 // 1) operand
+                let operand: any = condition.getOperand();
+                if(typeof operand === "string") {
+                    // ignore references to context
+                    if(operand.startsWith("user.") || operand.startsWith('env.') || operand.startsWith('parent.')) {
+                        continue;
+                    }
+                    // relative ORM field
+                    if(operand.startsWith('object.')) {
+                        const path: string = operand.substring('object.'.length);
+                        if(path.length > 0) {
+                            result.add(path);
+                        }
+                        continue;
+                    }
+                    // direct ORM field
+                    else {
+                        result.add(operand);
+                    }
+
+                }
+                // 2) value
+                let value: any = condition.getValue();
+                if(typeof value === "string") {
+                    // ignore references to context
+                    if(value.startsWith("user.") || value.startsWith('env.') || value.startsWith('parent.')) {
+                        continue;
+                    }
+                    // relative ORM field
+                    if(value.startsWith("object.")) {
+                        const path: string = value.substring('object.'.length);
+                        if(path.length > 0) {
+                            result.add(path);
+                        }
+                        continue;
+                    }
                 }
             }
         }
 
-        return result;
+        return Array.from(result);
     }
 
 }
