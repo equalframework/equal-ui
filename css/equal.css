@@ -473,7 +473,8 @@ body, html {
 
 .sb-view.header-inline .sb-view-header-actions {
     /* #memo - do not use display none, to preserve top padding */
-    visibility: hidden;
+    /* #memo - inline layout does not imply no actions on view */
+    /* visibility: hidden; */
 }
 
 .sb-view-header-list-actions button {
