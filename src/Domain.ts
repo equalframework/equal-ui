@@ -3,18 +3,19 @@ import { DateReference } from "./DateReference";
 
 /**
  * Class Domain manipulations
- *
+ * #memo - SharedLib should use the logic from this class for its own Widgets
  */
 export class Domain {
 
     private clauses: Array<Clause>;
+    static OPERATORS: Array<string> = ['=', '==', '!=', '<>', '>', '<', '<=', '>=', 'like', 'ilike', 'is', 'is not', 'in', 'not in', 'contains'] ;
 
-    constructor(domain:Array<any>) {
+    constructor(domain: Array<any>) {
         this.clauses = new Array<Clause>();
         this.fromArray(domain);
     }
 
-    public fromArray(domain:Array<any>) {
+    public fromArray(domain: Array<any>) {
         // reset clauses
         this.clauses.splice(0, this.clauses.length);
         /*
@@ -69,29 +70,54 @@ export class Domain {
         return this.fromArray(res_domain);
     }
 
-    private static normalize(domain: Array<any>) {
-        if(domain.length <= 0) {
+    public static isDomainConditionArray(candidate: any): boolean {
+        return (
+            Array.isArray(candidate) &&
+            candidate.length === 3 &&
+            typeof candidate[1] === 'string' &&
+            Domain.OPERATORS.includes(candidate[1])
+        );
+    }
+
+    private static normalize(domain: any): Array<any> {
+
+        if(!Array.isArray(domain) || domain.length <= 0) {
             return [];
         }
 
-        if(!Array.isArray(domain[0])) {
-            // single condition
+        // CASE 1: single condition [operand, operator, value]
+        // operand can be ANYTHING (string, array, number…)
+        if(Domain.isDomainConditionArray(domain)) {
             return [[domain]];
         }
-        else {
-            if( domain[0].length <= 0)  {
-                return [];
-            }
-            if(!Array.isArray(domain[0][0])) {
-                // single clause
-                return [domain];
-            }
+
+        // CASE 2 — single clause
+        // [ [operand, operator, value], ... ]
+        if(
+            Array.isArray(domain[0]) &&
+            Domain.isDomainConditionArray(domain[0])
+        ) {
+            return [domain];
         }
-        return domain;
+
+        // CASE 3 — already normalized
+        // [ [ [operand, operator, value], ... ], ... ]
+        if (
+            Array.isArray(domain[0]) &&
+            Array.isArray(domain[0][0]) &&
+            Domain.isDomainConditionArray(domain[0][0])
+        ) {
+            return domain;
+        }
+
+        // fallback: invalid domain
+        console.warn('Domain::normalize() - invalid domain structure', domain);
+        return [];
     }
 
+
     /**
-     * Add a clause at the Domain level : the clause is appened to the Domain
+     * Add a clause at the Domain level : the clause is append to the Domain
      */
     public addClause(clause: Clause) {
         this.clauses.push(clause);
@@ -215,7 +241,7 @@ export class Domain {
      * @param object
      * @returns boolean Return true if the object matches the domain, false otherwise.
      */
-    public evaluate(object: any, user: any = {}, parent: any = {}, env: any = {}) : boolean {
+    public evaluate(object: any, user: any = {}, parent: any = {}, env: any = {}): boolean {
         console.debug('Domain::evaluate() - evaluating object', object, this);
         let res = false;
         if(this.clauses.length == 0) {
@@ -301,6 +327,12 @@ export class Domain {
                     }
                     cc_res = (value.indexOf(operand) == -1);
                 }
+                else if(operator == 'contains') {
+                    if(!Array.isArray(operand)) {
+                        continue;
+                    }
+                    cc_res = (operand.indexOf(value) > -1);
+                }
                 else {
                     let c_condition: string = '';
                     if(['<', '>'].includes(operator)) {
@@ -332,7 +364,7 @@ export class Domain {
      * Returns the resulting boolean value of the domain.
      * @returns boolean
      */
-    public test() : boolean {
+    public test(): boolean {
         let res = false;
         if(this.clauses.length == 0) {
             return true;
@@ -399,6 +431,12 @@ export class Domain {
                         continue;
                     }
                     cc_res = (value.indexOf(operand) == -1);
+                }
+                else if(operator == 'contains') {
+                    if(!Array.isArray(operand)) {
+                        continue;
+                    }
+                    cc_res = (operand.indexOf(value) > -1);
                 }
                 else {
                     let c_condition = "( '" + operand + "' " + operator + " '" + value + "')";
