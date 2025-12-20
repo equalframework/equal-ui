@@ -239,8 +239,8 @@ class EventsListener {
     /**
      * Notify subscribers about a context update.
      */
-    private async _updatedContext() {
-        console.debug('EventsListener::_updatedContext', this.mute);
+    private async _updatedContext(updated: any = {}) {
+        console.debug('EventsListener::_updatedContext', this.mute, updated);
 
         // run callback of subscribers
         if(this.subscribers.hasOwnProperty('updated') && this.subscribers['updated'].length && !this.mute) {
@@ -249,7 +249,7 @@ class EventsListener {
                 if( ({}).toString.call(callback) === '[object Function]') {
                     // run callback with empty context
                     console.debug('calling callback');
-                    callback();
+                    callback(updated); 
                 }
             }
         }
@@ -426,9 +426,9 @@ class EventsListener {
     /**
      * Mark current context as changed (called from Frame class).
      */
-    public async updated() {
+    public async updated(updated: any = {}) {
         console.debug('EventsListener::updated');
-        await this._updatedContext();
+        await this._updatedContext(updated);
     }
 
     public async closeAll(external:boolean=false) {
@@ -506,10 +506,10 @@ class EventsListener {
             let parts = context.view.split('.');
             let view_type = 'list', view_name = 'default';
             if(parts.length) {
-                view_type = <string>parts.shift();
+                view_type = <string> parts.shift();
             }
             if(parts.length) {
-                view_name = <string>parts.shift();
+                view_name = <string> parts.shift();
             }
             if(!context.hasOwnProperty('type')) {
                 target_context.type = view_type;

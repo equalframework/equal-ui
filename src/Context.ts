@@ -106,9 +106,9 @@ export class Context {
     /**
      * Relay update notification (from View) to parent Frame.
      */
-    public async updatedContext() {
+    public async updatedContext(updated: any = {}) {
         console.debug('Context::updatedContext');
-        await this.frame.updatedContext();
+        await this.frame.updatedContext(updated);
     }
 
     /**

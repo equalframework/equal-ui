@@ -606,9 +606,10 @@ export class Frame {
         return this.eq.getUser();
     }
 
-    public async updatedContext() {
+    public async updatedContext(updated: any = {}) {
         console.debug('Frame::updatedContext');
-        await this.eq.updated();
+        await this.eq.updated(updated);
+        this.updateHeader();
     }
 
     /**
