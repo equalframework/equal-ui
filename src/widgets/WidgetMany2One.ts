@@ -513,7 +513,7 @@ export default class WidgetMany2One extends Widget {
                 $select.on('update', (event) => {
                     console.debug('WidgetMany2One: received update event', $select.attr('data-selected'));
                     // m2o relations are always loaded as an object with {id:, name:}
-                    let object:any = objects.find( o => o.id == $select.attr('data-selected'));
+                    let object: any = objects.find( o => o.id == $select.attr('data-selected'));
                     if(object) {
                         if(this.config.has_action_open) {
                             $button_open.show();

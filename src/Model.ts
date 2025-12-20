@@ -205,7 +205,7 @@ export class Model {
             }
 
             if(!schema || !schema.hasOwnProperty(field)) {
-                console.warn('unknown field', field);
+                console.debug('unknown field ' + field + ' ' + 'for entity ' + this.view.getEntity() + ' (might be a false-positive injected value from a domain of the view)');
                 continue;
             }
             let type: string | null = this.getFinalType(field);
