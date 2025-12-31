@@ -15,7 +15,7 @@ export class LayoutList extends Layout {
             this.layout();
         }
         catch(err) {
-            console.warn('Something went wrong ', err);
+            console.warn('LayoutList::init - Something went wrong ', err);
         }
     }
 
@@ -26,6 +26,7 @@ export class LayoutList extends Layout {
 
         // also re-generate the layout
         if(full) {
+            console.debug('LayoutList::refresh - `full` option : emptying $layout');
             this.$layout.empty();
             this.layout();
         }
@@ -35,20 +36,22 @@ export class LayoutList extends Layout {
             this.$layout.find('thead').find('th:first-child').find('input').trigger('refresh');
         }
 
+        // feed layout with current Model
+        let objects = await this.view.getModel().get();
+        console.debug('LayoutList::layout - fetched objects', objects);
+        await this.feed(objects);
+        console.debug('LayoutList::layout - finished feed()');
+
         // auto open (unfold) groups, if requested
         let group_by = this.view.getGroupBy();
         if(group_by.length > 0) {
             let $fold_toggle = this.$layout.find('thead tr th.sb-group-cell');
-            this.getView().isReady().then( () => {
-                if(typeof group_by[0] === 'object' && group_by[0].hasOwnProperty('open') && group_by[0].open) {
-                    $fold_toggle.trigger('click');
-                }
-            });
+            let is_open = !($fold_toggle.hasClass('folded'));
+            if(typeof group_by[0] === 'object' && group_by[0].hasOwnProperty('open') && group_by[0].open != is_open) {
+                $fold_toggle.trigger('click');
+            }
         }
 
-        // feed layout with current Model
-        let objects = await this.view.getModel().get();
-        this.feed(objects);
     }
 
     public loading(loading: boolean) {
@@ -64,12 +67,15 @@ export class LayoutList extends Layout {
     }
 
     protected layout() {
+        console.debug('LayoutList::layout()');
         // create table
 
         // we define a tree structure according to MDC pattern
         let $elem = $('<div/>').addClass('table-wrapper').css({"width": "100%"})
         let $container = $('<div/>').css({"width": "100%"}).appendTo($elem);
 
+        console.debug('LayoutList::layout() - created table-wrapper');
+        this.$layout.append($elem);
         // add spinner
         $container.append( $('<div class="table-loader"> <div class="table-spinner"><div class="spinner__element"></div></div> <div class="table-overlay"></div> </div>') );
 
@@ -82,14 +88,19 @@ export class LayoutList extends Layout {
 
         if(this.view.getPurpose() != 'widget' || this.view.getMode() == 'edit') {
             UIHelper.createTableCellCheckbox(this.uuid + 'table-cell', true)
-            .appendTo($hrow)
-            .find('input')
-            .on('click', () => setTimeout( () => this.view.onchangeSelection(this.getSelected()) ) );
+                .appendTo($hrow)
+                .find('input')
+                .on('click', () => setTimeout( () => this.view.onchangeSelection(this.getSelected()) ) );
         }
 
         let group_by = this.view.getGroupBy();
         if(group_by.length > 0) {
-            let $fold_toggle = $('<th />').addClass('sb-group-cell folded').css({'width': '44px', 'cursor': 'pointer'}).append( $('<i/>').addClass('material-icons sb-toggle-button').text('chevron_right') );
+            let $fold_toggle = $('<th />')
+                .addClass('sb-group-cell folded')
+                .css({'width': '44px', 'cursor': 'pointer'})
+                .append(
+                    $('<i/>').addClass('material-icons sb-toggle-button').text('chevron_right')
+                );
             $hrow.append( $fold_toggle );
 
             $fold_toggle.on('click', () => {
@@ -211,8 +222,6 @@ export class LayoutList extends Layout {
 
         $thead.append($hrow);
 
-        this.$layout.append($elem);
-
         if(view_schema.hasOwnProperty('operations')) {
             console.debug(' ');
 
@@ -265,8 +274,6 @@ export class LayoutList extends Layout {
 
         UIHelper.decorateTable($elem, view_schema);
 
-
-
         let count_actions_column_items: number = 0;
         console.debug('LayoutList::layout - testing routes & actions');
 
@@ -312,7 +319,7 @@ export class LayoutList extends Layout {
             // add a virtual column of same width in operation rows (to maintain alignment)
             if(view_schema.hasOwnProperty('operations')) {
                 let $op_rows: any = $elem.find('.table-operations').first().find('.operation-row');
-            console.debug('LayoutList::layout - fadding width to op_rows', $op_rows);
+                console.debug('LayoutList::layout - padding width to op_rows', $op_rows);
                 for(let $op_row of $op_rows) {
                     $('<div/>')
                         .addClass('operation-cell mdc-data-table__cell sb-operation-actions-cell')
@@ -327,8 +334,6 @@ export class LayoutList extends Layout {
     protected async feed(objects: any) {
         console.debug('LayoutList::feed', objects);
 
-        this.$layout.find("tbody").remove();
-
         let group_by = this.view.getGroupBy();
 
         let groups: any = {};
@@ -342,9 +347,6 @@ export class LayoutList extends Layout {
         const user = this.view.getUser();
 
         let view_schema = this.view.getViewSchema();
-
-        let $elem = this.$layout.find('.table-wrapper');
-        let $table = $elem.find('table');
 
         let $tbody = $('<tbody/>');
 
@@ -445,7 +447,12 @@ export class LayoutList extends Layout {
             }
         }
 
+        let $elem = this.$layout.find('.table-wrapper');
+        let $table = $elem.find('table');
+
+        console.debug('LayoutList::feed - removing $tbody');
         $table.find('tbody').remove();
+        console.debug('LayoutList::feed - appending $tbody', $table);
         $table.append($tbody);
 
         if(view_schema.hasOwnProperty('operations')) {
@@ -513,6 +520,18 @@ export class LayoutList extends Layout {
         }
 
         UIHelper.decorateTable($elem, view_schema);
+
+        // adapt group fold state based on column
+        let $fold_toggle = this.$layout.find('thead tr th.sb-group-cell');
+        let folded = $fold_toggle.hasClass('folded');
+
+        $tbody.find('.sb-group-row').each( (index: number, elem: any) => {
+            let $this = $(elem);
+            let subfolded = $this.hasClass('folded');
+            if(subfolded != folded) {
+                $this.trigger('click');
+            }
+        });
 
         // handler for reordering through drag n drop
         $elem.on('_updateOrder', (event: any, updates: any[]) => {
@@ -634,7 +653,7 @@ export class LayoutList extends Layout {
     }
 
     public prependObject(object: any, actions: any[] = []) {
-        let $tbody = this.$layout.find("tbody");
+        let $tbody = this.$layout.find('tbody');
 
         let $row = this.feedListCreateObjectRow(object);
 
