@@ -2458,6 +2458,7 @@ export class View {
 
 
     private async layoutRefresh(full: boolean = false) {
+        console.debug('View::layoutRefresh', full);
         await this.layout.refresh(full);
         if(['list', 'cards'].indexOf(this.type) >= 0) {
             this.layoutListRefresh(full);
