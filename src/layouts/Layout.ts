@@ -347,11 +347,10 @@ export class Layout implements LayoutInterface{
                 };
 
                 const handleSuccess = (data: any) => {
-                    /*
-                    if(data) {
-                        // #todo - refresh view if requested
+                    if(data?.refresh) {
+                        // refresh view if requested
+                        this.view.onchangeView();
                     }
-                    */
                     $action_button.removeClass('mdc-button--spinner');
                     setTimeout( () => $disable_overlay.hide(), 1000);
                 };
