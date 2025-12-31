@@ -156,6 +156,8 @@ class WidgetFactory {
                 result = 'date';
                 break;
             case 'datetime':
+            case 'datetime/plain':
+            case 'datetime/plain.short':
             case 'datetime/short':
             case 'datetime/full':
             case 'date/time.short':
