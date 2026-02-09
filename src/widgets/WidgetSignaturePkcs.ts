@@ -138,7 +138,7 @@ export default class WidgetSignaturePkcs extends Widget {
 
                             console.log('response', body);
 
-                            // const result = await ApiService.call("?do=model_onchange", body);
+                            // const result = await ApiService.call('?do=model_onchange', body);
                         }
                         catch(error: any) {
                             this.handleWebEidError(error, {
