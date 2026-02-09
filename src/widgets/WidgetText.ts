@@ -18,6 +18,7 @@ export default class WidgetText extends Widget {
             let editor = this.$elem.data('quill');
             editor.root.innerHTML = this.adaptIn(value);
         }
+        return this;
     }
 
     private updateWidget() {
@@ -232,8 +233,31 @@ export default class WidgetText extends Widget {
                         // normalize CRLF
                         .replace(/\r\n?/g, '\n');
 
-                    // convert <br> to end/start of paragraph
-                    result = result.replace(/<br\s*\/?>/gi, '</p><p>');
+                    // #memo there might be legitimate break-spaces
+
+                    // normalize empty paragraphs
+                    result = result.replace(/<p>\s*<\/p>/gi, '<p><br></p>');
+
+                    // remove/normalize trailing <br> inside non-empty paragraphs
+                    result = result.replace(/<p>([\s\S]*?)(<br\s*\/?>\s*)+<\/p>/gi, (match, content, brs) => {
+                            // clean content (no space nor nbsp)
+                            const clean = content.replace(/&nbsp;|\s+/gi, '');
+                            const br_count = (brs.match(/<br\s*\/?>/gi) || []).length;
+
+                            if(clean === '') {
+                                return '<p><br></p>';
+                            }
+
+                            let html: string = `<p>${content}</p>`;
+
+                            // each additional <br> becomes <p><br></p>
+                            for(let i = 1; i < br_count; i++) {
+                                html += '<p><br></p>';
+                            }
+
+                            return html;
+                        }
+                    );
 
                     // ensure everything is within a paragraph
                     if (!/^<p[\s>]/i.test(result)) {
@@ -272,7 +296,7 @@ export default class WidgetText extends Widget {
         if(this.$elem.data('quill')) {
             const editor = this.$elem.data('quill');
             if(usage.includes('text/html')) {
-                // leave unchanged : this will not require any Quill processing at next load
+                // leave unchanged : this will not require any Quill processing at next load (and <p>, <ol>, <ul> paddings are ignore at rendering)
                 /*
                 const container = document.createElement('div');
                 container.innerHTML = result;

@@ -734,7 +734,8 @@ body, html {
     transform-origin: top left;
 }
 
-.sb-widget.sb-ui-textarea p {
+/* prevent rendering variations on text/html when edited using Quill (which appends <p></p>) */
+.sb-widget.sb-ui-textarea p, .sb-widget.sb-ui-textarea ol, .sb-widget.sb-ui-textarea ul {
     margin: 0;
 }
 
