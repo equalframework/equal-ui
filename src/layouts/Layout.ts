@@ -274,12 +274,12 @@ export class Layout implements LayoutInterface{
             event.stopPropagation();
             let target_id: any = 0;
             if(route.hasOwnProperty('context')) {
-                let context:any = {...route.context};
+                let context: any = {...route.context};
                 if(context.hasOwnProperty('domain') && Array.isArray(context.domain)) {
                     let domain = JSON.stringify(context.domain);
                     for(let object_field of Object.keys(object)) {
                         target_id = object[object_field];
-                        // handle m2o sub-ojects (assuming id is always loaded)
+                        // handle m2o sub-objects (assuming id is always loaded)
                         if(typeof target_id == 'object' && target_id !== null && target_id.hasOwnProperty('id')) {
                             target_id = target_id.id;
                         }
@@ -290,7 +290,13 @@ export class Layout implements LayoutInterface{
                 else if(target_id) {
                     context.domain = ['id', '=', target_id];
                 }
-                this.getView().getContext().getFrame().openContext(context);
+                if(context.hasOwnProperty('display_mode') && context.display_mode === 'popup') {
+                    const eq = this.getView().getContext().getFrame().getEventListener();
+                    eq.popup(context);
+                }
+                else {
+                    this.getView().openContext(context);
+                }
             }
         });
     }
@@ -302,7 +308,8 @@ export class Layout implements LayoutInterface{
 
             if(action.hasOwnProperty('callback')) {
                 if( ({}).toString.call(action.callback) === '[object Function]' ) {
-                    action.callback(object);
+                    // #memo action can lead to object edition - changes are applied only after widgets lose focus, so we need a delay
+                    setTimeout( () => action.callback(object), 100);
                 }
                 return;
             }
@@ -340,16 +347,24 @@ export class Layout implements LayoutInterface{
                     }
                 });
 
-                const handleError = (err: any) => {
-                    console.log('call to component returned as cancelled (or error)');
+                const handleError = async (error: any) => {
+                    console.debug('call to component returned cancel (or error)', error);
                     $action_button.removeClass('mdc-button--spinner');
                     setTimeout( () => $disable_overlay.hide(), 1000);
                 };
 
-                const handleSuccess = (data: any) => {
-                    if(data?.refresh) {
-                        // refresh view if requested
-                        this.view.onchangeView();
+                const handleSuccess = async (data: any) => {
+                    console.log('call to component returned success', data);
+                    // refresh whole parent context
+                    if(data?.refresh_context) {
+                        console.debug('refreshing parent context');
+                        let parentView: View = this.view.getContext().getView();
+                        await parentView.onchangeView();
+                    }
+                    // refresh parent view (might be a widget)
+                    else if(data?.refresh) {
+                        console.debug('refreshing parent view');
+                        await this.view.onchangeView();
                     }
                     $action_button.removeClass('mdc-button--spinner');
                     setTimeout( () => $disable_overlay.hide(), 1000);
@@ -368,7 +383,7 @@ export class Layout implements LayoutInterface{
                 );
             }
             // b) invoke controller referenced in action
-            else {
+            else if(action.hasOwnProperty('controller')) {
                 try {
                     let resulting_params: any = {};
                     let missing_params: any = {};
@@ -532,6 +547,10 @@ export class Layout implements LayoutInterface{
                     await this.view.displayErrorFeedback(this.view.getTranslation(), response);
                 }
             }
+            // c) open context in popup
+            else if(action.hasOwnProperty('context')) {
+                // this is actually a route
+            }
         });
     }
 
@@ -624,6 +643,7 @@ export class Layout implements LayoutInterface{
 
             // handle HTTP 202 (accepted - no change)
             if(status == 202) {
+                console.debug('Layout::performViewAction - status `202`: no change');
                 // nothing to perform
                 // #todo - show snack
                 // let $snack = UIHelper.createSnackbar(TranslationService.instant('SB_ACTIONS_NOTIFY_ACTION_SENT', 'Action request sent.'), '', '', 4000);
@@ -631,6 +651,7 @@ export class Layout implements LayoutInterface{
             }
             // handle HTTP 205 (reset content)
             else if(status == 205) {
+                console.debug('Layout::performViewAction - status `205`: closing context');
                 // mark context as changed to refresh parent lists or views showing deleted object
                 this.view.setChanged();
                 // close context
@@ -638,9 +659,14 @@ export class Layout implements LayoutInterface{
             }
             // handle other HTTP status (200 - success, 201 - created, 204 - no content)
             else {
-                // refresh current view
+                console.debug('Layout::performViewAction - status `other`: refreshing main context');
+                // refresh main view of current context
+                let parentView: View = this.view.getContext().getView();
                 // #memo - this will trigger updatedContext
-                await this.view.onchangeView();
+                await parentView.onchangeView();
+
+                // #memo - this will trigger updatedContext
+                // await this.view.onchangeView();
             }
         }
         catch(response) {
