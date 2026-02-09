@@ -606,16 +606,28 @@ export default class WidgetMany2One extends Widget {
                             this.$elem.addClass('is-first');
                         }
                         else {
-                            // open targeted object in new context
-                            this.$elem.on('click', async (event: any) => {
-                                this.getLayout().openContext({
-                                    entity: this.config.foreign_object,
-                                    type: 'form',
-                                    name: (this.config.hasOwnProperty('view_name')) ? this.config.view_name : 'default',
-                                    domain: ['id', '=', this.config.object_id]
+                            // open targeted object in new context only if parent view didn't disable click/open interactions
+                            const view = this.getLayout().getView();
+                            let view_schema: any = view.getViewSchema();
+                            const interactions = view_schema.layout?.interactions ?? (view_schema.interactions ?? {});
+
+                            if( (!interactions.hasOwnProperty('click') || interactions.click)
+                                &&
+                                (!interactions.hasOwnProperty('open') || interactions.open)
+                            ) {
+                                this.$elem.on('click', async (event: any) => {
+                                    this.getLayout().openContext({
+                                        entity: this.config.foreign_object,
+                                        type: 'form',
+                                        name: (this.config.hasOwnProperty('view_name')) ? this.config.view_name : 'default',
+                                        domain: ['id', '=', this.config.object_id]
+                                    });
+                                    event.stopPropagation();
                                 });
-                                event.stopPropagation();
-                            });
+                            }
+                            else {
+                                console.debug('view with explicit discard of click event');
+                            }
                         }
                 }
                 break;
