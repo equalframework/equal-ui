@@ -332,7 +332,7 @@ body, html {
 }
 
 .sb-view-layout-list .sb-widget-cell .sb-widget-mode-view {
-    padding-right: 17px;
+    padding-right: 16px;
     overflow: hidden;
     text-overflow: ellipsis;
 }
@@ -437,7 +437,6 @@ body, html {
     width: 100%;
     text-align: left;
     font-weight: 600;
-    padding: 0 12px 0 12px;
 }
 
 .sb-view-layout-list .table-operations .operation .operation-row {
@@ -447,8 +446,13 @@ body, html {
     min-height: 44px;
 }
 
+/* specific to the first cell/column of a row (e.g. "Total") */
+.sb-view-layout-list .table-operations .operation .operation-row .operation-cell:first-child {
+    padding-left: 12px;
+}
+
 .sb-view-layout-list .table-operations .operation .operation-row .operation-cell {
-    padding: 12px 19px 12px 2px;
+    padding: 12px 2px 12px 2px;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
