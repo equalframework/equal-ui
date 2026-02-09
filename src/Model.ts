@@ -151,7 +151,7 @@ export class Model {
 
     public export(object: any) {
         console.debug('Model::export', object);
-        let result:any = {};
+        let result: any = {};
         let schema = this.view.getModelFields();
         for(let field in schema) {
             if(!object.hasOwnProperty(field)) {
@@ -305,7 +305,7 @@ export class Model {
     }
 
     /**
-     * Handler for resetting change status and modified field of a given object, when an update occured and was accepted by server.
+     * Handler for resetting change status and modified field of a given object, when an update occurred and was accepted by server.
      *
      * @param id
      * @param values
