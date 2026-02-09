@@ -12,6 +12,9 @@ export class Context {
 
     private view: View;
 
+    // keep original domain (might be adapted inside underlying View)
+    private domain: any[];
+
     // flag for marking the context to be refreshed
     private has_changed: boolean;
 
@@ -46,6 +49,7 @@ export class Context {
         this.callback = callback;
         this.has_changed = false;
         this.config = config;
+        this.domain = JSON.parse(JSON.stringify(domain));
         this.frame = frame;
         this.view = new View(this, entity, type, name, domain, mode, purpose, lang, config);
         // inject View in parent Context object
@@ -119,6 +123,10 @@ export class Context {
         this.has_changed = true;
     }
 
+    public setDomain(domain: any[]) {
+        this.domain = domain;
+    }
+
     /**
      *
      * @returns Promise A promise that resolves when the View will be fully rendered
@@ -148,7 +156,7 @@ export class Context {
     }
 
     public getDomain() {
-        return this.view.domain;
+        return this.domain;
     }
 
     public getPurpose() {
