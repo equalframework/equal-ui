@@ -969,9 +969,9 @@ export class View {
     /**
      * Relay update notification (from View) to parent Frame.
      */
-    public async updatedContext() {
+    public async updatedContext(updated: any = {}) {
         console.debug('View::updatedContext');
-        await this.context.updatedContext();
+        await this.context.updatedContext(updated);
     }
 
     public getConfig() {
@@ -1048,6 +1048,10 @@ export class View {
 
     public setDomain(domain: any[]) {
         this.domain = domain;
+    }
+
+    public setContextDomain(domain: any[]) {
+        this.context.setDomain(domain);
     }
 
     /**
@@ -2161,6 +2165,7 @@ export class View {
         };
 
         const header_layout = ( (this.config.header?.layout ?? 'full') === 'inline') ? 'inline' : 'full';
+        const header_actions_disabled = ( typeof this.config.header?.actions === 'boolean' && !this.config.header.actions );
 
         let header_actions: any = {};
 
@@ -2178,9 +2183,9 @@ export class View {
             header_actions['ACTION.CANCEL'] = default_header_actions['ACTION.CANCEL'];
         }
 
-        let has_action_save = this.isActionEnabled(header_actions['ACTION.SAVE'], this.mode);
-        let has_action_cancel = this.isActionEnabled(header_actions['ACTION.CANCEL'], this.mode);
-        let has_action_update = this.isActionEnabled(this.config?.header?.actions?.['ACTION.EDIT'] ?? true, this.mode);
+        let has_action_save = !header_actions_disabled && this.isActionEnabled(header_actions['ACTION.SAVE'], this.mode);
+        let has_action_cancel = !header_actions_disabled && this.isActionEnabled(header_actions['ACTION.CANCEL'], this.mode);
+        let has_action_update = !header_actions_disabled && this.isActionEnabled(this.config?.header?.actions?.['ACTION.EDIT'] ?? true, this.mode);
 
         // overlay to cover the buttons and prevent additional click while action is processing
         let $disable_overlay = $('<div />').addClass('disable-overlay');
@@ -2345,7 +2350,7 @@ export class View {
 
                 $cancel_button.on('click', async () => {
                     let validation = true;
-                    if(this.hasChanged()) {
+                    if(this.hasChanged() && this.getMode() === 'edit') {
                         validation = confirm(TranslationService.instant('SB_ACTIONS_MESSAGE_ABANDON_CHANGE'));
                     }
                     if(validation) {
@@ -2789,17 +2794,9 @@ export class View {
         }
 
         // #memo - this needs to be done after model change (it case it impacts context header)
-        // #todo - for now only possible domain change is relayed
-        // relay domain to the changes made to context
-        this.context.updatedContext({domain: this.getDomain()});
-        /*
-        // not sure why limited to edit
-        if(this.getMode() === 'edit') {
-            // notify about context update
-            this.context.updatedContext();
-        }
-        */
-
+        // #memo - this has only effects if the Context was actually changed (domain or else)
+        // relay updated context event
+        this.updatedContext();
     }
 
     /**
@@ -3222,12 +3219,14 @@ export class View {
 
                 // handle HTTP 202 (accepted - no change)
                 if(status == 202) {
+                    console.debug('View::performAction - status `202`: no change');
                     // nothing to perform
                     let $snack = UIHelper.createSnackbar(TranslationService.instant('SB_ACTIONS_NOTIFY_ACTION_SENT', 'Action request sent.'), '', '', 4000);
                     this.$container.append($snack);
                 }
                 // handle HTTP 205 (reset content)
                 else if(status == 205) {
+                    console.debug('View::performAction - status `205`: closing context');
                     // mark context as changed to refresh parent lists or views showing deleted object
                     this.setChanged();
                     // close context
@@ -3235,9 +3234,15 @@ export class View {
                 }
                 // handle other HTTP status (200 - success, 201 - created, 204 - no content)
                 else {
+                    console.debug('View::performAction - status `other`: refreshing main context');
+                    // refresh main view of current context
+                    let parentView: View = this.getContext().getView();
+                    // #memo - this will trigger updatedContext
+                    await parentView.onchangeView();
+
                     // refresh current view
                     // #memo - this will trigger updatedContext
-                    await this.onchangeView();
+                    // await this.onchangeView();
                 }
             }
             catch(response) {
@@ -3513,8 +3518,10 @@ export class View {
      * Tells if an action button is visible, based on configuration from the View Header.
      * Action descriptor can either be a boolean, an object, or an array.
      * @see https://doc.equal.run/usage/views/lists/#actions
+     * #isVisible #isActionVisible
      */
     private isActionEnabled(action: any, mode: string): boolean {
+        // #todo - these are actions in header - find a way to inject current object for form views
         console.debug("View::isActionEnabled - evaluating action", action, mode);
         // direct boolean (visibility)
         if(typeof action === 'boolean') {
@@ -3545,6 +3552,7 @@ export class View {
                 }
             }
             else if(action.hasOwnProperty('visible')) {
+                // #todo - add support for visible.{mode}
                 if(typeof action.visible === 'boolean') {
                     return action.visible;
                 }
