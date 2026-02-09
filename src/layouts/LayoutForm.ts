@@ -236,9 +236,9 @@ export class LayoutForm extends Layout {
     protected async feed(objects: any) {
         console.debug('LayoutForm::feed', objects);
         // display the first object from the collection
+        const view_schema: any = this.view.getViewSchema();
 
         if(objects.length == 0) {
-            const view_schema: any = this.view.getViewSchema();
             if(view_schema.hasOwnProperty('on_error') && view_schema.on_error.hasOwnProperty('missing')) {
                 if(view_schema.on_error.missing.hasOwnProperty('context')) {
                     await this.view.getContext().getFrame().closeAll();
@@ -267,7 +267,6 @@ export class LayoutForm extends Layout {
             let object: any = objects[0];
 
             // update actions in view header
-            let view_schema = this.view.getViewSchema();
             let $view_actions = this.view.getContainer().find('.sb-view-header-actions-view').first().empty();
 
             // show object status, if defined and present
@@ -369,7 +368,7 @@ export class LayoutForm extends Layout {
                                 await parentView.navigationAction('prev');
                                 const object_id = parentView.getActiveObjectId();
                                 // update domain & refresh context
-                                this.view.setDomain(['id', '=', object_id]);
+                                this.view.setContextDomain(['id', '=', object_id]);
                                 this.view.onchangeView();
                             })
                         )
@@ -378,7 +377,7 @@ export class LayoutForm extends Layout {
                             .on('click', async (event: any) => {
                                 await parentView.navigationAction('next');
                                 const object_id = parentView.getActiveObjectId();
-                                this.view.setDomain(['id', '=', object_id]);
+                                this.view.setContextDomain(['id', '=', object_id]);
                                 this.view.onchangeView();
                             })
                         );
@@ -625,7 +624,7 @@ export class LayoutForm extends Layout {
                                         params.values  = this.view.getModel().export(object);
                                     }
 
-                                    const result = await ApiService.call("?do=model_onchange", params);
+                                    const result = await ApiService.call('?do=model_onchange', params);
 
                                     if(typeof result === 'object' && result != null) {
 
@@ -647,7 +646,7 @@ export class LayoutForm extends Layout {
                                                     // #memo - m2o widgets use an object as value
                                                     values[changed_field] = result[changed_field];
                                                     if(result[changed_field].hasOwnProperty('domain')) {
-                                                        // #todo - using original_domain is probabily no longer necessary (see above)
+                                                        // #todo - using original_domain is probability no longer necessary (see above)
                                                         // force changing original_domain
                                                         model_fields[changed_field].original_domain = result[changed_field].domain;
                                                         this.view.updateModelField(changed_field, 'domain', result[changed_field].domain);
@@ -729,16 +728,32 @@ export class LayoutForm extends Layout {
                 }
             }
             else {
-                // by convention give the focus to the first input (widget) of the layout
-                setTimeout( () => {
-                    // unless focus has already been manually given by user
-                    if(this.focused_widget_id) {
-                        return;
-                    }
-                    console.debug('LayoutForm:FOCUS Giving focus to first input');
-                    this.$layout.find('input').first().trigger('focus');
-                // delay to allow considering user manual selection
-                }, 1000);
+                const interactions = view_schema.layout?.interactions ?? (view_schema.interactions ?? {});
+                // #memo autofocus is the default behavior
+                if(interactions.autofocus !== false) {
+                    // by convention give the focus to the first input (widget) of the layout
+                    setTimeout( () => {
+                        // unless focus has already been manually given by user
+                        if(this.focused_widget_id) {
+                            return;
+                        }
+                        console.debug('LayoutForm:FOCUS Giving focus to first input');
+
+                        // this.$layout.find('input').first().trigger('focus');
+
+                        // give focus to first input a widget, avoiding recursion (sub-views)
+                        const $firstWidget = this.$layout.find('sb-widget').first();
+                        $firstWidget
+                            .find('input')
+                            .filter( (index: number, input: any) => {
+                                return $(input).closest('sb-widget')[0] === $firstWidget[0];
+                            })
+                            .first()
+                            .focus();
+
+                    // delay to allow considering user manual selection
+                    }, 1000);
+                }
             }
         }
 
