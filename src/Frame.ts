@@ -11,6 +11,7 @@ import { UIHelper } from './material-lib';
  */
 export class Frame {
 
+    // eQual UI event listener
     private eq: any;
 
     private environment: any = null;
@@ -43,7 +44,7 @@ export class Frame {
 
     private is_active: boolean;
 
-    constructor(eq:any, domContainerSelector:string='#sb-container') {
+    constructor(eq: any, domContainerSelector: string = '#sb-container') {
         this.eq = eq;
         this.context = <Context> {};
         this.stack = [];
@@ -64,6 +65,10 @@ export class Frame {
 
     public isActive() {
         return this.is_active;
+    }
+
+    public getEventListener() {
+        return this.eq;
     }
 
     public getContext() {
@@ -397,7 +402,7 @@ export class Frame {
                             // close all contexts after the one clicked
                             for(let j = this.stack.length-1; j > i; --j) {
                                 // unstack contexts silently (except for the targeted one), and ask for validation at each step
-                                if(this.context.getView().hasChanged()) {
+                                if(this.context.getView().hasChanged() && this.context.getView().getMode() === 'edit') {
                                     let validation = confirm(TranslationService.instant('SB_ACTIONS_MESSAGE_ABANDON_CHANGE'));
                                     if(!validation) {
                                         return;
@@ -457,7 +462,7 @@ export class Frame {
                 .appendTo($elem)
                 .on('click', () => {
                     let validation = true;
-                    if(Object.keys(this.context).length && this.context.getView().hasChanged()) {
+                    if(Object.keys(this.context).length && this.context.getView().hasChanged() && this.context.getView().getMode() === 'edit') {
                         validation = confirm(TranslationService.instant('SB_ACTIONS_MESSAGE_ABANDON_CHANGE'));
                     }
                     if(!validation) {
@@ -633,7 +638,7 @@ export class Frame {
      * @param data
      * @param silent
      */
-    public async closeContext(data:any = null, silent: boolean = false) {
+    public async closeContext(data: any = null, silent: boolean = false) {
         if(this.display_mode == 'stacked') {
             await this.eq.close({
                 target: this.domContainerSelector,
@@ -779,7 +784,7 @@ export class Frame {
             this.context.close({silent: silent, ...data});
 
             // restore previous context
-            this.context = <Context>this.stack.pop();
+            this.context = <Context> this.stack.pop();
 
             if(!silent) {
                 if( this.context && this.context.hasOwnProperty('$container') ) {
