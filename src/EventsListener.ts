@@ -249,7 +249,7 @@ class EventsListener {
                 if( ({}).toString.call(callback) === '[object Function]') {
                     // run callback with empty context
                     console.debug('calling callback');
-                    callback(updated); 
+                    callback(updated);
                 }
             }
         }
@@ -290,7 +290,7 @@ class EventsListener {
                 console.debug('eQ::_closeContext - running callbacks', params);
                 for(let callback of this.subscribers['close']) {
                     if( ({}).toString.call(callback) === '[object Function]') {
-                        // run callback with empty context
+                        // run callback with resulting context
                         callback(result);
                     }
                 }
@@ -437,7 +437,7 @@ class EventsListener {
         if(external) {
             for(let index in this.frames) {
                 let frame = this.frames[index];
-                if(frame && typeof frame.getContext().getView === 'function' && frame.getContext().getView().hasChanged()) {
+                if(frame && typeof frame.getContext().getView === 'function' && frame.getContext().getView().hasChanged() && frame.getContext().getView().getMode() === 'edit') {
                     let validation = confirm(TranslationService.instant('SB_ACTIONS_MESSAGE_ABANDON_CHANGE'));
                     if(!validation) {
                         return false;
@@ -472,7 +472,7 @@ class EventsListener {
         if(external) {
             for(let index in this.frames) {
                 let frame = this.frames[index];
-                if(frame && typeof frame.getContext().getView === 'function' && frame.getContext().getView().hasChanged()) {
+                if(frame && typeof frame.getContext().getView === 'function' && frame.getContext().getView().hasChanged() && frame.getContext().getView().getMode() === 'edit') {
                     let validation = confirm(TranslationService.instant('SB_ACTIONS_MESSAGE_ABANDON_CHANGE'));
                     if(!validation) {
                         return false;
@@ -488,17 +488,17 @@ class EventsListener {
 
         // extend default params with received config
         let target_context = {...{
-            entity:     '',
-            type:       'list',
-            name:       'default',
-            domain:     [],
-            mode:       'view',             // view, edit
-            purpose:    'view',             // view, select, add
-            lang:       environment.lang,
-            callback:   null,
-            target:     '#sb-container',
-            reset:      false
-        }, ...context};
+                entity:     '',
+                type:       'list',
+                name:       'default',
+                domain:     [],
+                mode:       'view',             // view, edit
+                purpose:    'view',             // view, select, add
+                lang:       environment.lang,
+                callback:   null,
+                target:     '#sb-container',
+                reset:      false
+            }, ...context};
 
         // this.$sbEvents.trigger('click', [context, context.hasOwnProperty('reset') && context.reset]);
 
@@ -536,7 +536,7 @@ class EventsListener {
     public async popup(config: any, domContainerSelector: string = 'body') {
         console.debug('EventsListener::popup', config);
 
-        let $domContainer  = $(domContainerSelector);
+        let $domContainer = $(domContainerSelector);
 
         let $wrapper = $domContainer.find('.sb-popup-wrapper');
         if(!$wrapper.length) {
@@ -560,8 +560,40 @@ class EventsListener {
 
         let frame = new Frame(this, '#sb-popup-inner-'+popup_id);
 
-        config.display_mode = 'popup';
-        await frame._openContext(config);
+        const environment = await EnvService.getEnv();
+
+        let target_context = {...{
+                entity:     '',
+                type:       'list',
+                name:       'default',
+                domain:     [],
+                mode:       'view',             // view, edit
+                purpose:    'view',             // view, select, add
+                lang:       environment.lang,
+                callback:   null,
+                target:     null,
+                reset:      false
+            }, ...config};
+
+        if( config.hasOwnProperty('view') ) {
+            let parts = config.view.split('.');
+            let view_type = 'list', view_name = 'default';
+            if(parts.length) {
+                view_type = <string> parts.shift();
+            }
+            if(parts.length) {
+                view_name = <string> parts.shift();
+            }
+            if(!config.hasOwnProperty('type')) {
+                target_context.type = view_type;
+            }
+            if(!config.hasOwnProperty('name')) {
+                target_context.name = view_name;
+            }
+        }
+
+        target_context.display_mode = 'popup';
+        await frame._openContext(target_context);
 
         this.popups.push(frame);
     }
