@@ -75,7 +75,9 @@ export default class WidgetDateTime extends Widget {
                 $input.val(this.dateToString(date, moment_format));
             }
         }
+        return this;
     }
+
     public render(): JQuery {
         console.debug('WidgetDateTime::render', this);
         const locale = this.getLayout().getEnv().locale.slice(0, 2);

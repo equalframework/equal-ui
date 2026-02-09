@@ -157,6 +157,7 @@ export default class Widget {
      */
     public change(value:any) {
         this.setValue(value);
+        return this;
     }
 
     /**

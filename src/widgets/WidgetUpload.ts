@@ -10,7 +10,7 @@ export default class WidgetUpload extends Widget {
     private windowDragOverHandler = (e: DragEvent) => e.preventDefault();
 
     public change(value: any) {
-
+        return this;
     }
 
     public destroy() {

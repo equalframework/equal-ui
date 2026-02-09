@@ -30,6 +30,7 @@ export default class WidgetString extends Widget {
                 this.$elem.html(value);
             }
         }
+        return this;
     }
 
     public render(): JQuery {

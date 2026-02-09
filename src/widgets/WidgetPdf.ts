@@ -8,7 +8,7 @@ export default class WidgetPdf extends Widget {
     }
 
     public change(value: any) {
-
+        return this;
     }
 
     public render():JQuery {

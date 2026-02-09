@@ -75,6 +75,7 @@ export default class WidgetDate extends Widget {
                 $input.val(this.dateToString(date, moment_format));
             }
         }
+        return this;
     }
 
     public render(): JQuery {

@@ -11,6 +11,7 @@ export default class WidgetLink extends Widget {
 
     public change(value: any) {
         this.$elem.find('input').val(value).trigger('change');
+        return this;
     }
 
     public render():JQuery {

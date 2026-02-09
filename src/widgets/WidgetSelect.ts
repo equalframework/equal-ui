@@ -12,6 +12,7 @@ export default class WidgetSelect extends Widget {
     public change(value: any) {
         console.debug('WidgetSelect::change', value);
         this.$elem.trigger('select', value);
+        return this;
     }
 
     public render():JQuery {
