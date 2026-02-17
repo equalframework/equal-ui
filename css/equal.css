@@ -194,8 +194,8 @@ body, html {
     width: calc(100% - 100px);
     white-space: nowrap;
     text-overflow: ellipsis;
-    /* #memo - popups require the overflow to be visible */
-    /*overflow: hidden;*/
+    /* #memo - meta info popups require the overflow to be visible */
+    overflow: visible;
 }
 
 .sb-popup-inner .sb-container-header h3 {

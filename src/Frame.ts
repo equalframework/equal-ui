@@ -358,105 +358,192 @@ export class Frame {
         // make sure header is visible
         this.$headerContainer.show();
 
-        let $elem = $('<h3 />');
+        // create invisible h3 for progressive construction
+        let $elem = $('<h3 />')
+            .css({
+                position: 'absolute',
+                visibility: 'hidden',
+                left: 0,
+                top: 0
+            })
+            .appendTo(this.$headerContainer);
 
-        // add temporary, invisible header for font size computations
-        let $temp = $('<h3 />').css({visibility: 'hidden'}).appendTo(this.$headerContainer);
+        // collect crumbs (oldest > newest)
+        let crumbs: { $node: JQuery, isSeparator?: boolean, isContext?: boolean, contextIndex?: number }[] = [];
 
-        let current_purpose_string = await this.getPurposeString(this.context);
+        // build stack crumbs (clickable)
+        for(let i = 0; i < this.stack.length; i++) {
 
-        let available_width = (this.$headerContainer.length && this.$headerContainer[0]) ? (this.$headerContainer[0].clientWidth - 160) : 300;
-
-        let total_text_width = this.getTextWidth(current_purpose_string, $temp);
-
-        let prepend_contexts_count = 0;
-
-        if(total_text_width > available_width) {
-            let char_width = (total_text_width / current_purpose_string.length) + 2;
-            let max_chars = available_width / char_width;
-            current_purpose_string = current_purpose_string.substring(0, max_chars-1) + '…';
-        }
-        else {
-            // use all contexts in stack (loop in reverse order)
-            for(let i = this.stack.length-1; i >= 0; --i) {
-                let context = this.stack[i];
-                if(context.hasOwnProperty('$container')) {
-                    let context_purpose_string = await this.getPurposeString(context);
-
-                    let text_width = this.getTextWidth(context_purpose_string + ' > ', $temp) + 20;
-                    let overflow = false;
-                    if( (text_width+total_text_width) >= available_width) {
-                        overflow = true;
-                        context_purpose_string = '...';
-                        text_width = this.getTextWidth(context_purpose_string + ' > ', $temp) + 20;
-                        if(text_width+total_text_width >= available_width) {
-                            break;
-                        }
-                    }
-                    total_text_width += text_width;
-                    prepend_contexts_count++;
-
-                    if(!config.hasOwnProperty('header_links') || config.header_links == true) {
-                        let $crumb = $('<a>'+context_purpose_string+'</a>').prependTo($elem)
-                        .on('click', async () => {
-                            // close all contexts after the one clicked
-                            for(let j = this.stack.length-1; j > i; --j) {
-                                // unstack contexts silently (except for the targeted one), and ask for validation at each step
-                                if(this.context.getView().hasChanged() && this.context.getView().getMode() === 'edit') {
-                                    let validation = confirm(TranslationService.instant('SB_ACTIONS_MESSAGE_ABANDON_CHANGE'));
-                                    if(!validation) {
-                                        return;
-                                    }
-                                    this.closeContext(null, true);
-                                }
-                                else {
-                                    this.closeContext(null, true);
-                                }
-                            }
-                            this.closeContext();
-                        });
-                        this.decorateCrumb($crumb, context);
-                    }
-                    else {
-                        let $crumb = $('<span>'+context_purpose_string+'</span>').prependTo($elem);
-                        this.decorateCrumb($crumb, context);
-                    }
-
-                    if(overflow) {
-                        break;
-                    }
-
-                    if(i > 1) {
-                        $('<span> › </span>').css({'margin': '0 10px'}).prependTo($elem);
-                    }
-
-                }
+            let context = this.stack[i];
+            if(!context.hasOwnProperty('$container')) {
+                continue;
             }
 
+            let context_purpose_string = await this.getPurposeString(context);
+
+            let $crumb;
+
+            if(!config.hasOwnProperty('header_links') || config.header_links == true) {
+                $crumb = $('<a>' + context_purpose_string + '</a>')
+                .on('click', async () => {
+                    // close all contexts after the one clicked
+                    for(let j = this.stack.length-1; j > i; --j) {
+                        if(this.context.getView().hasChanged() && this.context.getView().getMode() === 'edit') {
+                            let validation = confirm(TranslationService.instant('SB_ACTIONS_MESSAGE_ABANDON_CHANGE'));
+                            if(!validation) {
+                                return;
+                            }
+                            this.closeContext(null, true);
+                        }
+                        else {
+                            this.closeContext(null, true);
+                        }
+                    }
+                    this.closeContext();
+                });
+                this.decorateCrumb($crumb, context);
+            }
+            else {
+                $crumb = $('<span>' + context_purpose_string + '</span>');
+                this.decorateCrumb($crumb, context);
+            }
+
+            crumbs.push({ $node: $crumb, isContext: true, contextIndex: i });
+
+            if(i < this.stack.length - 1) {
+                crumbs.push({
+                    $node: $('<span> › </span>').css({'margin': '0 10px'}),
+                    isSeparator: true
+                });
+            }
         }
 
-        // ... and add the active context
+        // active context
+        let current_purpose_string = await this.getPurposeString(this.context);
 
-        if(prepend_contexts_count > 0) {
-            $('<span> › </span>').css({'margin': '0 10px'}).appendTo($elem);
-        }
+        let $current;
 
         if(this.display_mode == 'popup' && (!config.hasOwnProperty('header_links') || config.header_links == true)) {
             let model_schema = await ApiService.getSchema(this.context.getEntity());
             let objects:any = await this.context.getView().getModel().get();
             if(objects.length && objects[0].hasOwnProperty('id')) {
                 let url = model_schema.link.replace(/object\.id/, objects[0].id);
-                let $crumb = $('<a>'+current_purpose_string+'</a>').attr('href', url).attr('target', '_blank').prependTo($elem);
-                this.decorateCrumb($crumb, this.context);
+                $current = $('<a>' + current_purpose_string + '</a>')
+                    .attr('href', url)
+                    .attr('target', '_blank');
             }
         }
         else {
-            let $crumb = $('<span>'+current_purpose_string+'</span>').appendTo($elem);
-            this.decorateCrumb($crumb, this.context);
+            $current = $('<span>' + current_purpose_string + '</span>');
         }
 
+        this.decorateCrumb($current, this.context);
+
+        if(crumbs.length > 0) {
+            crumbs.push({
+                $node: $('<span> › </span>').css({'margin': '0 10px'}),
+                isSeparator: true
+            });
+        }
+
+        crumbs.push({ $node: <JQuery> $current });
+
+        // overflow detection based on visible width of an element
+        const isOverflow = ($el: any) => {
+            const el = $el[0];
+            console.log('@@@isOverflow', $el, el, el.scrollWidth, el.clientWidth);
+            return el && el.scrollWidth > el.clientWidth;
+        };
+
+        let leftRemovalIndex = 0;
+        let removedContextIndex: number|null = null;
+
+        // progressive injection
+        for(let i = 0; i < crumbs.length; i++) {
+
+            let item = crumbs[i];
+            $elem.append(item.$node);
+
+            if(isOverflow($elem)) {
+
+                // remove the last added
+                item.$node.detach();
+
+                // remove previous items until it fits
+                while(leftRemovalIndex < i) {
+
+                    let toRemove = crumbs[leftRemovalIndex];
+
+                    if(toRemove.$node.parent().length) {
+                        toRemove.$node.detach();
+
+                        if(toRemove.isContext && typeof toRemove.contextIndex !== 'undefined') {
+                            removedContextIndex = toRemove.contextIndex;
+                        }
+                    }
+
+                    leftRemovalIndex++;
+
+                    $elem.append(item.$node);
+
+                    if(!isOverflow($elem)) {
+                        break;
+                    }
+
+                    item.$node.detach();
+                }
+
+                // fallback (extreme case)
+                if(!$elem.find(item.$node).length) {
+                    $elem.append(item.$node);
+                }
+            }
+        }
+
+        // if some contexts were removed, add [...] crumb pointing to last removed context
+        if(removedContextIndex !== null) {
+
+            let i = removedContextIndex;
+            let context = this.stack[i];
+
+            let $ellipsis;
+
+            if(!config.hasOwnProperty('header_links') || config.header_links == true) {
+                $ellipsis = $('<a>[...]</a>')
+                .on('click', async () => {
+                    // close all contexts after the one clicked
+                    for(let j = this.stack.length-1; j > i; --j) {
+                        if(this.context.getView().hasChanged() && this.context.getView().getMode() === 'edit') {
+                            let validation = confirm(TranslationService.instant('SB_ACTIONS_MESSAGE_ABANDON_CHANGE'));
+                            if(!validation) {
+                                return;
+                            }
+                            this.closeContext(null, true);
+                        }
+                        else {
+                            this.closeContext(null, true);
+                        }
+                    }
+                    this.closeContext();
+                });
+                this.decorateCrumb($ellipsis, context);
+            }
+            else {
+                $ellipsis = $('<span>[...]</span>');
+                this.decorateCrumb($ellipsis, context);
+            }
+
+            $elem.prepend($ellipsis);
+
+            let $next = $ellipsis.next();
+            if(!$next.length || $next.text().trim() !== '›') {
+                $ellipsis.after($('<span> › </span>').css({'margin': '0 10px'}));
+            }
+
+        }
+
+        // add 'close' button
         if(this.stack.length > 1 || this.display_mode == 'popup' || this.close_button) {
-            // #memo - for integration, we need to let user close any context
             UIHelper.createButton('context-close', '', 'mini-fab', 'close')
                 .addClass('context-close')
                 .appendTo($elem)
@@ -472,40 +559,95 @@ export class Frame {
                 });
         }
 
-        // lang selector controls the current context and is used for opening subsequent contexts
+        // final overflow check, after adding ellipsis and close button (which can make the content overflow)
+        while(isOverflow($elem)) {
+            // withdraw first visible element, after ellipsis
+            let $first = $elem.children().eq(0);
+            let $next = $first.next();
+
+            // skip chevrons
+            if($next.length && $next.text().trim() === '›') {
+                $next = $next.next();
+            }
+
+            // nothing left
+            if(!$next.length) {
+                break;
+            }
+
+            // withdraw crumb + separator
+            let $after = $next.next();
+            $next.remove();
+            if($after.length && $after.text().trim() === '›') {
+                $after.remove();
+            }
+        }
+
+
+        // lang selector controls the current context
         const environment = await EnvService.getEnv();
 
-        // #todo - add support for lang with locale (format xx_XX)
         let lang = environment.lang.slice(0, 2);
 
-        // if there is a current context, use its lang
         if(this.context.hasOwnProperty('$container')) {
             lang = this.context.getLang();
         }
 
-        let $lang_selector = UIHelper.createSelect('lang-selector_' + Math.random().toString(36).substring(2, 10), '', this.languages, lang);
+        let $lang_selector = UIHelper.createSelect(
+            'lang-selector_' + Math.random().toString(36).substring(2, 10),
+            '',
+            this.languages,
+            lang
+        );
+
         $lang_selector.addClass('lang-selector');
         $lang_selector.find('.mdc-menu').addClass('mdc-menu-surface--is-open-left');
-        $lang_selector.find('.mdc-select__selected-text').css({'text-transform': 'uppercase'}).text(lang);
+        $lang_selector.find('.mdc-select__selected-text')
+            .css({'text-transform': 'uppercase'})
+            .text(lang);
 
-        // when the lang selector is changed by user, update current context
         $lang_selector.find('input').on('change', () => {
-            let lang:string = <string> $lang_selector.find('input').val();
+            let lang:string = <string>$lang_selector.find('input').val();
             $lang_selector.trigger('select', lang);
-            // force display lang code instead of full lang name (UI/UX)
-            setTimeout( () => {
-                    $lang_selector.find('.mdc-select__selected-text').css({'text-transform': 'uppercase'}).text(lang);
-                }, 100);
-            let context: Context = new Context(this, this.context.getEntity(), this.context.getType(), this.context.getName(), this.context.getDomain(), this.context.getMode(), this.context.getPurpose(), lang, this.context.getCallback(), this.context.getConfig());
+
+            setTimeout(() => {
+                $lang_selector.find('.mdc-select__selected-text')
+                    .css({'text-transform': 'uppercase'})
+                    .text(lang);
+            }, 100);
+
+            let context: Context = new Context(
+                this,
+                this.context.getEntity(),
+                this.context.getType(),
+                this.context.getName(),
+                this.context.getDomain(),
+                this.context.getMode(),
+                this.context.getPurpose(),
+                lang,
+                this.context.getCallback(),
+                this.context.getConfig()
+            );
+
             this.context.destroy();
             this.context = context;
-            this.context.isReady().then( () => {
+
+            this.context.isReady().then(() => {
                 $(this.domContainerSelector).append(this.context.getContainer());
             });
-            console.debug('Switched ORM requests to "'+lang+'"');
+
+            console.debug('Switched ORM requests to "' + lang + '"');
         });
 
-        this.$headerContainer.show().empty().append($elem).append($lang_selector);
+        // make h3 visible
+        $elem
+            .css({
+                position: 'relative',
+                visibility: 'visible'
+            })
+            .detach();
+
+        this.$headerContainer.empty().append($elem).append($lang_selector);
     }
 
     /**
@@ -514,7 +656,10 @@ export class Frame {
      * @param $crumb
      * @param context
      */
-    private decorateCrumb($crumb: JQuery, context: Context) {
+    private decorateCrumb($crumb: JQuery | undefined, context: Context) {
+        if(!$crumb) {
+            return;
+        }
         $crumb.on('mouseenter', () => {
             $crumb.addClass('has-mouseover');
             // hide any previously opened popup in the header
@@ -544,7 +689,9 @@ export class Frame {
                 .text('View details')
                 .append(
                     $('<span class="btn-copy material-icons">content_copy</span>')
-                    .on('click', () => {
+                    .on('click', (event: any) => {
+                        event.preventDefault();
+                        event.stopPropagation();
                         console.log('copying to clipboard');
                         let tmp = document.createElement("textarea");
                         tmp.style.position = 'absolute';
