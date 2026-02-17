@@ -542,23 +542,23 @@ class EventsListener {
         if(!$wrapper.length) {
             // origin not found, create container
             $wrapper = $('<div class="sb-popup-wrapper"></div>')
-            $wrapper.css('left', window.pageXOffset+'px');
-            $wrapper.css('top', window.pageYOffset+'px');
+            $wrapper.css('left', window.pageXOffset + 'px');
+            $wrapper.css('top', window.pageYOffset + 'px');
             $domContainer.append($wrapper);
         }
 
         let popup_id = this.popups.length + 1;
-        let $popup = $('<div id="sb-popup-'+popup_id+'" class="sb-popup"></div>');
+        let $popup = $('<div id="sb-popup-' + popup_id + '" class="sb-popup"></div>');
         $wrapper.append($popup);
         $popup.css('z-index', 9000 + popup_id);
 
-        let $inner = $('<div class="sb-popup-inner" id="sb-popup-inner-'+popup_id+'"></div>').on('_close', () => {
+        let $inner = $('<div class="sb-popup-inner" id="sb-popup-inner-' + popup_id + '"></div>').on('_close', () => {
             $popup.remove();
         });
 
         $popup.append($inner);
 
-        let frame = new Frame(this, '#sb-popup-inner-'+popup_id);
+        let frame = new Frame(this, '#sb-popup-inner-' + popup_id);
 
         const environment = await EnvService.getEnv();
 
