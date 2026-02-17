@@ -123,8 +123,13 @@ export class Context {
         this.has_changed = true;
     }
 
+    /**
+     * Update context domain and relay to child View.
+     * #memo - context domain is used in Frame and EventListener
+     */
     public setDomain(domain: any[]) {
         this.domain = domain;
+        this.view.setDomain(domain);
     }
 
     /**
