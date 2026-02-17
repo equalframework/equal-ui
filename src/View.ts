@@ -789,25 +789,37 @@ export class View {
     }
 
     public setActiveObjectId(id: number) {
+        console.debug('View::setActiveObjectId - setting active object id', id);
         this.activeObjectId = id;
     }
 
     public getActiveObjectId() {
+        console.debug('View::getActiveObjectId - current active object id', this.activeObjectId);
         return this.activeObjectId;
     }
 
     public async navigationAction(action: string) {
+        console.debug('View::navigationAction - performing navigation action', action, this.activeObjectId);
         let objects = await this.model.get();
+
+        if(objects.length <= 1) {
+            return;
+        }
+
         let index: number = objects.findIndex((obj: any) => obj.id === this.activeObjectId);
+
+        if(index === -1) {
+            index = 0;
+        }
+
         switch(action) {
             case 'prev':
                 --index;
                 if(index < 0) {
                     await this.paginationAction('prev');
                     objects = await this.model.get();
-                    index = objects.length - 1;
+                    index = Math.max(0, objects.length - 1);
                 }
-                this.setActiveObjectId(objects[index].id);
                 break;
             case 'next':
                 ++index;
@@ -816,12 +828,16 @@ export class View {
                     objects = await this.model.get();
                     index = 0;
                 }
-                this.setActiveObjectId(objects[index].id);
                 break;
         }
+        if(objects.length === 0) {
+            return;
+        }
+        this.setActiveObjectId(objects[index].id);
     }
 
     public async paginationAction(action: string) {
+        console.debug('View::paginationAction - performing pagination action ', action);
         const limit = this.getLimit();
         const start = this.getStart();
         const total = this.getTotal();
@@ -1051,6 +1067,7 @@ export class View {
     }
 
     public setContextDomain(domain: any[]) {
+        console.debug('View::setContextDomain - setting context domain', domain);
         this.context.setDomain(domain);
     }
 
@@ -3591,7 +3608,7 @@ export class View {
 
         const popup = window.open(url, title, options);
 
-        if (!popup || popup.closed || typeof popup.closed == 'undefined') {
+        if(!popup || popup.closed || typeof popup.closed == 'undefined') {
             alert("Please allow popups for this App.");
         }
 
