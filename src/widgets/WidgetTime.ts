@@ -74,11 +74,12 @@ export default class WidgetTime extends Widget {
      * Adapt UTC time (HH:mm[:ss]) to local time (HH:mm)
      */
     private adaptIn(value: any): string {
-        if (!value) {
+        if(!value) {
             return '';
         }
 
         // normalize human time formats like "10h30", "10 h", "10 h 30"
+        // #memo - this format should never be provided here
         value = value
             .trim()
             .toLowerCase()
@@ -91,13 +92,13 @@ export default class WidgetTime extends Widget {
             );
 
         // Date object assumed UTC
-        if (Object.prototype.toString.call(value) === '[object Date]') {
+        if(Object.prototype.toString.call(value) === '[object Date]') {
             const h = value.getUTCHours().toString().padStart(2, '0');
             const m = value.getUTCMinutes().toString().padStart(2, '0');
             return `${h}:${m}`;
         }
 
-        if (typeof value !== 'string') {
+        if(typeof value !== 'string') {
             return '';
         }
 
@@ -125,9 +126,24 @@ export default class WidgetTime extends Widget {
      */
     private adaptOut(): string {
         const input = this.$elem?.find('input').val();
-        if (!input) return '';
+        if(!input) {
+            return '';
+        }
 
-        const parts = String(input).split(':').map(Number);
+        let value = String(input);
+
+        value = value
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, '')
+            .replace(/^(\d{1,2})h(\d{0,2})$/, (match: string, h: string, m: string) => {
+                    const hh = h.padStart(2, '0');
+                    const mm = m.padStart(2, '0');
+                    return `${hh}:${mm}`;
+                }
+            );
+
+        const parts = value.split(':').map(Number);
         const h = parts[0] ?? 0;
         const m = parts[1] ?? 0;
         const s = parts[2] ?? 0;
