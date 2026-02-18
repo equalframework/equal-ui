@@ -464,6 +464,10 @@ export class Layout implements LayoutInterface{
                     if(translated_description == description) {
                         // fallback to current view translation
                         description = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, description, 'description');
+                        if(translated_description == description) {
+                            // fallback to translation for the default view of the same type as the current view
+                            description = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getType() + '.default', 'actions'], action.id, description, 'description');
+                        }
                     }
                     else {
                         description = translated_description;

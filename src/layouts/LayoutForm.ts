@@ -88,7 +88,7 @@ export class LayoutForm extends Layout {
                 let translated_group_title = TranslationService.resolve(translation, 'view', [this.view.getId(), 'layout'], group.id, group_title);
                 if(translated_group_title == group_title) {
                     // no translation found, check default view
-                    translated_group_title = TranslationService.resolve(translation, 'view', [this.view.getType()+'.default', 'layout'], group.id, group_title);
+                    translated_group_title = TranslationService.resolve(translation, 'view', [this.view.getType() + '.default', 'layout'], group.id, group_title);
                 }
                 group_title = translated_group_title;
             }
@@ -136,7 +136,7 @@ export class LayoutForm extends Layout {
                             let translated_section_title = TranslationService.resolve(translation, 'view', [this.view.getId(), 'layout'], section.id, section_title);
                             if(translated_section_title == section_title) {
                                 // no translation found, check default view
-                                translated_section_title = TranslationService.resolve(translation, 'view', [this.view.getType()+'.default', 'layout'], section.id, section_title);
+                                translated_section_title = TranslationService.resolve(translation, 'view', [this.view.getType() + '.default', 'layout'], section.id, section_title);
                             }
                             section_title = translated_section_title;
                         }

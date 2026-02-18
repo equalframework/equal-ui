@@ -299,7 +299,13 @@ export class LayoutList extends Layout {
                 if(this.view.getPurpose() === 'widget') {
                     continue;
                 }
-                let action_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, action.label);
+                let action_title = action.label;
+                let translated_action_title = TranslationService.resolve(this.view.getTranslation(), 'view', [this.view.getId(), 'actions'], action.id, action_title);
+                if(translated_action_title == action_title) {
+                    // no translation found, check default view
+                    translated_action_title = TranslationService.resolve(translation, 'view', [this.view.getType() + '.default', 'layout'], action.id, action_title);
+                }
+                action_title = translated_action_title;
                 let $action_button = UIHelper.createButton(this.uuid + '_action-view-' + action.id, action_title, 'outlined');
                 $action_button.css({'margin-left': '12px'});
                 $view_actions.append($action_button);

@@ -64,9 +64,14 @@ export class LayoutSearch extends Layout {
             let $group = $('<div />').addClass('sb-view-form-group').appendTo($elem);
 
             // try to resolve the group title
-            let group_title = (group.hasOwnProperty('label'))?group.label:'';
+            let group_title = (group.hasOwnProperty('label')) ? group.label : '';
             if(group.hasOwnProperty('id')) {
-                group_title = TranslationService.resolve(translation, 'view', [this.view.getId(), 'layout'], group.id, group_title);
+                let translated_group_title = TranslationService.resolve(translation, 'view', [this.view.getId(), 'layout'], group.id, group_title);
+                if(translated_group_title == group_title) {
+                    // no translation found, check default view
+                    translated_group_title = TranslationService.resolve(translation, 'view', [this.view.getType() + '.default', 'layout'], group.id, group_title);
+                }
+                group_title = translated_group_title;
             }
             // append the group title, if any
             if(group_title.length) {
@@ -78,14 +83,14 @@ export class LayoutSearch extends Layout {
                 selected_section = view_config.selected_sections[i];
             }
 
-            let $tabs = UIHelper.createTabBar('sections-'+group_id, '', '').addClass('sb-view-form-sections-tabbar');
+            let $tabs = UIHelper.createTabBar('sections-' + group_id, '', '').addClass('sb-view-form-sections-tabbar');
 
             if(group.sections.length > 1 ||  group.sections[0].hasOwnProperty('label')){
                 $group.append($tabs);
             }
 
             $.each(group.sections, (j:number, section) => {
-                let section_id = group_id+'-section-'+j;
+                let section_id = group_id + '-section-' + j;
 
                 let $section = $('<div />').attr('id', section_id).addClass('sb-view-form-section mdc-layout-grid').appendTo($group);
 
