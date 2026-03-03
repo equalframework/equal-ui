@@ -358,6 +358,9 @@ export class Frame {
         // make sure header is visible
         this.$headerContainer.show();
 
+        // hide any pending details popups (@see `decorateCrumb()`)
+        $('body > .header-view-details-popup').remove();
+
         // create invisible h3 for progressive construction
         let $elem = $('<h3 />')
             .css({
@@ -368,8 +371,31 @@ export class Frame {
             })
             .appendTo(this.$headerContainer);
 
+        // overflow detection based on visible width of an element
+        /*
+        const isOverflow = ($el: any) => {
+            const el = $el[0];
+            return el && (el.scrollWidth + 100) > el.clientWidth;
+        };
+        */
+
+        const isOverflow = ($el: any) => {
+            const el = $el[0];
+            if (!el || !el.parentElement) {
+                return false;
+            }
+
+            const contentWidth = el.scrollWidth;
+            // consider parent width with a margin to consider lang selector
+            const availableWidth = el.parentElement.clientWidth;
+
+            console.log('@@@@isOverflow', contentWidth, availableWidth);
+            return contentWidth > availableWidth;
+        };
+
         // collect crumbs (oldest > newest)
         let crumbs: { $node: JQuery, isSeparator?: boolean, isContext?: boolean, contextIndex?: number }[] = [];
+        const has_header_links: boolean = !config.hasOwnProperty('header_links') || config.header_links === true;
 
         // build stack crumbs (clickable)
         for(let i = 0; i < this.stack.length; i++) {
@@ -383,7 +409,7 @@ export class Frame {
 
             let $crumb;
 
-            if(!config.hasOwnProperty('header_links') || config.header_links == true) {
+            if(has_header_links) {
                 $crumb = $('<a>' + context_purpose_string + '</a>')
                 .on('click', async () => {
                     // close all contexts after the one clicked
@@ -423,7 +449,7 @@ export class Frame {
 
         let $current;
 
-        if(this.display_mode == 'popup' && (!config.hasOwnProperty('header_links') || config.header_links == true)) {
+        if(this.display_mode == 'popup' && has_header_links) {
             let model_schema = await ApiService.getSchema(this.context.getEntity());
             let objects:any = await this.context.getView().getModel().get();
             if(objects.length && objects[0].hasOwnProperty('id')) {
@@ -448,84 +474,65 @@ export class Frame {
 
         crumbs.push({ $node: <JQuery> $current });
 
-        // overflow detection based on visible width of an element
-        const isOverflow = ($el: any) => {
-            const el = $el[0];
-            console.log('@@@isOverflow', $el, el, el.scrollWidth, el.clientWidth);
-            return el && el.scrollWidth > el.clientWidth;
-        };
 
-        let leftRemovalIndex = 0;
-        let removedContextIndex: number|null = null;
+        let removedContextIndex: number | null = null;
 
-        // progressive injection
+        // inject everything first
         for(let i = 0; i < crumbs.length; i++) {
-
-            let item = crumbs[i];
-            $elem.append(item.$node);
-
-            if(isOverflow($elem)) {
-
-                // remove the last added
-                item.$node.detach();
-
-                // remove previous items until it fits
-                while(leftRemovalIndex < i) {
-
-                    let toRemove = crumbs[leftRemovalIndex];
-
-                    if(toRemove.$node.parent().length) {
-                        toRemove.$node.detach();
-
-                        if(toRemove.isContext && typeof toRemove.contextIndex !== 'undefined') {
-                            removedContextIndex = toRemove.contextIndex;
-                        }
-                    }
-
-                    leftRemovalIndex++;
-
-                    $elem.append(item.$node);
-
-                    if(!isOverflow($elem)) {
-                        break;
-                    }
-
-                    item.$node.detach();
-                }
-
-                // fallback (extreme case)
-                if(!$elem.find(item.$node).length) {
-                    $elem.append(item.$node);
-                }
-            }
+            $elem.append(crumbs[i].$node);
         }
 
-        // if some contexts were removed, add [...] crumb pointing to last removed context
+        // now remove from the left while overflowing
+        let leftIndex = 0;
+
+        while(isOverflow($elem) && leftIndex < crumbs.length - 1) {
+
+            const item = crumbs[leftIndex];
+
+            // do not remove the last crumb (current context)
+            const isLast = leftIndex === crumbs.length - 1;
+
+            if(!isLast && item.$node.parent().length) {
+
+                item.$node.detach();
+
+                if(item.isContext && typeof item.contextIndex !== 'undefined') {
+                    removedContextIndex = item.contextIndex;
+                }
+
+                // remove following separator if any
+                const next = crumbs[leftIndex + 1];
+                if(next && next.isSeparator && next.$node.parent().length) {
+                    next.$node.detach();
+                }
+            }
+
+            leftIndex++;
+        }
+
+        // add ellipsis if needed
         if(removedContextIndex !== null) {
 
-            let i = removedContextIndex;
-            let context = this.stack[i];
-
+            const context = this.stack[removedContextIndex];
             let $ellipsis;
 
-            if(!config.hasOwnProperty('header_links') || config.header_links == true) {
+            if(has_header_links) {
                 $ellipsis = $('<a>[...]</a>')
-                .on('click', async () => {
-                    // close all contexts after the one clicked
-                    for(let j = this.stack.length-1; j > i; --j) {
-                        if(this.context.getView().hasChanged() && this.context.getView().getMode() === 'edit') {
-                            let validation = confirm(TranslationService.instant('SB_ACTIONS_MESSAGE_ABANDON_CHANGE'));
-                            if(!validation) {
-                                return;
+                    .on('click', async () => {
+                        for(let j = this.stack.length - 1; j > removedContextIndex!; --j) {
+                            if(this.context.getView().hasChanged() && this.context.getView().getMode() === 'edit') {
+                                let validation = confirm(
+                                    TranslationService.instant('SB_ACTIONS_MESSAGE_ABANDON_CHANGE')
+                                );
+                                if(!validation) {
+                                    return;
+                                }
                             }
                             this.closeContext(null, true);
                         }
-                        else {
-                            this.closeContext(null, true);
-                        }
-                    }
-                    this.closeContext();
-                });
+                        this.closeContext();
+                    });
+
                 this.decorateCrumb($ellipsis, context);
             }
             else {
@@ -533,13 +540,11 @@ export class Frame {
                 this.decorateCrumb($ellipsis, context);
             }
 
+            // insert at beginning
+            $elem.prepend(
+                $('<span> › </span>').css({ 'margin': '0 10px' })
+            );
             $elem.prepend($ellipsis);
-
-            let $next = $ellipsis.next();
-            if(!$next.length || $next.text().trim() !== '›') {
-                $ellipsis.after($('<span> › </span>').css({'margin': '0 10px'}));
-            }
-
         }
 
         // add 'close' button
@@ -560,29 +565,12 @@ export class Frame {
         }
 
         // final overflow check, after adding ellipsis and close button (which can make the content overflow)
-        while(isOverflow($elem)) {
-            // withdraw first visible element, after ellipsis
+        if(isOverflow($elem)) {
             let $first = $elem.children().eq(0);
-            let $next = $first.next();
-
-            // skip chevrons
-            if($next.length && $next.text().trim() === '›') {
-                $next = $next.next();
-            }
-
-            // nothing left
-            if(!$next.length) {
-                break;
-            }
-
-            // withdraw crumb + separator
-            let $after = $next.next();
-            $next.remove();
-            if($after.length && $after.text().trim() === '›') {
-                $after.remove();
+            if($first.text().trim() !== '[...]') {
+                $first.text('[...]');
             }
         }
-
 
         // lang selector controls the current context
         const environment = await EnvService.getEnv();
@@ -663,28 +651,48 @@ export class Frame {
         $crumb.on('mouseenter', () => {
             $crumb.addClass('has-mouseover');
             // hide any previously opened popup in the header
-            this.$headerContainer.find('.header-view-details-popup')
-                .not($crumb.find('.header-view-details-popup'))
-                .removeClass('has-mouseover').hide();
+            $('body > .header-view-details-popup')
+                .filter((_, el) => $(el).data('crumb-owner')[0] !== $crumb[0])  // exclut celle du crumb courant (si déjà détachée)
+                .removeClass('has-mouseover');
             setTimeout( () => {
                 // show popup if crumb sill has mouseover after a delay
                 if($crumb.hasClass('has-mouseover')) {
-                    $crumb.find('.header-view-details-popup').show();
+                    // check that crumb element is still in DOM
+                    if(!$crumb.closest('body').length) {
+                        return;
+                    }
+                    let $popup = $crumb.find('.header-view-details-popup');
+                    // calcule la position absolue du crumb dans la page
+                    const offset = $crumb.offset();
+                    const height = $crumb.outerHeight() ?? 0;
+                    // déplace le popup dans le body pour échapper au overflow:hidden
+                    $popup
+                        .appendTo('body')
+                        .css({
+                            position: 'fixed',
+                            top: (offset?.top ?? 0) + height,
+                            left: offset?.left ?? 0,
+                        })
+                        .show();
                 }
             }, 1200);
         })
         .on('mouseleave', () => {
             $crumb.removeClass('has-mouseover');
             setTimeout( () => {
-                let $popup = $crumb.find('.header-view-details-popup');
+                let $popup = $('body > .header-view-details-popup').filter((index, el) => {
+                    return $(el).data('crumb-owner')[0] === $crumb[0];
+                });
                 // hide popup if neither crumb nor popup has mouseover
                 if(!$crumb.hasClass('has-mouseover') && !$popup.hasClass('has-mouseover')) {
-                    $popup.hide();
+                    $popup.hide().appendTo($crumb);
                 }
             }, 500);
         });
 
-        $('<div />').addClass('header-view-details-popup').hide()
+        $('<div />').addClass('header-view-details-popup')
+            .hide()
+            .data('crumb-owner', $crumb)
             .append( $('<div />').addClass('header-view-details-title')
                 .text('View details')
                 .append(
@@ -711,15 +719,20 @@ export class Frame {
                 .append( $('<div />').attr('title', context.getMode()).html('Mode: <b>'+context.getMode()+'</b>') )
             )
             .on('mouseenter', function() {
-                $crumb.find('.header-view-details-popup').addClass('has-mouseover');
+                $(this).addClass('has-mouseover');
             })
             .on('mouseleave', function() {
-                let $popup = $crumb.find('.header-view-details-popup');
+                let $popup = $(this);
                 $popup.removeClass('has-mouseover');
                 setTimeout( () => {
+                    // if crumb element has been removed from DOM, destroy popup
+                    if(!$crumb.closest('body').length) {
+                        $popup.remove();
+                        return;
+                    }
                     // hide popup if neither crumb nor popup has mouseover
                     if(!$crumb.hasClass('has-mouseover') && !$popup.hasClass('has-mouseover')) {
-                        $popup.hide();
+                        $popup.hide().appendTo($crumb);
                     }
                 }, 500);
             })
