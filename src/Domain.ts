@@ -147,6 +147,7 @@ export class Domain {
             for(let condition of clause.conditions) {
                 // adapt value according to its syntax ('user.' or 'object.')
                 let value = condition.value;
+                const expectsArray = ['in', 'contains'].includes(condition.operator);
 
                 // handle object references as `value` part
                 if(typeof value === 'string' && value.indexOf('object.') == 0) {
@@ -164,6 +165,8 @@ export class Domain {
                         target = target[subfield];
                     }
                     if(has_unknown_field) {
+                        value = expectsArray ? [] : value;
+                        condition.value = value;
                         continue;
                     }
                     // target points to an object with subfields
@@ -190,6 +193,8 @@ export class Domain {
                 else if(typeof value === 'string' && value.indexOf('user.') == 0) {
                     let target = value.substring('user.'.length);
                     if(!user || !user.hasOwnProperty(target)) {
+                        value = expectsArray ? [] : value;
+                        condition.value = value;
                         continue;
                     }
                     value = user[target];
@@ -197,6 +202,8 @@ export class Domain {
                 else if(typeof value === 'string' && value.indexOf('parent.') == 0 ) {
                     let target = value.substring('parent.'.length);
                     if(!parent || !parent.hasOwnProperty(target)) {
+                        value = expectsArray ? [] : value;
+                        condition.value = value;
                         continue;
                     }
                     let tmp = parent[target];
@@ -222,7 +229,9 @@ export class Domain {
                 else if(typeof value === 'string' && value.indexOf('env.') == 0) {
                     let target = value.substring('env.'.length);
                     if(!env || !env.hasOwnProperty(target)) {
-                        value = false;
+                        value = expectsArray ? [] : false;
+                        condition.value = value;
+                        continue;
                     }
                     value = env[target];
                 }
