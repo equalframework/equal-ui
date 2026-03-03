@@ -3492,7 +3492,7 @@ export class View {
                         let title = TranslationService.instant('SB_ERROR_CONFLICT_OBJECT');
                         // try to resolve the error message
                         let msg = TranslationService.resolve(translation, 'error', [], 'errors', errors['CONFLICT_OBJECT'], errors['CONFLICT_OBJECT']);
-                        let $snack = UIHelper.createSnackbar(title+' '+msg, TranslationService.instant('SB_ERROR_ERROR'), '', 4000);
+                        let $snack = UIHelper.createSnackbar(title + ' ' + msg, TranslationService.instant('SB_ERROR_ERROR'), '', 4000);
                         this.$container.append($snack);
                     }
                 }
@@ -3502,7 +3502,7 @@ export class View {
                     let title = TranslationService.instant('SB_ERROR_SQL_ERROR');
                     // try to resolve the error message
                     let msg = TranslationService.resolve(translation, 'error', [], 'errors', errors['SQL_ERROR'], errors['SQL_ERROR']);
-                    let $snack = UIHelper.createSnackbar(title+' '+msg, TranslationService.instant('SB_ERROR_ERROR'), '', 4000);
+                    let $snack = UIHelper.createSnackbar(title + ' ' + msg, TranslationService.instant('SB_ERROR_ERROR'), '', 4000);
                     this.$container.append($snack);
                 }
             }
@@ -3511,7 +3511,7 @@ export class View {
                     let title = TranslationService.instant('SB_ERROR_UNKNOWN_OBJECT');
                     // try to resolve the error message
                     let msg = TranslationService.resolve(translation, 'error', [], 'errors', errors['UNKNOWN_OBJECT'], errors['UNKNOWN_OBJECT']);
-                    let $snack = UIHelper.createSnackbar(title+' '+msg, TranslationService.instant('SB_ERROR_ERROR'), '', 4000);
+                    let $snack = UIHelper.createSnackbar(title + ' ' + msg, TranslationService.instant('SB_ERROR_ERROR'), '', 4000);
                     this.$container.append($snack);
                 }
             }
@@ -3519,7 +3519,7 @@ export class View {
                 if(snack) {
                     let title = TranslationService.instant('SB_ERROR_UNKNOWN');
                     let msg = TranslationService.resolve(translation, 'error', [], 'errors', errors['UNKNOWN_ERROR'], errors['UNKNOWN_ERROR']);
-                    let $snack = UIHelper.createSnackbar(title+' '+msg, TranslationService.instant('SB_ERROR_ERROR'), '', 4000);
+                    let $snack = UIHelper.createSnackbar(title + ' ' + msg, TranslationService.instant('SB_ERROR_ERROR'), '', 4000);
                     this.$container.append($snack);
                 }
             }
@@ -3527,7 +3527,7 @@ export class View {
                 if(snack) {
                     let title = TranslationService.instant('SB_ERROR_CONFIG_MISSING_PARAM');
                     let msg = TranslationService.resolve(translation, 'error', [], 'errors', errors['INVALID_CONFIG'], errors['INVALID_CONFIG']);
-                    let $snack = UIHelper.createSnackbar(title+' '+msg, TranslationService.instant('SB_ERROR_ERROR'), '', 4000);
+                    let $snack = UIHelper.createSnackbar(title + ' ' + msg, TranslationService.instant('SB_ERROR_ERROR'), '', 4000);
                     this.$container.append($snack);
                 }
             }
