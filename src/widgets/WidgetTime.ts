@@ -20,7 +20,7 @@ export default class WidgetTime extends Widget {
 
         switch(this.mode) {
             case 'edit':
-                this.$elem = UIHelper.createInput('time_'+this.id, this.label, value, this.config.description, '', this.readonly);
+                this.$elem = UIHelper.createInput('time_' + this.id, this.label, value, this.config.description, '', this.readonly);
                 if(this.config.layout == 'list') {
                     this.$elem.css({"width": "calc(100% - 10px)"});
                 }
@@ -78,6 +78,9 @@ export default class WidgetTime extends Widget {
             return '';
         }
 
+        const env = this.getLayout().getEnv();
+        const encoding = env?.['core.locale.time_encoding'] ?? 'frontend';
+
         // normalize human time formats like "10h30", "10 h", "10 h 30"
         // #memo - this format should never be provided here
         value = value
@@ -93,8 +96,16 @@ export default class WidgetTime extends Widget {
 
         // Date object assumed UTC
         if(Object.prototype.toString.call(value) === '[object Date]') {
-            const h = value.getUTCHours().toString().padStart(2, '0');
-            const m = value.getUTCMinutes().toString().padStart(2, '0');
+            const date = value as Date;
+            // frontend mode : adapt browser TZ → UTC
+             if(encoding === 'frontend') {
+                const h = date.getUTCHours().toString().padStart(2, '0');
+                const m = date.getUTCMinutes().toString().padStart(2, '0');
+                return `${h}:${m}`;
+             }
+            // backend mode : no timezone shift
+            const h = date.getHours().toString().padStart(2, '0');
+            const m = date.getMinutes().toString().padStart(2, '0');
             return `${h}:${m}`;
         }
 
@@ -107,18 +118,24 @@ export default class WidgetTime extends Widget {
         const m = parts[1] ?? 0;
         const s = parts[2] ?? 0;
 
-        const now = new Date();
-        const utcDate = new Date(Date.UTC(
-            now.getUTCFullYear(),
-            now.getUTCMonth(),
-            now.getUTCDate(),
-            h, m, s
-        ));
+        // frontend mode : adapt browser TZ → UTC
+        if(encoding === 'frontend') {
+            const now = new Date();
+            const utcDate = new Date(Date.UTC(
+                now.getUTCFullYear(),
+                now.getUTCMonth(),
+                now.getUTCDate(),
+                h, m, s
+            ));
 
-        const lh = utcDate.getHours().toString().padStart(2, '0');
-        const lm = utcDate.getMinutes().toString().padStart(2, '0');
+            const lh = utcDate.getHours().toString().padStart(2, '0');
+            const lm = utcDate.getMinutes().toString().padStart(2, '0');
 
-        return `${lh}:${lm}`;
+            return `${lh}:${lm}`;
+        }
+
+        // backend mode : no adaptation
+        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
     }
 
     /**
@@ -129,6 +146,9 @@ export default class WidgetTime extends Widget {
         if(!input) {
             return '';
         }
+
+        const env = this.getLayout().getEnv();
+        const encoding = env?.['core.locale.time_encoding'] ?? 'frontend';
 
         let value = String(input);
 
@@ -148,14 +168,23 @@ export default class WidgetTime extends Widget {
         const m = parts[1] ?? 0;
         const s = parts[2] ?? 0;
 
-        const localDate = new Date();
-        localDate.setHours(h, m, s, 0);
+        // frontend mode : adapt browser TZ → UTC
+        if(encoding === 'frontend') {
+            const localDate = new Date();
+            localDate.setHours(h, m, s, 0);
 
-        const uh = localDate.getUTCHours().toString().padStart(2, '0');
-        const um = localDate.getUTCMinutes().toString().padStart(2, '0');
-        const us = localDate.getUTCSeconds().toString().padStart(2, '0');
+            const uh = localDate.getUTCHours().toString().padStart(2, '0');
+            const um = localDate.getUTCMinutes().toString().padStart(2, '0');
+            const us = localDate.getUTCSeconds().toString().padStart(2, '0');
 
-        return `${uh}:${um}:${us}`;
+            return `${uh}:${um}:${us}`;
+        }
+
+        // backend mode : no adaptation
+        const hh = h.toString().padStart(2, '0');
+        const mm = m.toString().padStart(2, '0');
+        const ss = s.toString().padStart(2, '0');
+        return `${hh}:${mm}:${ss}`;
     }
 
 }
