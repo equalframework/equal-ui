@@ -183,7 +183,7 @@ export class LayoutList extends Layout {
                 continue;
             }
             // ignore non-visible columns
-            if(config.hasOwnProperty('visible') && config.visible === 'false') {
+            if(config.hasOwnProperty('visible') && (!config.visible || config.visible === 'false')) {
                 continue;
             }
             let width = Math.floor(10 * item.width) / 10;
@@ -852,9 +852,12 @@ export class LayoutList extends Layout {
                         visible = this.isVisible(config.visible, object, user, {}, this.getEnv());
                     }
 
+                    /*
+                    // #memo - a hidden widget can become visible as a result of an onchange event: it should always be displayed according to row mode
                     if(!visible) {
                         return;
                     }
+                    */
 
                     let $widget = widget.setMode(mode).render();
 
@@ -914,7 +917,7 @@ export class LayoutList extends Layout {
             }
 
             // ignore non-visible fields
-            if(config.hasOwnProperty('visible') && config.visible == 'false') {
+            if(config.hasOwnProperty('visible') && (!config.visible || config.visible === 'false')) {
                 continue;
             }
 
@@ -1392,26 +1395,31 @@ export class LayoutList extends Layout {
                 let field = widget.config.field;
                 if(values.hasOwnProperty(field)) {
                     widget.setValue(values[field]);
-                    // #memo - this differ from FORM view, since we cannot perform a layout refresh
-                    let $targetCell = $parentRow.find(
-                            `td.sb-widget-cell[data-field="${field}"]`
-                        )
-                        .first();
+                }
 
-                    let visible = true;
-                    if(widget.config.hasOwnProperty('visible')) {
-                        visible = this.isVisible(widget.config.visible, {...object, ...values}, user, {}, this.getEnv());
-                    }
+                // #memo - this differ from FORM view, since we cannot perform a layout refresh
+                let $targetCell = $parentRow.find(
+                        `td.sb-widget-cell[data-field="${field}"]`
+                    )
+                    .first();
 
-                    $targetCell.empty();
+                if(!$targetCell.length) {
+                    continue;
+                }
 
-                    if(visible) {
-                        let $widget = widget.render();
-                        // setup listener for objet changes
-                        $widget.on('_updatedWidget', async (event: any, refresh: boolean = true) => this.updatedWidget(event, refresh));
-                        $targetCell.append($widget);
-                        console.debug('retrieved target cell, and assigning widget', $targetCell, widget);
-                    }
+                let visible = true;
+                if(widget.config.hasOwnProperty('visible')) {
+                    visible = this.isVisible(widget.config.visible, {...object, ...values}, user, {}, this.getEnv());
+                }
+
+                $targetCell.empty();
+
+                if(visible) {
+                    let $widget = widget.render();
+                    // setup listener for objet changes
+                    $widget.on('_updatedWidget', async (event: any, refresh: boolean = true) => this.updatedWidget(event, refresh));
+                    $targetCell.append($widget);
+                    console.debug('retrieved target cell, and assigning widget', $targetCell, widget);
                 }
             }
 
