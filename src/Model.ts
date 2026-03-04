@@ -255,6 +255,8 @@ export class Model {
                     entity: this.view.getEntity(),
                     fields: this.getFieldsProjection(),
                     domain: this.view.getDomain(),
+                    // by convention we always provide params in a sub `params` to avoid collisions with data-controller acting as virtual entities
+                    params: this.view.getParams(),
                     ...this.view.getParams()
                 };
 
