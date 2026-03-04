@@ -163,6 +163,7 @@ export class Layout implements LayoutInterface{
     }
 
     public updateFieldValue(object_id: number, field: string, value: any) {
+        console.debug('Layout::updateFieldValue', object_id, field, value);
         let model_fields = this.view.getModelFields();
 
         if(!model_fields || !model_fields.hasOwnProperty(field)) {
