@@ -26,6 +26,10 @@ body, html {
     height:100%;
 }
 
+body.no-scroll {
+    overflow: hidden;
+}
+
 #sb-root {
     display: flex;
     height: 100%;
@@ -1698,6 +1702,7 @@ button.ui-state-hover {
 /* pdfjs widget */
 
 .sb-widget.sb-ui-pdfjs {
+    position: relative;
     outline: solid 1px lightgrey;
 }
 
@@ -1705,6 +1710,8 @@ button.ui-state-hover {
 .pdfjs-custom-fullscreen {
     position: absolute;
     z-index: 3;
+    top: 2px;
+    right: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1721,14 +1728,18 @@ button.ui-state-hover {
     z-index: 10000;
 }
 
-/*  iframe marked as applicative full-screen */
-.sb-widget.sb-ui-pdfjs iframe.pdfjs-custom-iframe-fullscreen {
+.sb-widget.sb-ui-pdfjs.fullscreen {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
+    width: 100vw !important;
+    height: 100vh !important;
     z-index: 9999;
+}
+
+.sb-widget.sb-ui-pdfjs.fullscreen iframe {
+    width: 100%;
+    height: 100%;
 }
 
 /* jquery ui datepicker month year picker */
