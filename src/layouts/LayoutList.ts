@@ -818,7 +818,7 @@ export class LayoutList extends Layout {
                             domain: ['id', '=', object.id]
                         };
                     // if current list is a widget, reload content after child context has been closed
-                    if(this.view.getPurpose() == 'widget') {
+                    if(this.view.getPurpose() === 'widget') {
                         config.callback = (data: any) => {
                             // trigger a refresh of the current view
                             this.view.onchangeView();

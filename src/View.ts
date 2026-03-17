@@ -1718,11 +1718,14 @@ export class View {
         // pagination controls
         let $pagination = UIHelper.createPagination().addClass('sb-view-header-list-pagination');
 
-        let $refreshListButton = UIHelper.createButton('refresh-view', 'refresh', 'icon', 'refresh').on('click', () => this.onchangeView());
+        let $refreshListButton = UIHelper.createButton('refresh-view', 'refresh', 'icon', 'refresh')
+            .css({
+                color: 'var(--mdc-theme-primary)'
+            })
+            .on('click', () => this.onchangeView());
 
         $pagination.find('.pagination-container')
             .prepend( $refreshListButton );
-
 
         let $paginationTotal = $pagination.find('.pagination-total');
 
@@ -2789,7 +2792,7 @@ export class View {
      *   - or from layout: context has been updated (sort column, sorting order, limit, page, ...)
      */
     public async onchangeView(full: boolean = false, active_index: number = 0) {
-        console.debug('View::onchangeView', full);
+        console.debug('View::onchangeView', full, active_index);
 
         if(this.is_inline_editing) {
             // prevent refresh while inline editing
@@ -2814,7 +2817,7 @@ export class View {
             }
         }
 
-        // #memo - this needs to be done after model change (it case it impacts context header)
+        // #memo - this needs to be done after model change (in case it impacts context header)
         // #memo - this has only effects if the Context was actually changed (domain or else)
         // relay updated context event
         this.updatedContext();

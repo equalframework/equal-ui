@@ -25,7 +25,7 @@ class UIHelper {
 /*
  Helpers for element creation
 */
-    public static createButton(id:string, label:string, type:string = '', icon:string = '', variant='')  {
+    public static createButton(id: string, label: string, type: string = '', icon: string = '', variant = '')  {
         let $button = $('<button/>').attr('id', id);
 
         if(['outlined', 'raised', 'text'].indexOf(type) >= 0) {
@@ -61,16 +61,16 @@ class UIHelper {
             $button.append($('<div/>').addClass('mdc-fab__touch'));
         }
         else if(['icon'].indexOf(type) >= 0) {
-            $button.addClass('mdc-icon-button').attr('aria-describedby', id+'-tooltip').attr('data-tooltip-id', id+'-tooltip')
+            $button.addClass('mdc-icon-button').attr('aria-describedby', id + '-tooltip').attr('data-tooltip-id', id + '-tooltip')
             .append($('<span/>').addClass('material-icons mdc-icon-button__icon').text(icon))
             // #todo - fix ripple not working on icon-button
 
             // workaround to fix tooltips not hiding
             $button.on( "mouseenter", () => {
-                $button.parent().find('#'+id+'-tooltip').removeClass('mdc-tooltip--hide');
+                $button.parent().find('#' + id + '-tooltip').removeClass('mdc-tooltip--hide');
             });
             $button.on( "mouseleave", () => {
-                $button.parent().find('#'+id+'-tooltip').addClass('mdc-tooltip--hide');
+                $button.parent().find('#' + id + '-tooltip').addClass('mdc-tooltip--hide');
             });
         }
 
@@ -88,14 +88,14 @@ class UIHelper {
         return $button;
     }
 
-    public static createSplitButton(id:string, label:string, type:string='', icon:string='', variant:string='') {
-        let $elem = $('<div id="'+id+'" style="display: inline-flex;"></div>').addClass('sb-ui-split_button').addClass('mdc-menu-surface--anchor');
+    public static createSplitButton(id: string, label: string, type: string='', icon: string='', variant: string='') {
+        let $elem = $('<div id="' + id + '" style="display: inline-flex;"></div>').addClass('sb-ui-split_button').addClass('mdc-menu-surface--anchor');
 
-        let $button = this.createButton(id+'_button', label, type, icon, variant).addClass('mdc-button-split_button');
-        let $drop_button = this.createButton(id+'_drop', '', type, 'arrow_drop_down', variant).addClass('mdc-button-split_drop');
+        let $button = this.createButton(id + '_button', label, type, icon, variant).addClass('mdc-button-split_button');
+        let $drop_button = this.createButton(id + '_drop', '', type, 'arrow_drop_down', variant).addClass('mdc-button-split_drop');
 
-        let $drop_menu = this.createMenu(id+'_drop'+'menu');
-        let $menu_list = this.createList(id+'_drop'+'menu-list').addClass('menu-list').appendTo($drop_menu);
+        let $drop_menu = this.createMenu(id + '_drop'+'menu');
+        let $menu_list = this.createList(id + '_drop'+'menu-list').addClass('menu-list').appendTo($drop_menu);
 
         this.decorateMenu($drop_menu);
 

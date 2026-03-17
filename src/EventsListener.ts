@@ -599,7 +599,7 @@ class EventsListener {
     }
 
     public async popup_close(params: any) {
-        let frame = this.popups.pop();
+        let frame: Frame = this.popups.pop();
 
         let $wrapper = $('body').find('.sb-popup-wrapper');
         // pop last child of wrapper
@@ -609,7 +609,7 @@ class EventsListener {
             $wrapper.remove();
         }
         // close context (update frame header if necessary)
-        await frame._closeContext(params.data);
+        await frame._closeContext(params.data, true);
     }
 
     public getUser() {

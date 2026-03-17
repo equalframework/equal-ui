@@ -266,6 +266,8 @@ export class LayoutForm extends Layout {
             // #todo - keep internal index of the object to display (with a prev/next navigation in the header)
             let object: any = objects[0];
 
+            this.view.setActiveObjectId(object.id);
+
             // update actions in view header
             let $view_actions = this.view.getContainer().find('.sb-view-header-actions-view').first().empty();
 

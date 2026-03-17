@@ -12,6 +12,17 @@ export default class WidgetMany2One extends Widget {
         super(layout, label, value, config);
     }
 
+    public setValue(value: any) {
+        super.setValue(value);
+        if(!value) {
+            this.config.object_id = 0;
+        }
+        else if(typeof value == 'object' && value.hasOwnProperty('id')) {
+            this.config.object_id = value.id;
+        }
+        return this;
+    }
+
     public render(): JQuery {
         console.debug('WidgetMany2One::render', this.config, this.value);
         // in view mode, we should have received a string
@@ -61,6 +72,7 @@ export default class WidgetMany2One extends Widget {
 
                 $button_reset.on('click', (event:any) => {
                     this.value = null;
+                    this.config.object_id = 0;
                     $select.attr('data-selected', 0);
                     $select.find('input').val('').trigger('change');
                     $button_reset.hide();
@@ -513,7 +525,8 @@ export default class WidgetMany2One extends Widget {
                 $select.on('update', (event) => {
                     console.debug('WidgetMany2One: received update event', $select.attr('data-selected'));
                     // m2o relations are always loaded as an object with {id:, name:}
-                    let object: any = objects.find( o => o.id == $select.attr('data-selected'));
+                    const selected = parseInt($select.attr('data-selected') ?? '0');
+                    let object: any = objects.find(o => o.id === selected);
                     if(object) {
                         if(this.config.has_action_open) {
                             $button_open.show();
