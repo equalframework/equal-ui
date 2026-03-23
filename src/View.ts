@@ -732,6 +732,7 @@ export class View {
         this.$container.show();
 
         this.is_ready_promise.resolve();
+
         console.debug("View::init - resulting config", this.config);
     }
 
@@ -940,8 +941,15 @@ export class View {
         }
     }
 
+    /**
+     * @return Promise (JQuery Deferred)
+     */
     public isReady() {
         return this.is_ready_promise;
+    }
+
+    public isDomReady() {
+        return this.context.isDomReady();
     }
 
     public getEnv() {
@@ -1611,13 +1619,17 @@ export class View {
             $advanced_filters_button.on('click', () => {
                 $elem.toggleClass('is-advanced-open');
                 let head_height = this.$headerContainer.height();
-                this.$layoutContainer.css({height: 'calc(100% - '+head_height+'px)'});
+                this.$layoutContainer.css({height: 'calc(100% - ' + head_height + 'px)'});
             });
 
-            this.is_ready_promise.then( () => {
+            this.isDomReady().then( () => {
                 if(this.config.header.hasOwnProperty('advanced_search') && this.config.header.advanced_search) {
                     if(this.config.header.advanced_search.hasOwnProperty('open') && this.config.header.advanced_search.open) {
-                        $advanced_filters_button.trigger('click');
+                        requestAnimationFrame(() => {
+                            requestAnimationFrame(() => {
+                                $advanced_filters_button.trigger('click');
+                            });
+                        });
                     }
                 }
             });

@@ -23,6 +23,8 @@ export class Context {
 
     private config: any;
 
+    private is_dom_ready_promise: any;
+
     /**
      *
      * Contexts have a type and a mode, and are created for a purpose.
@@ -45,6 +47,8 @@ export class Context {
     constructor(frame: Frame, entity: string, type: string, name: string, domain: any[], mode: string = 'view', purpose: string = 'view', lang: string = '', callback: (data:any) => void = (data:any=null) => {}, config: any = null) {
         console.debug('Context::Construct - opening context', entity, type, name, domain, mode, purpose, lang, config);
         this.$container = $('<div />').addClass('sb-context');
+
+        this.is_dom_ready_promise = $.Deferred();
 
         this.callback = callback;
         this.has_changed = false;
@@ -138,6 +142,15 @@ export class Context {
      */
     public isReady() {
         return this.view.isReady();
+    }
+
+    public isDomReady() {
+        return this.is_dom_ready_promise;
+    }
+
+    public setDomReady() {
+        console.log('@@@marking Context as DOM ready');
+        return this.is_dom_ready_promise.resolve();
     }
 
     public hasChanged() {

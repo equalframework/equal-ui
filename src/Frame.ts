@@ -595,7 +595,7 @@ export class Frame {
             .text(lang);
 
         $lang_selector.find('input').on('change', () => {
-            let lang:string = <string>$lang_selector.find('input').val();
+            let lang: string = <string>$lang_selector.find('input').val();
             $lang_selector.trigger('select', lang);
 
             setTimeout(() => {
@@ -894,10 +894,24 @@ export class Frame {
                         ctx.getContainer().hide();
                     }
                 }
+
+                this.updateHeader(config);
+
+                // inject Context container into DOM
                 $(this.domContainerSelector).append(this.context.getContainer());
+
+                // wait for a frame (DOM rendered)
+                await new Promise(resolve => {
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            this.context.setDomReady();
+                            resolve(null);
+                        });
+                    });
+                });
+
                 // relay event to the outside
                 $(this.domContainerSelector).show().trigger('_open', [{context: config}]);
-                this.updateHeader(config);
             }
             catch(error) {
                 console.warn('unexpected error while waiting for context readiness', error);
