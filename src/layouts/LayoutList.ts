@@ -526,8 +526,8 @@ export class LayoutList extends Layout {
                 });
             }
 
-            for(let operation in view_schema.operations) {
-                let descriptor = view_schema.operations[operation];
+            for(let operation_name in view_schema.operations) {
+                let descriptor = view_schema.operations[operation_name];
 
                 for(let item of view_schema.layout.items) {
 
@@ -535,56 +535,34 @@ export class LayoutList extends Layout {
                         continue;
                     }
                     let op_field = item.value;
+
                     if(!descriptor.hasOwnProperty(op_field)) {
                         continue;
                     }
-                    let op_type = descriptor[op_field]['operation'];
-                    let op_result: number = 0.0;
-                    let usage: string = descriptor[op_field]?.usage ?? null;
-                    // #todo - use computeOperation()
-                    let i: number = 0;
-                    for (let object of objects) {
-                        let val: any = object[op_field];
-                        if( usage == 'time' || usage == 'time/plain' ) {
-                            const time_str = typeof val === 'string' ? val : '';
-                            const [hours, minutes, seconds] = time_str.split(':').map(Number);
-                            val = (hours || 0) * 3600 + (minutes || 0) * 60 + (seconds || 0);
-                        }
-                        switch(op_type) {
-                            case 'DIFF':
-                                op_result = (i == 0) ? val : (op_result - val);
-                                break;
-                            case 'SUM':
-                                op_result += val;
-                                break;
-                            case 'COUNT':
-                                op_result += 1;
-                                break;
-                            case 'MIN':
-                                if(i == 0 || op_result > val) {
-                                    op_result = val;
-                                }
-                                break;
-                            case 'MAX':
-                                if(i == 0 || op_result < val) {
-                                    op_result = val;
-                                }
-                                break;
-                            case 'AVG':
-                                op_result += (val - op_result) / (i+1);
-                                break;
-                        }
-                        ++i;
+
+                    if(!descriptor[op_field]?.operation) {
+                        continue;
                     }
 
-                    let prefix = descriptor[item.value]?.prefix ?? '';
-                    let suffix = descriptor[item.value]?.suffix ?? '';
+                    const usage: string = descriptor[op_field]?.usage ?? null;
+
+                    let operation = descriptor[op_field]['operation'];
+                    if(typeof operation === 'string') {
+                        operation = [operation, op_field];
+                    }
+
+                    const op_result = this.computeOperation(operation, {
+                        _data: objects
+                    }, usage);
+
+                    let prefix = descriptor[op_field]?.prefix ?? '';
+                    let suffix = descriptor[op_field]?.suffix ?? '';
 
                     let type: string | null = this.view.getModel().getFinalType(op_field);
-                    let value: string = Widget.toString(type ?? 'string', op_result, usage);
+                    let value: string = this.formatOperationValue(operation, op_result, 'string', usage);
 
                     this.$layout
-                        .find('[data-id="' + 'operation-' + operation + '-' + op_field + '"]')
+                        .find('[data-id="' + 'operation-' + operation_name + '-' + op_field + '"]')
                         .addClass('computed-operation')
                         .text(prefix + value + suffix);
                 }
@@ -1038,7 +1016,7 @@ export class LayoutList extends Layout {
 
         if(group.hasOwnProperty('_operation')) {
             let value = this.computeOperation(group._operation, group);
-            suffix = '[' + value + ']';
+            suffix = '[' + this.formatOperationValue(group._operation, value) + ']';
         }
 
         const row_uuid: string = UIHelper.getUuid();
@@ -1118,8 +1096,13 @@ export class LayoutList extends Layout {
             let value = '';
             let align = 'right';
             if(group.hasOwnProperty('_operations') && group._operations.hasOwnProperty(column)) {
-                let operation = [ group._operations[column]?.operation, column ];
-                value = this.computeOperation(operation, group, group._operations[column]?.usage ?? null);
+                let operation = group._operations[column]?.operation;
+                if(typeof operation === 'string') {
+                    operation = [operation, column];
+                }
+                let usage = group._operations[column]?.usage ?? null;
+                let result = this.computeOperation(operation, group, usage);
+                value = this.formatOperationValue(operation, result, type ?? 'string', usage);
                 align = group._operations[column]?.align ?? align;
             }
             $row.append( $('<td/>')
@@ -1197,64 +1180,203 @@ export class LayoutList extends Layout {
         return $row;
     }
 
-    private computeOperation(operation: Array<string>, group: any, usage?: string | null) {
-        let result: string = '';
-        let op_type  = operation?.[0] ?? null;
-        let op_field = operation?.[1] ?? null;
+    private computeOperation(operation: any, group: any, usage?: string | null): number {
+        if(!operation) {
+            return 0;
+        }
+
+        if(typeof operation === 'string') {
+            operation = [operation];
+        }
+
+        if(Array.isArray(operation)) {
+            const [op, ...args] = operation;
+
+            switch(op) {
+                case 'SUM':
+                case 'COUNT':
+                case 'MIN':
+                case 'MAX':
+                case 'AVG':
+                    return this.computeOperationOnField(op, args[0], group, usage);
+
+                case 'DIFF':
+                    return this.computeOperation(args[0], group)
+                        - this.computeOperation(args[1], group);
+            }
+        }
+
+        return 0;
+    }
+
+    private computeOperationOnField(op_type: string, op_field: any, group: any, usage?: string | null): number {
+        op_field = this.normalizeOperationField(op_field);
+
+        if(!op_field) {
+            if(op_type === 'COUNT') {
+                return this.getGroupObjectCount(group);
+            }
+            return 0;
+        }
 
         let viewSchema = this.view.getViewSchema();
-        // support (unnecessary) notation 'object.{field}'
-        if(op_field.startsWith('object.')) {
-            op_field = (op_field.split('.'))[1];
-        }
         const item = viewSchema.layout?.items.find( (item: any) => item.value === op_field );
+        const model_def = this.view.getModelFields()[op_field] ?? null;
+        const data = this.getGroupData(group, op_field);
 
-        if(item) {
-            let data: any[] = this.getGroupData(group, op_field);
-            let op_result: number = 0;
-            let i: number = 0;
-            for(let val of data) {
-                if(item.type == 'time' || item.result_type == 'time') {
-                    const time_str = (typeof val === 'string') ? val : '';
-                    const [hours, minutes, seconds] = time_str.split(':').map(Number);
-                    val = (hours || 0) * 3600 + (minutes || 0) * 60 + (seconds || 0);
-                }
-                switch(op_type) {
-                    case 'DIFF':
-                        op_result = (i == 0) ? val : (op_result - val);
-                        break;
-                    case 'SUM':
-                        op_result += val;
-                        break;
-                    case 'COUNT':
-                        ++op_result;
-                        break;
-                    case 'MIN':
-                        if(i == 0 || val < op_result) {
-                            op_result = val;
-                        }
-                        break;
-                    case 'MAX':
-                        if(i == 0 || val > op_result) {
-                            op_result = val;
-                        }
-                        break;
-                    case 'AVG':
-                        op_result += (val - op_result) / (i+1);
-                        break;
-                }
-                ++i;
-            }
-
-            let model_def = this.view.getModelFields()[op_field] ?? null;
-            let type: string | null = this.view.getModel().getFinalType(op_field);
-            usage = usage ?? item.usage ?? model_def.usage ?? null;
-            if(usage) {
-                type = WidgetFactory.getTypeFromUsage(usage, type ?? 'string');
-            }
-            result = Widget.toString(type ?? 'string', op_result, usage);
+        if(op_type === 'COUNT') {
+            return data.filter(v => v !== null && v !== undefined).length;
         }
+
+        let result: number = 0;
+        let i: number = 0;
+
+        for(let val of data) {
+            if(
+                usage == 'time'
+                || usage == 'time/plain'
+                || item?.type == 'time'
+                || item?.result_type == 'time'
+                || model_def?.type == 'time'
+                || model_def?.result_type == 'time'
+            ) {
+                const time_str = (typeof val === 'string') ? val : '';
+                const [hours, minutes, seconds] = time_str.split(':').map(Number);
+                val = (hours || 0) * 3600 + (minutes || 0) * 60 + (seconds || 0);
+            }
+
+            if(val === null || val === undefined) {
+                continue;
+            }
+
+            switch(op_type) {
+                case 'SUM':
+                    result += val;
+                    break;
+
+                /*
+                // #memo - this should have already been handled above
+                case 'COUNT':
+                    ++result;
+                    break;
+                */
+
+                case 'MIN':
+                    if(i == 0 || val < result) {
+                        result = val;
+                    }
+                    break;
+
+                case 'MAX':
+                    if(i == 0 || val > result) {
+                        result = val;
+                    }
+                    break;
+
+                case 'AVG':
+                    result += (val - result) / (i+1);
+                    break;
+            }
+
+            ++i;
+        }
+
         return result;
+    }
+
+    private formatOperationValue(operation: any, value: number, fallbackType: string = 'string', usage?: string | null): string {
+        const op_field = this.getOperationField(operation);
+        const op_type = this.getOperationType(operation);
+
+        let type: string | null = fallbackType;
+        if(op_field) {
+            type = this.view.getModel().getFinalType(op_field);
+        }
+        else if(op_type === 'COUNT') {
+            type = 'integer';
+        }
+
+        usage = this.getOperationUsage(operation, usage);
+        if(usage) {
+            type = WidgetFactory.getTypeFromUsage(usage, type ?? 'string');
+        }
+
+        return Widget.toString(type ?? 'string', value, usage);
+    }
+
+    private getOperationType(operation: any): string | null {
+        if(typeof operation === 'string') {
+            return operation;
+        }
+
+        if(Array.isArray(operation)) {
+            return operation[0] ?? null;
+        }
+
+        return null;
+    }
+
+    private getOperationField(operation: any): string | null {
+        if(!Array.isArray(operation)) {
+            return null;
+        }
+
+        const [op, ...args] = operation;
+
+        switch(op) {
+            case 'SUM':
+            case 'COUNT':
+            case 'MIN':
+            case 'MAX':
+            case 'AVG':
+                return this.normalizeOperationField(args[0]);
+
+            case 'DIFF':
+                return this.getOperationField(args[0]) ?? this.getOperationField(args[1]);
+        }
+
+        return null;
+    }
+
+    private getOperationUsage(operation: any, usage?: string | null): string | null {
+        const op_field = this.getOperationField(operation);
+        if(!op_field) {
+            return usage ?? null;
+        }
+
+        const viewSchema = this.view.getViewSchema();
+        const item = viewSchema.layout?.items.find( (item: any) => item.value === op_field );
+        const model_def = this.view.getModelFields()[op_field] ?? null;
+
+        return usage ?? item?.usage ?? model_def?.usage ?? null;
+    }
+
+    private normalizeOperationField(op_field: any): string | null {
+        if(typeof op_field !== 'string' || !op_field.length) {
+            return null;
+        }
+
+        if(op_field.startsWith('object.')) {
+            return op_field.substring('object.'.length);
+        }
+
+        return op_field;
+    }
+
+    private getGroupObjectCount(group: any): number {
+        if(group.hasOwnProperty('_data') && Array.isArray(group['_data'])) {
+            return group['_data'].length;
+        }
+
+        let count = 0;
+        for(let key of Object.keys(group)) {
+            if(key.charAt(0) == '_') {
+                continue;
+            }
+            count += this.getGroupObjectCount(group[key]);
+        }
+
+        return count;
     }
 
     private getGroupData(group: any, field: string) {
