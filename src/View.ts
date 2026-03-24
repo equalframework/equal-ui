@@ -87,15 +87,19 @@ export class View {
 
 
     /**
+     * View constructor.
      *
-     * @param entity    entity (package\Class) to be loaded: should be set only once (depend on the related view)
-     * @param type      type of the view ('list', 'form', ...)
-     * @param name      name of the view (eg. 'default')
-     * @param domain    Array of conditions (disjunctions clauses of conjunctions conditions): predefined domain from the Context.
-     * @param mode      ('view', 'edit')
-     * @param purpose   ('view', 'select', 'add', 'create', 'update', 'widget')
-     * @param lang
-     * @param config    extra parameters related to contexts communications
+     * @param context   Execution context (Environment, DOM, user, etc.)
+     * @param entity    Target entity (format: 'package\\Class'). Typically fixed and tied to the view definition.
+     * @param type      View type ('list', 'form', 'search', ...)
+     * @param name      View name (e.g. 'default')
+     * @param domain    Initial domain used to filter data.
+     *                  Array of conditions structured as disjunctions of conjunctions (see Domain).
+     * @param mode      View mode ('view', 'edit')
+     * @param purpose   Usage context of the view ('view', 'select', 'add', 'create', 'update', 'widget')
+     * @param lang      Language code (e.g. 'en', 'fr')
+     * @param config    Optional configuration object.
+     *                  Used to pass additional parameters (e.g. header options, advanced_search settings, etc.)
      */
     constructor(context: Context, entity: string, type: string, name: string, domain: any[], mode: string, purpose: string, lang: string, config: any = null) {
         // generate a random UUID
@@ -771,7 +775,7 @@ export class View {
     }
 
     private hasAdvancedFilters(): boolean {
-        if(this.config.header.hasOwnProperty('advanced_search') && !this.config.header.advanced_search) {
+        if(this.config.header?.advanced_search === false) {
             return false;
         }
         return (['core_model_collect', 'model_collect'].indexOf(this.controller) < 0);
@@ -1536,7 +1540,20 @@ export class View {
             $elem.addClass('has-advanced-filters');
             let $layout = $('<div class="sb-view-header-advanced-layout" />').appendTo($level1);
 
-            let view = new View(this.getContext(), this.controller.replace(/_/g, '\\'), 'search', 'default', this.getDomain(), 'edit', 'widget', this.lang, {});
+            let view = new View(
+                    this.getContext(),
+                    this.controller.replace(/_/g, '\\'),
+                    'search', 'default',
+                    this.getDomain(),
+                    'edit', 'widget',
+                    this.lang,
+                    {
+                        header: {
+                            advanced_search: this.config?.header?.advanced_search
+                        }
+                    }
+                );
+
             view.isReady().then( () => {
                 let updateParams = async () => {
                     // retrieve model of the view
@@ -1623,14 +1640,12 @@ export class View {
             });
 
             this.isDomReady().then( () => {
-                if(this.config.header.hasOwnProperty('advanced_search') && this.config.header.advanced_search) {
-                    if(this.config.header.advanced_search.hasOwnProperty('open') && this.config.header.advanced_search.open) {
+                if(this.config.header?.advanced_search?.open) {
+                    requestAnimationFrame(() => {
                         requestAnimationFrame(() => {
-                            requestAnimationFrame(() => {
-                                $advanced_filters_button.trigger('click');
-                            });
+                            $advanced_filters_button.trigger('click');
                         });
-                    }
+                    });
                 }
             });
         }

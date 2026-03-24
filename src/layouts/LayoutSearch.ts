@@ -10,6 +10,9 @@ import { Domain, Clause, Condition, Reference } from "../Domain";
  */
 export class LayoutSearch extends Layout {
 
+    // cumulative changes map, for manual submission
+    private pendingChanges: any = {};
+
     public async init() {
         console.debug('LayoutSearch::init');
         try {
@@ -54,6 +57,8 @@ export class LayoutSearch extends Layout {
         let translation = this.view.getTranslation();
         let view_config = this.view.getConfig();
 
+        const submit_mode = this.view.getConfig().header?.advanced_search?.submit || 'auto';
+
         if(!view_schema.hasOwnProperty('layout') || !view_schema.layout.hasOwnProperty('groups')) {
             console.warn("invalid layout, stop processing");
             return;
@@ -89,7 +94,7 @@ export class LayoutSearch extends Layout {
                 $group.append($tabs);
             }
 
-            $.each(group.sections, (j:number, section) => {
+            $.each(group.sections, (j: number, section) => {
                 let section_id = group_id + '-section-' + j;
 
                 let $section = $('<div />').attr('id', section_id).addClass('sb-view-form-section mdc-layout-grid').appendTo($group);
@@ -105,7 +110,7 @@ export class LayoutSearch extends Layout {
                         section_title = TranslationService.resolve(translation, 'view', [this.view.getId(), 'layout'], section.id, section_title);
                     }
 
-                    let $tab = UIHelper.createTabButton(section_id+'-tab', section_title, (j == selected_section)).addClass('sb-view-form-section-tab')
+                    let $tab = UIHelper.createTabButton(section_id + '-tab', section_title, (j == selected_section)).addClass('sb-view-form-section-tab')
                     .on('click', () => {
                         $group.find('.sb-view-form-section').hide();
                         $group.find('#'+section_id).show();
@@ -119,13 +124,19 @@ export class LayoutSearch extends Layout {
                 }
 
 
-                $.each(section.rows, (k:number, row) => {
+                $.each(section.rows, (k: number, row) => {
+                    const is_last_row = (k === section.rows.length - 1);
+                    let used_columns_span = 0;
+
                     let $row = $('<div />').addClass('sb-view-form-row mdc-layout-grid__inner').appendTo($section);
-                    $.each(row.columns, (l:number, column) => {
+                    $.each(row.columns, (l: number, column) => {
                         let $column = $('<div />').addClass('mdc-layout-grid__cell').appendTo($row);
 
+                        let column_span = Math.round((parseInt(column.width, 10) / 100) * 12);
+                        used_columns_span += column_span;
+
                         if(column.hasOwnProperty('width')) {
-                            $column.addClass('mdc-layout-grid__cell--span-' + Math.round((parseInt(column.width, 10) / 100) * 12));
+                            $column.addClass('mdc-layout-grid__cell--span-' + column_span);
                         }
 
                         if(column.hasOwnProperty('align') && column.align == 'right') {
@@ -169,6 +180,30 @@ export class LayoutSearch extends Layout {
                             }
                         });
                     });
+
+
+                    if(submit_mode === 'manual' && is_last_row) {
+                        let remaining_span = Math.max(12 - used_columns_span, 1);
+                        let $column = $('<div />')
+                            .addClass('mdc-layout-grid__cell')
+                            .addClass('mdc-layout-grid__cell--span-' + remaining_span)
+                            .css({
+                                display: 'flex',
+                                'align-items': 'flex-end',
+                                'justify-content': 'flex-end'
+                            })
+                            .appendTo($row);
+
+                        let $btn = UIHelper.createButton('search-submit_' + this.getUuid(), '', 'icon', 'search')
+                            .addClass('sb-view-header-search-submit')
+                            .css({
+                                'color': 'var(--mdc-theme-primary)'
+                            })
+                            .on('click', () => this.applyChanges());
+
+                        $column.append($btn);
+                    }
+
                 });
             });
             UIHelper.decorateTabBar($tabs);
@@ -187,19 +222,22 @@ export class LayoutSearch extends Layout {
         let model_fields = this.view.getModelFields();
         const user = this.view.getUser();
 
+        const submit_mode = this.view.getConfig().header?.advanced_search?.submit || 'auto';
+
+
         // remember which element has focus (DOM is going to be modified)
         let focused_widget_id = $("input:focus").closest('.sb-widget').attr('id');
 
         if(objects.length > 0) {
             // #todo - keep internal index of the object to display (with a prev/next navigation in the header)
-            let object:any = objects[0];
+            let object: any = objects[0];
 
             // update actions in view header
             let view_schema = this.view.getViewSchema();
 
             // update tabs visibility, if any
             let $tabs = this.$layout.find('.mdc-tab.sb-view-form-section-tab');
-            $tabs.each( (i:number, elem:any) => {
+            $tabs.each( (i: number, elem: any) => {
                 let $tab = $(elem);
                 const visible = this.isVisible($tab.attr('data-visible') ?? '', object, user, {}, this.getEnv());
                 if(visible) {
@@ -225,7 +263,7 @@ export class LayoutSearch extends Layout {
                             visible = domain.evaluate(object, user);
                         }
                         else {
-                            visible = <boolean>config.visible;
+                            visible = <boolean> config.visible;
                         }
                     }
                     let $parent = this.$layout.find('#' + widget.getId()).parent();
@@ -249,7 +287,7 @@ export class LayoutSearch extends Layout {
                     let type = this.view.getModel().getFinalType(field) || 'string';
 
                     let has_changed = false;
-                    let value = (object.hasOwnProperty(field))?object[field]:undefined;
+                    let value = (object.hasOwnProperty(field)) ? object[field]:undefined;
 
 
                     // for relational fields, we need to check if the Model has been fetched
@@ -334,10 +372,25 @@ export class LayoutSearch extends Layout {
                         $widget.on('_updatedWidget', async (event:any, refresh: boolean = true) => {
                             console.debug("Layout::feedForm : received _updatedWidget", field, widget.getValue(), refresh);
                             // update object with new value
-                            let values:any = {};
+                            let values: any = {};
                             values[field] = widget.getValue();
-                            // update model without refreshing the view
-                            this.view.onchangeViewModel([object.id], values, true);
+                            if(submit_mode === 'auto') {
+                                // update model without refreshing the view
+                                this.view.onchangeViewModel([object.id], values, true);
+                            }
+                            else {
+                                this.pendingChanges = {
+                                    ...(this.pendingChanges || {}),
+                                    ...values
+                                };
+
+                                // mark submit button as 'dirty'
+                                this.$layout.find('.sb-view-header-search-submit')
+                                    .css({
+                                        'background-color': 'var(--mdc-theme-primary)',
+                                        'color': 'white'
+                                    });
+                            }
                         });
                         // prevent refreshing objects that haven't changed
                         if(has_changed) {
@@ -354,4 +407,29 @@ export class LayoutSearch extends Layout {
 
     }
 
+
+    protected async applyChanges() {
+
+        if(!this.pendingChanges) {
+            return;
+        }
+
+        let objects = await this.view.getModel().get();
+        const object: any = objects[0];
+
+
+        this.view.onchangeViewModel(
+            [object.id],
+            this.pendingChanges,
+            true
+        );
+
+        this.pendingChanges = {};
+
+        // toggle button colors
+        this.$layout.find('.sb-view-header-search-submit')
+        .css({
+            'color': 'var(--mdc-theme-primary)'
+        });
+    }
 }

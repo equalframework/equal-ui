@@ -948,9 +948,12 @@ body > .header-view-details-popup .header-view-details-body div {
 }
 
 /* fix for ripple not working on icon-button */
-button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-button:focus {
+button.mdc-icon-button {
     border-radius: 50%;
-    background-color: rgba(0,0,0,0.10);
+    color: #424242;
+}
+button.mdc-icon-button:hover, button.mdc-icon-button:active, button.mdc-icon-button:focus {
+    background-color: rgba(0,0,0,0.10) !important;
 }
 
 /* fix tooltip not hiding */
