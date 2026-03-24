@@ -453,79 +453,12 @@ export class LayoutList extends Layout {
         let $elem = this.$layout.find('.table-wrapper');
         let $table = $elem.find('table');
 
-        console.debug('LayoutList::feed - removing $tbody');
         $table.find('tbody').remove();
-        console.debug('LayoutList::feed - appending $tbody', $table);
+
         $table.append($tbody);
 
-        // adjust controls column width
-        let controls_column_width = 0;
-
-        if(this.max_visible_controls > 0) {
-            const $actions_column = this.$layout.find('thead th[name="actions"]');
-            controls_column_width = (this.max_visible_controls * 44) + 10;
-            // set controls column width according to number of actions
-            $actions_column.css({width: controls_column_width + 'px'});
-            // always read back the real computed width (handles scrollbar / rounding / constraints)
-            controls_column_width = Math.round(
-                ($actions_column.get(0) as HTMLElement).getBoundingClientRect().width
-            );
-        }
-
-        UIHelper.decorateTable($elem, view_schema);
-
+        // add operation row, if any
         if(view_schema.hasOwnProperty('operations')) {
-            let $op_rows: any = $elem.find('.table-operations').first().find('.operation-row');
-            for(let $op_row of $op_rows) {
-                const $row = $($op_row);
-                // 1) if applicable, add a virtual column of same width as controls column in operation rows (to maintain alignment)
-                // create the "actions padding" cell only once (feed() may run multiple times)
-                let $actionsCell = $row.children('.sb-operation-actions-cell').first();
-                if($actionsCell.length === 0) {
-                    console.debug('LayoutList::layout - padding width to op_rows', $op_rows);
-                    $actionsCell = $('<div/>')
-                        .addClass('operation-cell mdc-data-table__cell sb-operation-actions-cell')
-                        .css({ 'text-align': 'right' })
-                        .appendTo($row);
-                }
-                // refresh width (it can change depending on number of actions / modes)
-                $actionsCell.css({ width: controls_column_width + 'px' });
-
-                // 2) adjust alignment based on related header column
-                const headerThs = this.$layout.find('thead tr:first th').toArray() as HTMLElement[];
-
-                const $cells = $row.children('.operation-cell');
-                let th_index = 0;
-
-                $cells.each((cellIndex, cell) => {
-                    if(cell.classList.contains('sb-operation-actions-cell')) {
-                        // skip cell
-                        return;
-                    }
-
-                    (cell as HTMLElement).style.transform = 'translateX(0px)';
-
-                    const th = headerThs[th_index];
-
-                    const thRect = th.getBoundingClientRect();
-
-                    const cellRect = cell.getBoundingClientRect();
-                    const delta = Math.round(thRect.left - cellRect.left);
-
-                    (cell as HTMLElement).style.transform = `translateX(${delta}px)`;
-
-                    // forward to next applicable (non-tech) column
-                    th_index++;
-                    while(th_index < headerThs.length) {
-                        const nextTh = headerThs[th_index];
-                        if(nextTh.getAttribute('name')) {
-                            break;
-                        }
-                        th_index++;
-                    }
-                });
-            }
-
             for(let operation_name in view_schema.operations) {
                 let descriptor = view_schema.operations[operation_name];
 
@@ -569,6 +502,89 @@ export class LayoutList extends Layout {
             }
         }
 
+        // decorate table with MDC styles
+        UIHelper.decorateTable($elem, view_schema);
+
+        // add support for operations, group fold, and drag-n-drop (requires to be present in DOM)
+        this.view.isDomReady().then( () => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    this.decorate(view_schema);
+                });
+            });
+        });
+    }
+
+    private async decorate(view_schema: any) {
+        const $elem = this.$layout.find('.table-wrapper');
+        const $table = $elem.find('table');
+        const $tbody = $table.find('tbody');
+
+        // adjust controls column width
+        let controls_column_width = 0;
+
+        if(this.max_visible_controls > 0) {
+            const $actions_column = this.$layout.find('thead th[name="actions"]');
+            controls_column_width = (this.max_visible_controls * 44) + 10;
+            // set controls column width according to number of actions
+            $actions_column.css({width: controls_column_width + 'px'});
+            // always read back the real computed width (handles scrollbar / rounding / constraints)
+            controls_column_width = Math.round(
+                ($actions_column.get(0) as HTMLElement).getBoundingClientRect().width
+            );
+        }
+
+        if(view_schema.hasOwnProperty('operations')) {
+            let $op_rows: any = $elem.find('.table-operations').first().find('.operation-row');
+            for(let $op_row of $op_rows) {
+                const $row = $($op_row);
+                // 1) if applicable, add a virtual column of same width as controls column in operation rows (to maintain alignment)
+                // create the "actions padding" cell only once (feed() may run multiple times)
+                let $actionsCell = $row.children('.sb-operation-actions-cell').first();
+                if($actionsCell.length === 0) {
+                    console.debug('LayoutList::layout - padding width to op_rows', $op_rows);
+                    $actionsCell = $('<div/>')
+                        .addClass('operation-cell mdc-data-table__cell sb-operation-actions-cell')
+                        .css({ 'text-align': 'right' })
+                        .appendTo($row);
+                }
+                // refresh width (it can change depending on number of actions / modes)
+                $actionsCell.css({ width: controls_column_width + 'px' });
+
+                // 2) adjust alignment based on related header column
+                // "memo - checkbox and chevron, if present, are ignored since they don't have a `name` attribute
+                const headerThs = this.$layout.find('thead tr:first th[name]').toArray() as HTMLElement[];
+
+                const $cells = $row.children('.operation-cell');
+
+                $cells.each((i, cell) => {
+                    if(!i) {
+                        // no X translation for first cell
+                        return;
+                    }
+
+                    if(cell.classList.contains('sb-operation-actions-cell')) {
+                        // skip actions cell
+                        return;
+                    }
+
+                    (cell as HTMLElement).style.transform = 'translateX(0px)';
+
+                    const th = headerThs[i];
+
+                    if(!th) {
+                        // unexpected
+                        return;
+                    }
+
+                    const delta = Math.round(th.getBoundingClientRect().left - cell.getBoundingClientRect().left);
+
+                    (cell as HTMLElement).style.transform = `translateX(${delta}px)`;
+
+                });
+            }
+        }
+
         // adapt group fold state based on column
         let $fold_toggle = this.$layout.find('thead tr th.sb-group-cell');
         let folded = $fold_toggle.hasClass('folded');
@@ -582,7 +598,7 @@ export class LayoutList extends Layout {
         });
 
         // handler for reordering through drag n drop
-        $elem.on('_updateOrder', (event: any, updates: any[]) => {
+        $elem.off('_updateOrder').on('_updateOrder', (event: any, updates: any[]) => {
             for(let object of updates) {
                 // update displayed value of 'order' field (handler will retrieve matching widget)
                 this.$layout.find('tr[data-id="' + object.id + '"]').trigger('_setValue', ['order', object.order]);
