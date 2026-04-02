@@ -453,7 +453,13 @@ export class Frame {
             let model_schema = await ApiService.getSchema(this.context.getEntity());
             let objects:any = await this.context.getView().getModel().get();
             if(objects.length && objects[0].hasOwnProperty('id')) {
-                let url = model_schema.link.replace(/object\.id/, objects[0].id);
+                const interpolate = (str: string, obj: any) =>
+                    str.replace(/object\.(\w+)/g, (_, key) => {
+                        const val = obj[key];
+                        return typeof val === 'object' && val !== null ? val.id : val;
+                    });
+
+                let url = interpolate(model_schema.link, objects[0]);
                 $current = $('<a>' + current_purpose_string + '</a>')
                     .attr('href', url)
                     .attr('target', '_blank');
