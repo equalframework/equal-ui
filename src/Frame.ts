@@ -195,23 +195,33 @@ export class Frame {
         }
     }
 
-    private getTextWidth(text: string, $elem: JQuery) {
-        console.debug('getTextWidth::computing width', text, $elem);
-        if (!$elem || !$elem.length) {
-            return 0;
-        }
+    private resolveObjectPath(source: any, path: string) {
+        // Resolve dot-separated paths (ex: "customer.identity.id") against the current object.
+        return path.split('.').reduce((acc: any, key: string) => {
+            if(acc === null || typeof acc === 'undefined') {
+                return undefined;
+            }
+            return acc[key];
+        }, source);
+    }
 
-        $elem.empty()
-            .css({
-                position: 'absolute',
-                visibility: 'hidden',
-                whiteSpace: 'nowrap',
-                display: 'inline-block',
-                width: 'auto'
-            })
-            .html(text);
+    private interpolateSchemaLink(link: string, object: any) {
+        // Replace each `object.<path>` placeholder in the schema link with its resolved value.
+        return link.replace(/object\.([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)/g, (match, path) => {
+            const value = this.resolveObjectPath(object, path);
 
-        return $elem[0].clientWidth || $elem[0].offsetWidth;
+            // Keep unresolved tokens unchanged to avoid creating invalid URLs.
+            if(typeof value === 'undefined' || value === null) {
+                return match;
+            }
+
+            if(typeof value === 'object') {
+                // For relation-like objects, use the nested `id` when available.
+                return (typeof value.id !== 'undefined' && value.id !== null) ? String(value.id) : match;
+            }
+
+            return String(value);
+        });
     }
 
     private async getPurposeString(context: Context) {
@@ -453,13 +463,9 @@ export class Frame {
             let model_schema = await ApiService.getSchema(this.context.getEntity());
             let objects:any = await this.context.getView().getModel().get();
             if(objects.length && objects[0].hasOwnProperty('id')) {
-                const interpolate = (str: string, obj: any) =>
-                    str.replace(/object\.(\w+)/g, (_, key) => {
-                        const val = obj[key];
-                        return typeof val === 'object' && val !== null ? val.id : val;
-                    });
 
-                let url = interpolate(model_schema.link, objects[0]);
+                let url = this.interpolateSchemaLink(model_schema.link, objects[0]);
+
                 $current = $('<a>' + current_purpose_string + '</a>')
                     .attr('href', url)
                     .attr('target', '_blank');
