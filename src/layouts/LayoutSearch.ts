@@ -429,7 +429,8 @@ export class LayoutSearch extends Layout {
         // toggle button colors
         this.$layout.find('.sb-view-header-search-submit')
         .css({
-            'color': 'var(--mdc-theme-primary)'
+            'color': '',
+            'background-color': ''
         });
     }
 }
