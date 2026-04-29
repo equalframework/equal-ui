@@ -664,7 +664,7 @@ export class Frame {
             $crumb.addClass('has-mouseover');
             // hide any previously opened popup in the header
             $('body > .header-view-details-popup')
-                .filter((_, el) => $(el).data('crumb-owner')[0] !== $crumb[0])  // exclut celle du crumb courant (si déjà détachée)
+                .filter((_, el) => $(el).data('crumb-owner')[0] !== $crumb[0])  // exclude current crumb (if already detached)
                 .removeClass('has-mouseover');
             setTimeout( () => {
                 // show popup if crumb sill has mouseover after a delay
