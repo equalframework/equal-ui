@@ -401,6 +401,8 @@ PERFORMANCE OF THIS SOFTWARE.
 
 /*! ./Domain */
 
+/*! ./EntityHelper */
+
 /*! ./EnvService */
 
 /*! ./ErrorCode */
@@ -410,6 +412,8 @@ PERFORMANCE OF THIS SOFTWARE.
 /*! ./Layout */
 
 /*! ./Model */
+
+/*! ./Popover */
 
 /*! ./TranslationService */
 
@@ -767,6 +771,10 @@ PERFORMANCE OF THIS SOFTWARE.
   !*** ./build/Context.js ***!
   \**************************/
 
+/*!**************************!*\
+  !*** ./build/Popover.js ***!
+  \**************************/
+
 /*!****************************!*\
   !*** ./build/equal-lib.js ***!
   \****************************/
@@ -782,6 +790,10 @@ PERFORMANCE OF THIS SOFTWARE.
 /*!*****************************!*\
   !*** ./build/jquery-lib.js ***!
   \*****************************/
+
+/*!*******************************!*\
+  !*** ./build/EntityHelper.js ***!
+  \*******************************/
 
 /*!*******************************!*\
   !*** ./build/material-lib.js ***!

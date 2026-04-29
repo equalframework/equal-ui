@@ -1,5 +1,6 @@
 import { $ } from "./jquery-lib";
 import { EnvService, TranslationService } from "./equal-services";
+import EntityHelper from "./EntityHelper";
 import { saveAs } from 'file-saver';
 
 /**
@@ -69,25 +70,12 @@ export class _ApiService {
         this.last_headers = {};
     }
 
-
-    /**
-     * ObjectManager methods
-     */
-    private getPackageName(entity:string) {
-        return entity.substr(0, entity.indexOf('\\'));
-    }
-
-    private getClassName(entity:string) {
-        return entity.substr(entity.indexOf('\\')+1);
-    }
-
-
     /**
      * schemas methods
      */
     private loadSchema(entity: string, domain: any[]) {
-        var package_name = this.getPackageName(entity);
-        var class_name = this.getClassName(entity);
+        var package_name = EntityHelper.getPackageName(entity);
+        var class_name = EntityHelper.getClassName(entity);
 
         if(typeof(this.schemas[package_name]) == 'undefined'
         || typeof(this.schemas[package_name][class_name]) == 'undefined') {
@@ -115,8 +103,8 @@ export class _ApiService {
 
     // the view_id matches the following convention : view_type.view_name
     private loadView(entity:string, view_id:string) {
-        var package_name = this.getPackageName(entity);
-        var class_name = this.getClassName(entity);
+        var package_name = EntityHelper.getPackageName(entity);
+        var class_name = EntityHelper.getClassName(entity);
 
         if(typeof(this.views[package_name]) == 'undefined'
         || typeof(this.views[package_name][class_name]) == 'undefined'
@@ -150,8 +138,8 @@ export class _ApiService {
     }
 
     private loadTranslation(entity:string, lang:string) {
-        var package_name = this.getPackageName(entity);
-        var class_name = this.getClassName(entity);
+        var package_name = EntityHelper.getPackageName(entity);
+        var class_name = EntityHelper.getClassName(entity);
 
         if(typeof(this.translations[package_name]) == 'undefined'
                 || typeof(this.translations[package_name][class_name]) == 'undefined'

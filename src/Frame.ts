@@ -1,8 +1,10 @@
 import { $ } from "./jquery-lib";
 
 import { Context, Domain } from "./equal-lib";
+import EntityHelper from "./EntityHelper";
 import { ApiService, EnvService, TranslationService } from "./equal-services";
 import { UIHelper } from './material-lib';
+import Popover from "./Popover";
 
 /**
  * Frames handle a stack of contexts
@@ -130,7 +132,7 @@ export class Frame {
             if(this.display_mode != 'stacked') {
                 return;
             }
-            console.log('Frame::popstate', event, event?.state, this.stack);
+            console.debug('Frame::popstate', event, event?.state, this.stack);
             if (this.stack.length > 0 && event.state && event.state.hasOwnProperty ('is_eq')) {
                 // consider only history from this frame
                 if(event.state.url != this.url) {
@@ -190,7 +192,7 @@ export class Frame {
             if(this.context && typeof this.context.getConfig === 'function') {
                 state.stack.push(this.context.getConfig(true));
                 window.history.pushState(state, '');
-                console.log('Frame::pushing state', state);
+                console.debug('Frame::pushing state', state);
             }
         }
     }
@@ -243,8 +245,7 @@ export class Frame {
             entity = view_schema['name'];
         }
         else {
-            let parts = entity.split('\\');
-            entity = <string>parts.pop();
+            entity = EntityHelper.getClassName(entity);
             // set the first letter uppercase
             entity = entity.charAt(0).toUpperCase() + entity.slice(1);
         }
@@ -359,6 +360,9 @@ export class Frame {
             this.$headerContainer = $('<div/>').addClass('sb-container-header').prependTo($domContainer);
         }
 
+        // reset/hide breadcrumb popovers (@see `decorateCrumb()`)
+        Popover.destroyGroup('breadcrumb-details');
+
         if( this.stack.length == 0 || !this.context.hasOwnProperty('$container')) {
             // hide header if there is no context
             this.$headerContainer.empty().hide();
@@ -367,9 +371,6 @@ export class Frame {
 
         // make sure header is visible
         this.$headerContainer.show();
-
-        // hide any pending details popups (@see `decorateCrumb()`)
-        $('body > .header-view-details-popup').remove();
 
         // create invisible h3 for progressive construction
         let $elem = $('<h3 />')
@@ -399,7 +400,6 @@ export class Frame {
             // consider parent width with a margin to consider lang selector
             const availableWidth = el.parentElement.clientWidth;
 
-            console.log('@@@@isOverflow', contentWidth, availableWidth);
             return contentWidth > availableWidth;
         };
 
@@ -660,95 +660,32 @@ export class Frame {
         if(!$crumb) {
             return;
         }
-        $crumb.on('mouseenter', () => {
-            $crumb.addClass('has-mouseover');
-            // hide any previously opened popup in the header
-            $('body > .header-view-details-popup')
-                .filter((_, el) => $(el).data('crumb-owner')[0] !== $crumb[0])  // exclude current crumb (if already detached)
-                .removeClass('has-mouseover');
-            setTimeout( () => {
-                // show popup if crumb sill has mouseover after a delay
-                if($crumb.hasClass('has-mouseover')) {
-                    // check that crumb element is still in DOM
-                    if(!$crumb.closest('body').length) {
-                        return;
-                    }
-                    let $popup = $crumb.find('.header-view-details-popup');
-                    // calcule la position absolue du crumb dans la page
-                    const offset = $crumb.offset();
-                    const height = $crumb.outerHeight() ?? 0;
-                    // déplace le popup dans le body pour échapper au overflow:hidden
-                    $popup
-                        .appendTo('body')
-                        .css({
-                            position: 'fixed',
-                            top: (offset?.top ?? 0) + height,
-                            left: offset?.left ?? 0,
-                        })
-                        .show();
-                }
-            }, 1200);
-        })
-        .on('mouseleave', () => {
-            $crumb.removeClass('has-mouseover');
-            setTimeout( () => {
-                let $popup = $('body > .header-view-details-popup').filter((index, el) => {
-                    return $(el).data('crumb-owner')[0] === $crumb[0];
-                });
-                // hide popup if neither crumb nor popup has mouseover
-                if(!$crumb.hasClass('has-mouseover') && !$popup.hasClass('has-mouseover')) {
-                    $popup.hide().appendTo($crumb);
-                }
-            }, 500);
-        });
 
-        $('<div />').addClass('header-view-details-popup')
-            .hide()
-            .data('crumb-owner', $crumb)
-            .append( $('<div />').addClass('header-view-details-title')
-                .text('View details')
-                .append(
-                    $('<span class="btn-copy material-icons">content_copy</span>')
-                    .on('click', (event: any) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        console.log('copying to clipboard');
-                        let tmp = document.createElement("textarea");
-                        tmp.style.position = 'absolute';
-                        tmp.style.left = '-9999px';
-                        document.body.appendChild(tmp);
-                        tmp.value = context.getEntity() + '.' + context.getType() + '.' + context.getName();
-                        tmp.select();
-                        document.execCommand("copy");
-                        document.body.removeChild(tmp);
-                    })
-                 )
-            )
-            .append( $('<div />').addClass('header-view-details-body')
-                .append( $('<div />').attr('title', context.getEntity()).html('Entity: <b>'+context.getEntity()+'</b>') )
-                .append( $('<div />').attr('title', context.getType()+'.'+context.getName()).html('View: <b>'+context.getType()+'.'+context.getName()+'</b>') )
-                .append( $('<div />').attr('title', context.getPurpose()).html('Purpose: <b>'+context.getPurpose()+'</b>') )
-                .append( $('<div />').attr('title', context.getMode()).html('Mode: <b>'+context.getMode()+'</b>') )
-            )
-            .on('mouseenter', function() {
-                $(this).addClass('has-mouseover');
-            })
-            .on('mouseleave', function() {
-                let $popup = $(this);
-                $popup.removeClass('has-mouseover');
-                setTimeout( () => {
-                    // if crumb element has been removed from DOM, destroy popup
-                    if(!$crumb.closest('body').length) {
-                        $popup.remove();
-                        return;
-                    }
-                    // hide popup if neither crumb nor popup has mouseover
-                    if(!$crumb.hasClass('has-mouseover') && !$popup.hasClass('has-mouseover')) {
-                        $popup.hide().appendTo($crumb);
-                    }
-                }, 500);
-            })
-            .appendTo($crumb);
+        const $body = $('<div />')
+            .append( $('<div />').attr('title', context.getEntity()).html('Entity: <b>'+context.getEntity()+'</b>') )
+            .append( $('<div />').attr('title', context.getType()+'.'+context.getName()).html('View: <b>'+context.getType()+'.'+context.getName()+'</b>') )
+            .append( $('<div />').attr('title', context.getPurpose()).html('Purpose: <b>'+context.getPurpose()+'</b>') )
+            .append( $('<div />').attr('title', context.getMode()).html('Mode: <b>'+context.getMode()+'</b>') );
+
+        const url = '/workbench/#/package/' + EntityHelper.getPackageName(context.getEntity()) + '/view/' + EntityHelper.getClassName(context.getEntity()) + ':' + context.getType() + '.' + context.getName() + '/edit';
+
+        new Popover($crumb, {
+            title: 'View details',
+            body: $body,
+            externalLink: url,
+            clipboardValue: JSON.stringify(
+                {
+                    entity: context.getEntity(),
+                    view: context.getType() + '.' + context.getName(),
+                    purpose: context.getPurpose(),
+                    mode: context.getMode()
+                },
+                null, 4),
+            popupClass: 'header-view-details-popup',
+            group: 'breadcrumb-details',
+            openDelay: 1200,
+            closeDelay: 500
+        });
     }
 
     /**
