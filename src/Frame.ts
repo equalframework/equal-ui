@@ -46,6 +46,9 @@ export class Frame {
 
     private is_active: boolean;
 
+    private static readonly BREADCRUMB_POPOVER_GROUP = 'breadcrumb-details';
+
+
     constructor(eq: any, domContainerSelector: string = '#sb-container') {
         this.eq = eq;
         this.context = <Context> {};
@@ -360,8 +363,8 @@ export class Frame {
             this.$headerContainer = $('<div/>').addClass('sb-container-header').prependTo($domContainer);
         }
 
-        // reset/hide breadcrumb popovers (@see `decorateCrumb()`)
-        Popover.destroyGroup('breadcrumb-details');
+        // reset/hide breadcrumb popovers (@see `createPopover()`)
+        this.destroyPopovers(Frame.BREADCRUMB_POPOVER_GROUP);
 
         if( this.stack.length == 0 || !this.context.hasOwnProperty('$container')) {
             // hide header if there is no context
@@ -437,11 +440,11 @@ export class Frame {
                     }
                     this.closeContext();
                 });
-                this.decorateCrumb($crumb, context);
+                this.createPopover($crumb, context);
             }
             else {
                 $crumb = $('<span>' + context_purpose_string + '</span>');
-                this.decorateCrumb($crumb, context);
+                this.createPopover($crumb, context);
             }
 
             crumbs.push({ $node: $crumb, isContext: true, contextIndex: i });
@@ -475,7 +478,7 @@ export class Frame {
             $current = $('<span>' + current_purpose_string + '</span>');
         }
 
-        this.decorateCrumb($current, this.context);
+        this.createPopover($current, this.context);
 
         if(crumbs.length > 0) {
             crumbs.push({
@@ -545,11 +548,11 @@ export class Frame {
                         this.closeContext();
                     });
 
-                this.decorateCrumb($ellipsis, context);
+                this.createPopover($ellipsis, context);
             }
             else {
                 $ellipsis = $('<span>[...]</span>');
-                this.decorateCrumb($ellipsis, context);
+                this.createPopover($ellipsis, context);
             }
 
             // insert at beginning
@@ -650,14 +653,18 @@ export class Frame {
         this.$headerContainer.empty().append($elem).append($lang_selector);
     }
 
+    private destroyPopovers(group: string) {
+        Popover.destroyGroup(group);
+    }
+
     /**
      * Adds hover listener on a part of the header breadcrumb, in order to display a popup showing the details about the view of a given context.
      *
      * @param $crumb
      * @param context
      */
-    private decorateCrumb($crumb: JQuery | undefined, context: Context) {
-        if(!$crumb) {
+    private createPopover($crumb: JQuery | undefined, context: Context) {
+        if(!this.environment?.debug || !$crumb) {
             return;
         }
 
@@ -682,7 +689,7 @@ export class Frame {
                 },
                 null, 4),
             popupClass: 'header-view-details-popup',
-            group: 'breadcrumb-details',
+            group: Frame.BREADCRUMB_POPOVER_GROUP,
             openDelay: 1200,
             closeDelay: 500
         });

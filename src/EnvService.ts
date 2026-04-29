@@ -8,6 +8,7 @@ export class _EnvService {
 
     private default: any = {
         "production":                   true,
+        "debug":                        false,
         "parent_domain":                "equal.local",
         "backend_url":                  "http://equal.local",
         "rest_api_url":                 "http://equal.local/",
@@ -49,7 +50,7 @@ export class _EnvService {
     }
 
     /**
-     * Assign and adapter to support older version of the URL syntax
+     * Assign environment : adapt & enrich with extra value
      */
     private assignEnv(environment: any) {
         if(environment.hasOwnProperty('backend_url')) {
@@ -57,7 +58,52 @@ export class _EnvService {
                 environment.backend_url += '/';
             }
         }
+        environment.debug = this.resolveDebug(environment);
         this.environment = {...environment};
+    }
+
+    private resolveDebug(environment: any): boolean {
+        let debug = false;
+
+        if(environment.hasOwnProperty('debug')) {
+            if(typeof environment.debug === 'boolean') {
+                debug = environment.debug;
+            }
+            else if(environment.debug === 'true') {
+                debug = true;
+            }
+            else if(environment.debug === 'false') {
+                debug = false;
+            }
+        }
+
+        const storedDebug = window.localStorage.getItem('debug');
+        if(storedDebug !== null) {
+            if(storedDebug === 'true') {
+                debug = true;
+            }
+            else if(storedDebug === 'false') {
+                debug = false;
+            }
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        let debugParam = params.get('debug');
+
+        if(debugParam === null) {
+            const hash = window.location.hash ?? '';
+            const queryIndex = hash.indexOf('?');
+            if(queryIndex >= 0) {
+                debugParam = new URLSearchParams(hash.substring(queryIndex + 1)).get('debug');
+            }
+        }
+
+        if(debugParam === 'true') {
+            debug = true;
+            window.localStorage.setItem('debug', 'true');
+        }
+
+        return debug;
     }
 
     public setEnv(property: string, value: any) {
