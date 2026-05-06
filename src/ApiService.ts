@@ -25,36 +25,26 @@ export class _ApiService {
     private last_status: number;
     private last_headers: any;
 
+    private csrfToken: string | null = null;
 
     constructor() {
         $.ajaxSetup({
             // let browser to handle responses cache
             cache: true,
             beforeSend: (xhr, settings) => {
-                const isMutation = /^(POST|PUT|PATCH|DELETE)$/i.test(settings.type || 'GET');
-
-                // #todo - not sure to limit the CSRF token to mutation requests
 
                 // inject CSRF token if present
-
-                const csrf_token = window.localStorage.getItem('csrf_token');
-                if(csrf_token) {
-                    xhr.setRequestHeader('X-CSRF-Token', csrf_token);
+                if(this.csrfToken) {
+                    xhr.setRequestHeader('X-CSRF-Token', this.csrfToken);
                 }
 
-                // for all requests, inject CSRF nonce if present
+                // inject CSRF nonce if present
                 const csrf_nonce = window.localStorage.getItem('csrf_nonce');
                 if(csrf_nonce) {
                     xhr.setRequestHeader('X-Nonce', csrf_nonce);
                 }
 
-                /*
-                // #memo - we use httpOnly cookie
-                let access_token = this.getCookie('access_token');
-                if(access_token) {
-                    xhr.setRequestHeader('Authorization', "Basic " + access_token);
-                }
-                */
+                // #memo - for access_token, eQual uses httpOnly cookie
             },
             xhrFields: { withCredentials: true },
             // #memo - this might be necessary when using cross-domain or distinct ports on same domain (TEST only)
@@ -220,14 +210,21 @@ export class _ApiService {
         let result: any;
         try {
             const environment = await EnvService.getEnv();
-            const response = await $.get({
+            const request = $.ajax({
                 url: environment.rest_api_url + 'userinfo'
             });
-            result = response;
+
+            result = await request;
+            // if a X-CSRF-Token header is present, store it into localStorage
+            const csrf_token = request.getResponseHeader('X-CSRF-Token');
+            if(csrf_token) {
+                this.csrfToken = csrf_token;
+            }
         }
         catch(response:any) {
             throw response.responseJSON;
         }
+
         return result;
     }
 
@@ -256,6 +253,10 @@ export class _ApiService {
                 let url = environment.backend_url + route.replace(/^\//g, '');
                 let xhr = new XMLHttpRequest();
                 xhr.open('GET', url + '?' + jQuery.param(body), true);
+
+                if(this.csrfToken) {
+                    xhr.setRequestHeader('X-CSRF-Token', this.csrfToken);
+                }
 
                 // default to JSON
                 if(content_type == 'application/json') {
@@ -303,6 +304,11 @@ export class _ApiService {
                 let xhr = new XMLHttpRequest();
                 xhr.open('POST', url, true);
                 xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+                if(this.csrfToken) {
+                    xhr.setRequestHeader('X-CSRF-Token', this.csrfToken);
+                }
+
                 var params = jQuery.param(body);
 
                 // default to JSON
