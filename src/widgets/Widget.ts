@@ -1,7 +1,7 @@
 import { View, Layout } from "../equal-lib";
 import moment from 'moment/moment.js';
 import { EnvService } from "../equal-services";
-import _EnvService from "../EnvService";
+import Popover from "../Popover";
 
 /**
  * This singleton is used to increase speed of UUID generation by using pseudo random values,
@@ -19,10 +19,10 @@ class UuidProvider {
     private constructor() {
         this.index = 1;
         // generates a random 4 hexadecimal digits string
-        let S4 = () => (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+        let S4 = () => (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
         // generate a random uuid with 26 hexadecimal digits (last 8 digits are omitted)
         // 92867eb7-604f-5764-41d6-d0bd
-        this.base = (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4());
+        this.base = (S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4());
     }
 
     public static getInstance(): UuidProvider {
@@ -76,6 +76,14 @@ export default class Widget {
 
     protected getLayout() {
         return this.layout;
+    }
+
+    protected getPopoverGroup(): string {
+        return 'widget-popover-' + this.getId();
+    }
+
+    protected destroyPopovers() {
+        Popover.destroyGroup(this.getPopoverGroup());
     }
 
     public getId() {
@@ -167,6 +175,11 @@ export default class Widget {
      */
     public toString(): string {
         return Widget.toString(this.config.type, this.value, this.config?.usage ?? null);
+    }
+
+    public destroy() {
+        this.destroyPopovers();
+        this.$elem.remove();
     }
 
     /**

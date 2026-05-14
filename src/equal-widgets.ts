@@ -142,7 +142,7 @@ class WidgetFactory {
     public static getTypeFromUsage(usage_str: string, default_type: string) {
         let result = default_type;
         let [usage, length] = usage_str.split(":");
-        if(usage.includes('text/plain') && length && parseInt(length) <= 255) {
+        if(usage.includes('text/plain') && length && parseInt(length) <= 256) {
             usage = 'text/plain.short';
         }
         switch(usage) {

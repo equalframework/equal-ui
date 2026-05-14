@@ -73,6 +73,10 @@ export class Layout implements LayoutInterface{
         return this.view;
     }
 
+    public getEntity() {
+        return this.view.getEntity();
+    }
+
     public getEnv() {
         return this.view.getEnv();
     }
@@ -424,6 +428,7 @@ export class Layout implements LayoutInterface{
                     // 2) retrieve announcement from the target action controller
                     const result = await ApiService.fetch("/", {do: action.controller, announce: true, ...resulting_params});
                     let params: any = {};
+                    let dialog_params: any = {};
                     let response_descr: any = {};
                     let description: string = '';
 
@@ -436,6 +441,7 @@ export class Layout implements LayoutInterface{
                                 if(params[param].hasOwnProperty('visible') && params[param].visible === false) {
                                     continue;
                                 }
+                                dialog_params[param] = params[param];
                                 if(params[param].hasOwnProperty('required') && params[param].required) {
                                     missing_params[param] = params[param];
                                 }
@@ -482,7 +488,7 @@ export class Layout implements LayoutInterface{
                         if(Object.keys(missing_params).length) {
                             let $dialog = UIHelper.createDialog(this.view.getUuid()+'_' + action.id + '_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
                             $dialog.find('.mdc-dialog__content').append($description);
-                            await this.view.decorateActionDialog($dialog, action, missing_params, object, user, parent);
+                            await this.view.decorateActionDialog($dialog, action, dialog_params, object, user, parent);
                             $dialog.addClass('sb-view-dialog').appendTo(this.view.getContainer());
                             $dialog
                                 .on('_accept', () => defer.resolve($dialog.data('result')))
@@ -506,7 +512,7 @@ export class Layout implements LayoutInterface{
                         if(Object.keys(missing_params).length) {
                             let $dialog = UIHelper.createDialog(this.view.getUuid()+'_' + action.id + '_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
                             $dialog.find('.mdc-dialog__content').append($description);
-                            await this.view.decorateActionDialog($dialog, action, missing_params, object, user, parent);
+                            await this.view.decorateActionDialog($dialog, action, dialog_params, object, user, parent);
                             $dialog.addClass('sb-view-dialog').appendTo(this.view.getContainer());
                             $dialog
                                 .on('_accept', () => defer.resolve($dialog.data('result')))

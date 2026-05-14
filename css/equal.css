@@ -658,6 +658,11 @@ body > .header-view-details-popup .header-view-details-body div {
     font-weight: 400;
 }
 
+.sb-widget-mode-view .mdc-text-field .mdc-floating-label,
+.sb-widget-mode-view.mdc-select .mdc-floating-label {
+    pointer-events: auto !important;
+}
+
 .sb-widget-mode-edit .mdc-text-field .mdc-floating-label,
 .sb-widget-mode-edit.mdc-select .mdc-floating-label {
     color: rgba(0,0,0,0.8) !important;

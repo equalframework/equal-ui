@@ -15,6 +15,7 @@ export default class WidgetUpload extends Widget {
 
     public destroy() {
         window.removeEventListener("dragover", (e) => this.windowDragOverHandler(e));
+        super.destroy();
     }
 
     public render(): JQuery {

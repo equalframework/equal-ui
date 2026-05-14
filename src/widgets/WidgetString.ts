@@ -1,6 +1,6 @@
 import Widget from "./Widget";
-import { View, Layout } from "../equal-lib";
-
+import Popover from "../Popover";
+import { View, Layout, EntityHelper } from "../equal-lib";
 import { UIHelper } from '../material-lib';
 
 export default class WidgetString extends Widget {
@@ -36,6 +36,9 @@ export default class WidgetString extends Widget {
     public render(): JQuery {
         let value: any = (typeof this.value != undefined && this.value != undefined) ? this.value : '';
         let usage = (this.config.hasOwnProperty('usage')) ? this.config.usage : '';
+
+        const debugPopoversEnabled = this.mode === 'view' && this.getLayout().getView().getEnv()?.debug;
+        this.destroyPopovers();
 
         if(typeof value == 'string') {
             value = value.replace(/"/g, "&quot;");
@@ -151,7 +154,12 @@ export default class WidgetString extends Widget {
                     // decorate the widget according to styles present in config
                     this.applyStyling(this.$elem);
 
-                    this.$elem.attr('title', value);
+                    if(debugPopoversEnabled) {
+                        this.createPopovers();
+                    }
+                    else {
+                        this.$elem.attr('title', value);
+                    }
                 }
                 break;
         }
@@ -168,6 +176,71 @@ export default class WidgetString extends Widget {
             .attr('data-type', this.config.type)
             .attr('data-field', this.config.field)
             .attr('data-usage', this.config.usage || '');
+    }
+
+    private createPopovers() {
+        const env = this.getLayout().getView().getEnv();
+        if(this.mode !== 'view' || !env?.debug) {
+            return;
+        }
+
+        const $label = this.$elem.find('.sb-ui-text-field-label').first();
+        const $input = this.$elem.find('.sb-ui-text-field-input').first();
+        const $description = this.$elem.find('.sb-ui-text-field-helper').first();
+
+        // remove title attributes, if any - to prevent hover conflict with popovers
+        this.$elem.removeAttr('title');
+        $input.removeAttr('title');
+        $description.removeAttr('title');
+        $label.removeAttr('title');
+
+        const entity = this.getLayout().getEntity();
+        const field = this.config.field ?? '';
+
+        if($label.length) {
+            const url = '/workbench/#/package/' + EntityHelper.getPackageName(entity) + '/model/' + EntityHelper.getClassName(entity) + '/translations?tab=model&field=' + field + '-label'
+            new Popover($label, {
+                title: 'Label translation',
+                body: $('<div />')
+                    .append($('<div />').html('Field: <b>' + field + '</b>'))
+                    .append($('<div />').html('Label: <b>' + this.label + '</b>')),
+                externalLink: url,
+                clipboardValue: this.label,
+                group: this.getPopoverGroup(),
+                openDelay: 800,
+                closeDelay: 300
+            });
+        }
+
+        if($input.length) {
+            const url = '/workbench/#/package/' + EntityHelper.getPackageName(entity) + '/model/' + EntityHelper.getClassName(entity) + '/fields?field=' + field
+            new Popover($input, {
+                title: 'Field info',
+                body: $('<div />')
+                    .append($('<div />').html('Field: <b>' + field + '</b>'))
+                    .append($('<div />').html('Type: <b>' + (this.config.type ?? '') + '</b>'))
+                    .append($('<div />').html('Usage: <b>' + (this.config.usage ?? '') + '</b>')),
+                externalLink: url,
+                clipboardValue: this.value,
+                group: this.getPopoverGroup(),
+                openDelay: 800,
+                closeDelay: 300
+            });
+        }
+
+        if($description.length && String(this.config.description ?? '').trim().length) {
+            const url = '/workbench/#/package/' + EntityHelper.getPackageName(entity) + '/model/' + EntityHelper.getClassName(entity) + '/translations?tab=model&field=' + field + '-description'
+            new Popover($description, {
+                title: 'Description translation',
+                body: $('<div />')
+                    .append($('<div />').html('Field: <b>' + field + '</b>')),
+                externalLink: url,
+                clipboardValue: this.config.description,
+                group: this.getPopoverGroup(),
+                openDelay: 800,
+                closeDelay: 300
+            });
+        }
     }
 
 }

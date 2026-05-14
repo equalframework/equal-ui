@@ -20,6 +20,7 @@ export class View {
 
     private context: Context;
 
+    // entity with full namespace
     public entity: string;
     public type: string;
     public name: string;
@@ -487,6 +488,7 @@ export class View {
 
                                             const result = await ApiService.fetch("/", {do: action.controller, announce: true, ...resulting_params});
                                             let params: any = {};
+                                            let dialog_params: any = {};
                                             let response_descr: any = {};
                                             let description: string = '';
 
@@ -496,6 +498,10 @@ export class View {
                                                 }
                                                 for(let param of Object.keys(params)) {
                                                     if(Object.keys(resulting_params).indexOf(param) < 0) {
+                                                        if(params[param].hasOwnProperty('visible') && params[param].visible === false) {
+                                                            continue;
+                                                        }
+                                                        dialog_params[param] = params[param];
                                                         if(params[param].hasOwnProperty('required') && params[param].required) {
                                                             missing_params[param] = params[param];
                                                         }
@@ -542,7 +548,7 @@ export class View {
                                                 if(Object.keys(missing_params).length) {
                                                     let $dialog = UIHelper.createDialog(this.getUuid()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
                                                     $dialog.find('.mdc-dialog__content').append($description);
-                                                    await this.decorateActionDialog($dialog, action, missing_params, object, user, parent);
+                                                    await this.decorateActionDialog($dialog, action, dialog_params, object, user, parent);
                                                     $dialog.addClass('sb-view-dialog').appendTo(this.getContainer());
                                                     $dialog
                                                         .on('_accept', () => defer.resolve($dialog.data('result')))
@@ -566,7 +572,7 @@ export class View {
                                                 if(Object.keys(missing_params).length) {
                                                     let $dialog = UIHelper.createDialog(this.getUuid()+'_'+action.id+'_custom_action_dialog', TranslationService.instant('SB_ACTIONS_PROVIDE_PARAMS'), TranslationService.instant('SB_DIALOG_SEND'), TranslationService.instant('SB_DIALOG_CANCEL'));
                                                     $dialog.find('.mdc-dialog__content').append($description);
-                                                    await this.decorateActionDialog($dialog, action, missing_params, object, user, parent);
+                                                    await this.decorateActionDialog($dialog, action, dialog_params, object, user, parent);
                                                     $dialog.addClass('sb-view-dialog').appendTo(this.getContainer());
                                                     $dialog
                                                         .on('_accept', () => defer.resolve($dialog.data('result')))
@@ -3166,6 +3172,34 @@ export class View {
         let $elem = $('<div />');
 
         let widgets:any = {};
+        let widget_containers:any = {};
+        let widget_values:any = {};
+
+        const normalizeWidgetValue = (value: any) => {
+            if(typeof value === 'object' && value !== null && value.hasOwnProperty('id')) {
+                return value.id;
+            }
+            return value;
+        };
+
+        const refreshWidgetsVisibility = () => {
+            const values = {...object, ...widget_values};
+            for(let field of Object.keys(widgets)) {
+                const widget = widgets[field];
+                const $container = widget_containers[field];
+                const visible = this.isVisible(widget.getConfig().visible ?? true, values, user, parent, this.getEnv());
+                if(visible) {
+                    $container
+                        .attr('data-visible', '1')
+                        .css({'visibility': 'visible', 'pointer-events': ''});
+                }
+                else {
+                    $container
+                        .attr('data-visible', '0')
+                        .css({'visibility': 'hidden', 'pointer-events': 'none'});
+                }
+            }
+        };
 
         // load translation related to controller
         let translation = await ApiService.getTranslation(action.controller.replaceAll('_', '\\'));
@@ -3197,6 +3231,7 @@ export class View {
             if(def.hasOwnProperty('default')) {
                 widget.setValue(def.default);
             }
+            widget_values[field] = normalizeWidgetValue(widget.getValue());
 
             // if widget has a domain, parse it using current object and user
             if(config.hasOwnProperty('original_domain')) {
@@ -3209,18 +3244,32 @@ export class View {
 
             console.debug('View::decorateActionDialog: requestiing widget rendering', widget);
             let $node = widget.render();
-            $node.css({'margin-bottom': '24px'});
-            $elem.append($node);
+            let $container = $('<div />')
+                .attr('data-field', field)
+                .attr('data-visible', '1')
+                .css({'margin-bottom': '24px'})
+                .append($node);
+            $elem.append($container);
 
             widgets[field] = widget;
+            widget_containers[field] = $container;
+
+            $node.on('_updatedWidget', () => {
+                widget_values[field] = normalizeWidgetValue(widget.getValue());
+                refreshWidgetsVisibility();
+            });
         }
 
         $dialog.find('.mdc-dialog__content').append($elem);
+        refreshWidgetsVisibility();
 
         $dialog.on('_accept', () => {
             let result:any = {};
             // build payload to send to target controller
             for(let field of Object.keys(widgets)) {
+                if(widget_containers[field].attr('data-visible') !== '1') {
+                    continue;
+                }
                 let widget = widgets[field];
                 let value = widget.getValue();
                 if(typeof value == 'object' && value.hasOwnProperty('id')) {
@@ -3618,6 +3667,40 @@ export class View {
             }
         }
         return false;
+    }
+
+    private isVisible(visible: boolean | string | [], object: any, user: any, parent: any = {}, env: any = {}) {
+        console.debug('View::isVisible - evaluating visibility', JSON.stringify(visible), object, user, env);
+        let result = true;
+        if(typeof visible === 'boolean') {
+            return visible;
+        }
+        if(visible.length) {
+            if(visible === 'false') {
+                result = false;
+            }
+            else if(visible === 'true') {
+                result = true;
+            }
+            else {
+                try {
+                    let array_domain = visible;
+                    if(typeof array_domain == 'string') {
+                        array_domain = JSON.parse(array_domain);
+                    }
+                    if(!Array.isArray(array_domain)) {
+                        throw new Error('non array visibility domain');
+                    }
+                    let domain = new Domain(array_domain);
+                    result = domain.evaluate(object, user, parent, env);
+                }
+                catch(error) {
+                    console.warn('Error parsing JSON', visible, error);
+                }
+            }
+        }
+        console.debug('View::isVisible - visibility result', result);
+        return result;
     }
 
     private openAuthPopup(url: string, title = "Authentication", width = 400, height = 600) {
