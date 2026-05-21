@@ -47,7 +47,7 @@ export class LayoutSearch extends Layout {
      */
     protected layout() {
         console.debug('LayoutSearch::layout');
-        let $elem = $('<div/>').css({"width": "100%"});
+        let $elem = $('<div/>').css({"width": "100%", "display": "flex"});
 
         let view_schema = this.view.getViewSchema();
 
@@ -66,7 +66,10 @@ export class LayoutSearch extends Layout {
 
         $.each(view_schema.layout.groups, (i:number, group) => {
             let group_id = 'group-'+i;
-            let $group = $('<div />').addClass('sb-view-form-group').appendTo($elem);
+            let $group = $('<div />')
+                .addClass('sb-view-form-group')
+                .css({"flex": "1"})
+                .appendTo($elem);
 
             // try to resolve the group title
             let group_title = (group.hasOwnProperty('label')) ? group.label : '';
@@ -180,32 +183,29 @@ export class LayoutSearch extends Layout {
                             }
                         });
                     });
-
-
-                    if(submit_mode === 'manual' && is_last_row) {
-                        let remaining_span = Math.max(12 - used_columns_span, 1);
-                        let $column = $('<div />')
-                            .addClass('mdc-layout-grid__cell')
-                            .addClass('mdc-layout-grid__cell--span-' + remaining_span)
-                            .css({
-                                display: 'flex',
-                                'align-items': 'flex-end',
-                                'justify-content': 'flex-end'
-                            })
-                            .appendTo($row);
-
-                        let $btn = UIHelper.createButton('search-submit_' + this.getUuid(), '', 'icon', 'search')
-                            .addClass('sb-view-header-search-submit')
-                            .css({
-                                'color': 'var(--mdc-theme-primary)'
-                            })
-                            .on('click', () => this.applyChanges());
-
-                        $column.append($btn);
-                    }
-
                 });
             });
+
+            if(submit_mode === 'manual') {
+                let $searchColumn = $('<div />')
+                    .css({
+                        'display': 'flex',
+                        'flex-wrap': 'wrap',
+                        'align-items': 'end',
+                        'padding-right': '20px',
+                        'padding-bottom': '20px'
+                    })
+                    .appendTo($elem);
+
+                let $btn = UIHelper.createButton('search-submit_' + this.getUuid(), '', 'icon', 'search')
+                    .addClass('sb-view-header-search-submit')
+                    .css({
+                        'color': 'var(--mdc-theme-primary)'
+                    })
+                    .on('click', () => this.applyChanges());
+                $searchColumn.append($btn);
+            }
+
             UIHelper.decorateTabBar($tabs);
         });
 
