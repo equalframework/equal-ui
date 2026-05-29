@@ -206,6 +206,12 @@ export default class Widget {
         return this.$elem;
     }
 
+    protected applyHeading() {
+        if(this.config.heading === true && this.config.layout == 'form') {
+            this.$elem.addClass('title');
+        }
+    }
+
     public static toString(type: string, value: any, usage?: string | null): string {
         console.debug("Widget::toString - parsing value", type, value, usage);
         switch(type) {

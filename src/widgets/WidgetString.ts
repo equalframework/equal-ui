@@ -164,9 +164,7 @@ export default class WidgetString extends Widget {
                 break;
         }
 
-        if(this.config.hasOwnProperty('heading') && this.config.layout == 'form') {
-            this.$elem.addClass('title');
-        }
+        this.applyHeading();
 
         return this.$elem
             .addClass('sb-widget')

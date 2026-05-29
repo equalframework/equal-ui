@@ -656,6 +656,8 @@ export default class WidgetMany2One extends Widget {
                 break;
         }
 
+        this.applyHeading();
+
         return this.$elem
             .addClass('sb-widget')
             .addClass('sb-widget-type-many2one')
