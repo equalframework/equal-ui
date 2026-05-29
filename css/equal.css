@@ -454,6 +454,20 @@ body > .header-view-details-popup .header-view-details-body div {
     cursor: pointer;
 }
 
+.sb-view-layout-list .sb-view-layout-list-empty-row {
+    cursor: default;
+}
+
+.sb-view-layout-list .sb-view-layout-list-empty-cell {
+    padding: 30px 20px;
+    text-align: center;
+}
+
+.sb-view-layout-list .sb-view-layout-list-empty-message {
+    color: rgba(0, 0, 0, .6);
+    font-style: italic;
+}
+
 .sb-view-layout-list .table-operations {
     display: block;
     width: 100%;

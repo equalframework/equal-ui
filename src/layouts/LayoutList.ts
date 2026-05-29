@@ -345,6 +345,36 @@ export class LayoutList extends Layout {
         let view_schema = this.view.getViewSchema();
 
         let $tbody = $('<tbody/>');
+        let $elem = this.$layout.find('.table-wrapper');
+        let $table = $elem.find('table');
+
+        const on_empty = view_schema.on_empty;
+        if(objects.length == 0 && on_empty && typeof on_empty === 'object') {
+            if(on_empty.hasOwnProperty('context')) {
+                await this.view.getContext().getFrame().closeAll();
+                this.view.getContext().getFrame().openContext(on_empty.context);
+                return;
+            }
+
+            const message = (typeof on_empty.message === 'string') ? on_empty.message.trim() : '';
+            if(message.length) {
+                const colspan = Math.max($table.find('thead tr:first th').length, 1);
+                $tbody.append(
+                    $('<tr/>')
+                        .addClass('sb-view-layout-list-empty-row')
+                        .append(
+                            $('<td/>')
+                                .addClass('mdc-data-table__cell sb-view-layout-list-empty-cell')
+                                .attr('colspan', colspan)
+                                .append(
+                                    $('<div/>')
+                                        .addClass('sb-view-layout-list-empty-message')
+                                        .text(message)
+                                )
+                        )
+                );
+            }
+        }
 
         let stack = (group_by.length == 0) ? [objects] : [groups];
 
@@ -449,9 +479,6 @@ export class LayoutList extends Layout {
                 }
             }
         }
-
-        let $elem = this.$layout.find('.table-wrapper');
-        let $table = $elem.find('table');
 
         $table.find('tbody').remove();
 
