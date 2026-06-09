@@ -3,6 +3,8 @@ import { View, Layout } from "../equal-lib";
 
 export default class WidgetUpload extends Widget {
 
+    private $text: JQuery = $();
+
     constructor(layout: Layout, label: string, value: any, config: {}) {
         super(layout, label, value, config);
     }
@@ -14,7 +16,7 @@ export default class WidgetUpload extends Widget {
     }
 
     public destroy() {
-        window.removeEventListener("dragover", (e) => this.windowDragOverHandler(e));
+        window.removeEventListener("dragover", this.windowDragOverHandler);
         super.destroy();
     }
 
@@ -38,7 +40,7 @@ export default class WidgetUpload extends Widget {
                     .css({'margin': '20px auto', 'width': '25%', 'max-width': '90px', 'min-width': '30px'})
                     .appendTo(this.$elem);
 
-                let $text = $('<div />')
+                this.$text = $('<div />')
                     .css({'margin': '10px auto', 'text-align': 'center'})
                     .appendTo(this.$elem);
 
@@ -49,7 +51,11 @@ export default class WidgetUpload extends Widget {
                 $('<div />')
                     .append($link)
                     .append($('<span>&nbsp;' + 'ou déposer le document ici' + '</span>'))
-                    .appendTo($text);
+                    .appendTo(this.$text);
+
+                if(this.config.autosave === false && value && this.meta?.name) {
+                    this.updateDisplayedFileName(this.meta.name);
+                }
 
                 this.addDragListener(this.$elem);
 
@@ -116,13 +122,36 @@ export default class WidgetUpload extends Widget {
 
         this.$elem.trigger('_updatedWidget', [false]);
 
-        // #todo - this is a test feature : auto save when uploaded
-        setTimeout( () => this.getLayout().getView().triggerAction('ACTION.SAVE'), 250);
+        if(this.config.autosave === false) {
+            this.updateDisplayedFileName(file.name);
+        }
+        else {
+            setTimeout( () => this.getLayout().getView().triggerAction('ACTION.SAVE'), 250);
+        }
+    }
+
+    private updateDisplayedFileName(fileName: string) {
+        if(!this.$text.length) {
+            return;
+        }
+
+        this.$text.empty();
+
+        let $link = $('<a>charger un autre</a>')
+            .css({'font-weight': 'bold', 'cursor': 'pointer'})
+            .on('click', () => this.$elem.find('input[type="file"]').trigger('click') );
+
+        $('<div />')
+            .append($('<span>Fichier recu : </span>'))
+            .append($('<span />').text(fileName).css({'font-weight': 'bold'}))
+            .append($('<span>&nbsp;-&nbsp;</span>'))
+            .append($link)
+            .appendTo(this.$text);
     }
 
     private addDragListener($elem: JQuery) {
         if(window.File && window.FileReader && window.FileList && window.Blob) {
-            window.addEventListener("dragover", (e) => this.windowDragOverHandler(e));
+            window.addEventListener("dragover", this.windowDragOverHandler);
 
             let dragCounter = 0;
 
