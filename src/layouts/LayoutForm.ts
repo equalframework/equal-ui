@@ -638,7 +638,19 @@ export class LayoutForm extends Layout {
                                             // if some changes are returned from the back-end, append them to the view model update
                                             if(typeof result[changed_field] === 'object' && result[changed_field] !== null) {
 
-                                                model_fields[changed_field] = result[changed_field];
+                                                if(!Array.isArray(result[changed_field])) {
+                                                    model_fields[changed_field] = result[changed_field];
+                                                }
+
+                                                if(['many2one', 'many2many'].includes(changed_field_type ?? '') && result[changed_field].hasOwnProperty('domain')) {
+                                                    if(!model_fields.hasOwnProperty(changed_field) || typeof model_fields[changed_field] !== 'object') {
+                                                        model_fields[changed_field] = result[changed_field];
+                                                    }
+                                                    // #todo - using original_domain is probability no longer necessary (see above)
+                                                    // force changing original_domain
+                                                    model_fields[changed_field].original_domain = result[changed_field].domain;
+                                                    this.view.updateModelField(changed_field, 'domain', result[changed_field].domain);
+                                                }
 
                                                 if(result[changed_field].hasOwnProperty('value')) {
                                                     values[changed_field] = result[changed_field].value;
@@ -647,16 +659,12 @@ export class LayoutForm extends Layout {
                                                     console.debug('assigning value for ', changed_field);
                                                     // #memo - m2o widgets use an object as value
                                                     values[changed_field] = result[changed_field];
-                                                    if(result[changed_field].hasOwnProperty('domain')) {
-                                                        // #todo - using original_domain is probability no longer necessary (see above)
-                                                        // force changing original_domain
-                                                        model_fields[changed_field].original_domain = result[changed_field].domain;
-                                                        this.view.updateModelField(changed_field, 'domain', result[changed_field].domain);
-                                                    }
                                                 }
                                                 else if(changed_field_type == 'many2many') {
                                                     // m2m is a list of positive or negative integers
-                                                    values[changed_field] = result[changed_field];
+                                                    if(Array.isArray(result[changed_field])) {
+                                                        values[changed_field] = result[changed_field];
+                                                    }
                                                 }
 
                                                 if(result[changed_field].hasOwnProperty('selection')) {
