@@ -636,7 +636,9 @@ export class Frame {
             this.context = context;
 
             this.context.isReady().then(() => {
-                $(this.domContainerSelector).append(this.context.getContainer());
+                if(this.context && typeof this.context.getContainer === 'function') {
+                    $(this.domContainerSelector).append(this.context.getContainer());
+                }
             });
 
             console.debug('Switched ORM requests to "' + lang + '"');
@@ -853,21 +855,25 @@ export class Frame {
 
                 this.updateHeader(config);
 
-                // inject Context container into DOM
-                $(this.domContainerSelector).append(this.context.getContainer());
+                if(this.context && typeof this.context.getContainer === 'function') {
+                    // inject Context container into DOM
+                    $(this.domContainerSelector).append(this.context.getContainer());
 
-                // wait for a frame (DOM rendered)
-                await new Promise(resolve => {
-                    requestAnimationFrame(() => {
+                    // wait for a frame (DOM rendered)
+                    await new Promise(resolve => {
                         requestAnimationFrame(() => {
-                            this.context.setDomReady();
-                            resolve(null);
+                            requestAnimationFrame(() => {
+                                if(this.context && typeof this.context.setDomReady === 'function') {
+                                    this.context.setDomReady();
+                                }
+                                resolve(null);
+                            });
                         });
                     });
-                });
 
-                // relay event to the outside
-                $(this.domContainerSelector).show().trigger('_open', [{context: config}]);
+                    // relay event to the outside
+                    $(this.domContainerSelector).show().trigger('_open', [{context: config}]);
+                }
             }
             catch(error) {
                 console.warn('unexpected error while waiting for context readiness', error);
