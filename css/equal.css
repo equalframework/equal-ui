@@ -461,6 +461,7 @@ body > .header-view-details-popup .header-view-details-body div {
 .sb-view-layout-list .sb-view-layout-list-empty-cell {
     padding: 30px 20px;
     text-align: center;
+    border-bottom-style: none;
 }
 
 .sb-view-layout-list .sb-view-layout-list-empty-message {

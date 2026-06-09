@@ -149,7 +149,7 @@ export class Context {
     }
 
     public setDomReady() {
-        console.log('@@@marking Context as DOM ready');
+        console.debug('marking Context as DOM ready');
         return this.is_dom_ready_promise.resolve();
     }
 
