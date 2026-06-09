@@ -200,9 +200,7 @@ export default class WidgetMany2Many extends Widget {
 
                     $selectActionButton.on('click', async () => {
                             let purpose = (this.rel_type == 'many2many') ? 'add' : 'select';
-
-                            // request a new Context for selecting an existing object to add to current selection
-                            this.getLayout().openContext({
+                            let context_config: any = {
                                 entity: this.config.entity,
                                 type: 'list',
                                 name: 'default',
@@ -226,7 +224,16 @@ export default class WidgetMany2Many extends Widget {
                                         this.$elem.trigger('_updatedWidget');
                                     }
                                 }
-                            });
+                            };
+
+                            if(this.config.header?.hasOwnProperty('actions')) {
+                                context_config.header = {
+                                    actions: this.config.header.actions
+                                };
+                            }
+
+                            // request a new Context for selecting an existing object to add to current selection
+                            this.getLayout().openContext(context_config);
                         });
                 }
 
