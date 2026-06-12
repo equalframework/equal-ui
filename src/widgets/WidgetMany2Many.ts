@@ -33,6 +33,7 @@ export default class WidgetMany2Many extends Widget {
                     ...this.config,
                     ...{
                         header: {
+                            ...(this.config.header || {}),
                             selection: false
                         },
                         selection_actions: []
@@ -55,6 +56,7 @@ export default class WidgetMany2Many extends Widget {
                     ...this.config,
                     ...{
                         header: {
+                            ...(this.config.header || {}),
                             selection: {
                                 default: false,
                                 actions: selection_actions
@@ -328,18 +330,42 @@ export default class WidgetMany2Many extends Widget {
             return action;
         }
         if(Array.isArray(action)) {
-            return action.length > 0;
+            if(action.length <= 0) {
+                return false;
+            }
+            action = action[0];
         }
         if(typeof action === 'object') {
+            const user = this.getLayout().getUser();
+            const env = this.getLayout().getEnv();
+
             if(action.hasOwnProperty('visible')) {
-                if(typeof action.visible === 'boolean') {
-                    return action.visible;
+                if(typeof action.visible === 'boolean' && !action.visible) {
+                    return false;
+                }
+                else if(Array.isArray(action.visible)) {
+                    let domain = new Domain(action.visible);
+                    if(!domain.evaluate({}, user, {}, env)) {
+                        return false;
+                    }
                 }
             }
-            if(Array.isArray(action[mode])) {
-                return action[mode].length > 0;
+
+            if(action.hasOwnProperty(mode)) {
+                if(typeof action[mode] === 'boolean') {
+                    return action[mode];
+                }
+                else if(Array.isArray(action[mode])) {
+                    let domain = new Domain(action[mode]);
+                    return domain.evaluate({}, user, {}, env);
+                }
+                else {
+                    return true;
+                }
             }
-            return !!action[mode];
+            else {
+                return true;
+            }
         }
         return false;
     }
