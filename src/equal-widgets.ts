@@ -355,14 +355,21 @@ class WidgetFactory {
                     config.has_action_select = false;
                 }
                 else if(config.header.hasOwnProperty('actions')) {
-                    if(config.header.actions.hasOwnProperty('ACTION.CREATE')) {
-                        config.has_action_create = config.header.actions['ACTION.CREATE'];
+                    if(config.header.actions === false) {
+                        config.has_action_create = false;
+                        config.has_action_open = false;
+                        config.has_action_select = false;
                     }
-                    if(config.header.actions.hasOwnProperty('ACTION.OPEN')) {
-                        config.has_action_open = config.header.actions['ACTION.OPEN'];
-                    }
-                    if(config.header.actions.hasOwnProperty('ACTION.SELECT')) {
-                        config.has_action_select = config.header.actions['ACTION.SELECT'];
+                    else {
+                        if(config.header.actions.hasOwnProperty('ACTION.CREATE')) {
+                            config.has_action_create = config.header.actions['ACTION.CREATE'];
+                        }
+                        if(config.header.actions.hasOwnProperty('ACTION.OPEN')) {
+                            config.has_action_open = config.header.actions['ACTION.OPEN'];
+                        }
+                        if(config.header.actions.hasOwnProperty('ACTION.SELECT')) {
+                            config.has_action_select = config.header.actions['ACTION.SELECT'];
+                        }
                     }
                 }
             }
