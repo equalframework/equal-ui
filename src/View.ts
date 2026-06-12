@@ -3636,6 +3636,20 @@ export class View {
         }
         // single descriptor
         if(typeof action === 'object') {
+            if(action.hasOwnProperty('visible')) {
+                // #todo - add support for visible.{mode}
+                if(typeof action.visible === 'boolean' && !action.visible) {
+                    return false;
+                }
+                else if(Array.isArray(action.visible)) {
+                    // visibility domain
+                    let domain = new Domain(action.visible);
+                    if(!domain.evaluate({}, this.getUser(), {}, this.getEnv())) {
+                        return false;
+                    }
+                }
+            }
+
             if(action.hasOwnProperty(mode)) {
                 // boolean
                 if(typeof action[mode] === 'boolean') {
@@ -3644,22 +3658,11 @@ export class View {
                 // visibility domain
                 else if(Array.isArray(action[mode])) {
                     let domain = new Domain(action[mode]);
-                    return domain.parse({}, this.getUser(), {}, this.getEnv()).test();
+                    return domain.evaluate({}, this.getUser(), {}, this.getEnv());
                 }
                 // other value for 'view' (e.g. view id)
                 else {
                     return true;
-                }
-            }
-            else if(action.hasOwnProperty('visible')) {
-                // #todo - add support for visible.{mode}
-                if(typeof action.visible === 'boolean') {
-                    return action.visible;
-                }
-                else if(Array.isArray(action.visible)) {
-                    // visibility domain
-                    let domain = new Domain(action.visible);
-                    return domain.parse({}, this.getUser(), {}, this.getEnv()).test();
                 }
             }
             else {
