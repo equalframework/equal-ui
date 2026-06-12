@@ -822,7 +822,6 @@ export class LayoutList extends Layout {
                     this.view.setActiveObjectId(object.id);
 
                     let childViewSchema = await ApiService.getView(this.view.getEntity(), 'form' + '.' + this.view.getName());
-                    // #todo - allow overloading default action ('ACTIONS.UPDATE')
                     // fallback to view mode if `header.actions.ACTION.EDIT` is set to false
                     let mode = this.view.getMode();
                     if(childViewSchema.hasOwnProperty('header') && childViewSchema.header.hasOwnProperty('actions')) {

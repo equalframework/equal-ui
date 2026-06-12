@@ -154,6 +154,10 @@ export class Model {
         let result: any = {};
         let schema = this.view.getModelFields();
         for(let field in schema) {
+            // `id` identifies the target record and must never be sent as an updatable field.
+            if(field == 'id') {
+                continue;
+            }
             if(!object.hasOwnProperty(field)) {
                 continue;
             }
