@@ -81,6 +81,10 @@ export class Layout implements LayoutInterface{
         return this.view.getEnv();
     }
 
+    public getUser() {
+        return this.view.getUser();
+    }
+
     public getContainer() {
         return this.$layout;
     }
