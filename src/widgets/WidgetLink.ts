@@ -14,8 +14,8 @@ export default class WidgetLink extends Widget {
         return this;
     }
 
-    public render():JQuery {
-        let value:string = (typeof this.value != undefined && this.value != undefined)?this.value:'';
+    public render(): JQuery {
+        let value:string = (typeof this.value != undefined && this.value != undefined) ? this.value:'';
         let $button_open = UIHelper.createButton('link-actions-open-' + this.id, '', 'icon', 'link').addClass('widget-link-btn');
 
         // open target in new window

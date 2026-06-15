@@ -3332,6 +3332,11 @@ export class View {
                     // close context
                     await this.closeContext();
                 }
+                // handle HTTP 302 (found - redirect)
+                else if(status == 302 && headers.hasOwnProperty('location')) {
+                    console.debug('View::performAction - status `302`: redirecting to Location');
+                    window.location.href = headers['location'];
+                }
                 // handle other HTTP status (200 - success, 201 - created, 204 - no content)
                 else {
                     console.debug('View::performAction - status `other`: refreshing main context');
@@ -3422,9 +3427,9 @@ export class View {
                 // errors['INVALID_PARAM'] is a string
                 else {
                     if(snack) {
-                        let error_id:string = <string> String(errors['INVALID_PARAM']);
+                        let error_id: string = <string> String(errors['INVALID_PARAM']);
                         // try to resolve the error message
-                        let msg:string = TranslationService.instant('SB_ERROR_INVALID_PARAM');
+                        let msg: string = TranslationService.instant('SB_ERROR_INVALID_PARAM');
                         let translated_msg = TranslationService.resolve(translation, 'error', [], 'errors', error_id, error_id);
                         if(translated_msg == error_id.replace(/_/g, ' ')) {
                             let translated_error = TranslationService.instant('SB_ERROR_'+error_id.toUpperCase());
@@ -3453,8 +3458,8 @@ export class View {
                         // errors['NOT_ALLOWED'][field] is a descriptor
                         if(typeof errors['NOT_ALLOWED'][field] == 'object') {
                             // for each field, we handle one error at a time (the first one)
-                            let error_id:string = <string> String((Object.keys(errors['NOT_ALLOWED'][field]))[0]);
-                            let msg:string = <string>(Object.values(errors['NOT_ALLOWED'][field]))[0];
+                            let error_id: string = <string> String((Object.keys(errors['NOT_ALLOWED'][field]))[0]);
+                            let msg: string = <string>(Object.values(errors['NOT_ALLOWED'][field]))[0];
                             let translated_msg = TranslationService.resolve(translation, 'error', [], field, msg, error_id);
                             if(translated_msg == msg.replace(/_/g, ' ')) {
                                 let translated_error = TranslationService.instant('SB_ERROR_'+error_id.toUpperCase());
@@ -3479,9 +3484,9 @@ export class View {
                         // errors['NOT_ALLOWED'][field] is a string
                         else {
                             if(snack) {
-                                let error_id:string = <string> String(errors['NOT_ALLOWED'][field]);
+                                let error_id: string = <string> String(errors['NOT_ALLOWED'][field]);
                                 // try to resolve the error message
-                                let msg:string = TranslationService.instant('SB_ERROR_NOT_ALLOWED');
+                                let msg: string = TranslationService.instant('SB_ERROR_NOT_ALLOWED');
                                 let translated_msg = TranslationService.resolve(translation, 'error', [], 'errors', error_id, error_id);
                                 if(translated_msg == error_id.replace(/_/g, ' ')) {
                                     let translated_error = TranslationService.instant('SB_ERROR_'+error_id.toUpperCase());
