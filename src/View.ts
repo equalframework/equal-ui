@@ -1330,9 +1330,9 @@ export class View {
         let $view_actions = $('<div />').addClass('sb-view-header-actions-view').appendTo($actions_set);
 
         // assign select & create default behavior
-        let has_action_select = (this.mode === 'view' && (this.purpose === 'select' || this.purpose === 'add'));
-        let has_action_create = (this.type === 'list' && (this.purpose !== 'widget' || this.mode === 'edit'));
-        let has_action_create_inline = (header_layout === 'inline' && !header_actions_disabled);
+        let has_action_select = false;
+        let has_action_create = (this.mode === 'view') ? false : (this.type === 'list' && (this.purpose !== 'widget' || this.mode === 'edit'));
+        let has_action_create_inline = (this.mode === 'view') ? false : (header_layout === 'inline' && !header_actions_disabled);
 
         if(this.custom_actions.hasOwnProperty('ACTION.SELECT')) {
             has_action_select = this.isActionEnabled(this.custom_actions['ACTION.SELECT'], this.mode);
@@ -1345,7 +1345,7 @@ export class View {
             }
         }
 
-        if(this.custom_actions.hasOwnProperty('ACTION.CREATE_INLINE') || (header_layout === 'inline' && has_action_create && !header_actions_disabled)) {
+        if(this.custom_actions.hasOwnProperty('ACTION.CREATE_INLINE') || (this.mode !== 'view' && header_layout === 'inline' && has_action_create && !header_actions_disabled)) {
             // create & create_inline are mutually exclusive
             has_action_create = false;
             has_action_create_inline = this.isActionEnabled(this.custom_actions['ACTION.CREATE_INLINE'], this.mode);
@@ -1380,8 +1380,8 @@ export class View {
                                 if(this.custom_actions.hasOwnProperty('ACTION.CREATE')) {
                                     if(Array.isArray(this.custom_actions['ACTION.CREATE']) && this.custom_actions['ACTION.CREATE'].length) {
                                         let custom_action_create = this.custom_actions['ACTION.CREATE'][0];
-                                        if(custom_action_create.hasOwnProperty('view')) {
-                                            let parts = custom_action_create.view.split('.');
+                                        if(custom_action_create.hasOwnProperty('view_id')) {
+                                            let parts = custom_action_create.view_id.split('.');
                                             if(parts.length) {
                                                 view_type = <string> parts.shift();
                                             }
@@ -2204,10 +2204,10 @@ export class View {
             "ACTION.SELECT":   [],
             "ACTION.EDIT":     [],
             "ACTION.SAVE":     [
-                {"id": "SAVE_AND_CLOSE"},                           // save and go back to list [edit] or parent context [create] (default)
-                {"id": "SAVE_AND_VIEW"},                            // save and go back to view mode [edit] or list [create]
-                {"id": "SAVE_AND_EDIT", "view": "form.default"},    // save and reopen a view in edit mode, change view if defined
-                {"id": "SAVE_AND_CONTINUE"}                         // save and remain in edit mode
+                {"id": "SAVE_AND_CLOSE"},                              // save and go back to list [edit] or parent context [create] (default)
+                {"id": "SAVE_AND_VIEW"},                               // save and go back to view mode [edit] or list [create]
+                {"id": "SAVE_AND_EDIT", "view_id": "form.default"},    // save and reopen a view in edit mode, change view if defined
+                {"id": "SAVE_AND_CONTINUE"}                            // save and remain in edit mode
             ],
             "ACTION.CANCEL":   [
                 {"id": "CANCEL_AND_CLOSE"},     // do not save and go back to list
@@ -2361,8 +2361,8 @@ export class View {
                                 let object_id = res.selection[0];
                                 let view_name = this.name;
                                 let view_type = this.type;
-                                if(action.hasOwnProperty('view')) {
-                                    let parts = action.view.split('.');
+                                if(action.hasOwnProperty('view_id')) {
+                                    let parts = action.view_id.split('.');
                                     if(parts.length) view_type = <string>parts.shift();
                                     if(parts.length) view_name = <string>parts.shift();
                                 }
@@ -2379,8 +2379,8 @@ export class View {
                             let object_id = res.selection[0];
                             let view_name = this.name;
                             let view_type = this.type;
-                            if(action.hasOwnProperty('view')) {
-                                let parts = action.view.split('.');
+                            if(action.hasOwnProperty('view_id')) {
+                                let parts = action.view_id.split('.');
                                 if(parts.length) view_type = <string>parts.shift();
                                 if(parts.length) view_name = <string>parts.shift();
                             }
@@ -3665,14 +3665,12 @@ export class View {
                     let domain = new Domain(action[mode]);
                     return domain.evaluate({}, this.getUser(), {}, this.getEnv());
                 }
-                // other value for 'view' (e.g. view id)
-                else {
-                    return true;
-                }
+                return false;
             }
-            else {
-                return true;
+            else if(mode === 'view') {
+                return false;
             }
+            return true;
         }
         return false;
     }

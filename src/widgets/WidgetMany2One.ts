@@ -258,8 +258,8 @@ export default class WidgetMany2One extends Widget {
                                             tmpDomain.parse(this.config?.object ?? {}, this.getLayout().getView().getUser(), {}, this.getLayout().getEnv());
                                             contextDomain.merge(new Domain(tmpDomain.toArray()));
                                         }
-                                        if(action.hasOwnProperty('view')) {
-                                            let parts = action.view.split('.');
+                                        if(action.hasOwnProperty('view_id')) {
+                                            let parts = action.view_id.split('.');
                                             if(parts.length) {
                                                 view_type = <string> parts.shift();
                                             }

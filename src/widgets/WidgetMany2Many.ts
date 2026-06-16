@@ -275,8 +275,8 @@ export default class WidgetMany2Many extends Widget {
                             if(custom_actions.hasOwnProperty('ACTION.CREATE')) {
                                 if(Array.isArray(custom_actions['ACTION.CREATE']) && custom_actions['ACTION.CREATE'].length) {
                                     let custom_action_create = custom_actions['ACTION.CREATE'][0];
-                                    if(custom_action_create.hasOwnProperty('view')) {
-                                        let parts = custom_action_create.view.split('.');
+                                    if(custom_action_create.hasOwnProperty('view_id')) {
+                                        let parts = custom_action_create.view_id.split('.');
                                         if(parts.length) {
                                             view_type = <string> parts.shift();
                                         }
@@ -359,13 +359,12 @@ export default class WidgetMany2Many extends Widget {
                     let domain = new Domain(action[mode]);
                     return domain.evaluate({}, user, {}, env);
                 }
-                else {
-                    return true;
-                }
+                return false;
             }
-            else {
-                return true;
+            else if(mode === 'view') {
+                return false;
             }
+            return true;
         }
         return false;
     }
