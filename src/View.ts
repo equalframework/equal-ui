@@ -257,7 +257,7 @@ export class View {
             }
         }
 
-        this.mode = (this.config.hasOwnProperty('mode')) ? this.config.mode : this.mode;
+        this.mode = this.getNormalizedMode((this.config.hasOwnProperty('mode')) ? this.config.mode : this.mode);
         this.controller = (this.config.hasOwnProperty('controller')) ? this.config.controller: View.DEFAULT_CONTROLLER;
         this.order = (this.config.hasOwnProperty('order')) ? this.config.order : View.DEFAULT_ORDER;
         this.sort = (this.config.hasOwnProperty('sort')) ? this.config.sort : View.DEFAULT_SORT;
@@ -391,7 +391,8 @@ export class View {
             }
 
             if(this.view_schema.hasOwnProperty("mode")) {
-                this.mode = this.view_schema.mode;
+                this.mode = this.getNormalizedMode(this.view_schema.mode);
+                this.$container.attr('data-mode', this.mode);
             }
 
             if(this.view_schema.hasOwnProperty("exports")) {
@@ -1017,7 +1018,21 @@ export class View {
     }
 
     public setMode(mode: string) {
-        this.mode = mode;
+        this.mode = this.getNormalizedMode(mode);
+        this.$container.attr('data-mode', this.mode);
+    }
+
+    private getNormalizedMode(mode: string) {
+        if(this.type == 'chart' && ['chart', 'grid'].indexOf(mode) < 0) {
+            return 'chart';
+        }
+        else if(this.type == 'list' && ['view', 'edit'].indexOf(mode) < 0) {
+            return 'view';
+        }
+        else if(this.type == 'form' && ['view', 'edit'].indexOf(mode) < 0) {
+            return 'view';
+        }
+        return mode;
     }
 
     /**
