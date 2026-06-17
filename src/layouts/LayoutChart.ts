@@ -7,9 +7,23 @@ import { Domain, Clause, Condition, Reference } from "../Domain";
 import { DateReference } from "../equal-lib";
 import Chart from 'chart.js/auto';
 
+interface ChartLayoutConfig {
+    type: any;
+    stacked: boolean;
+    group_by: string;
+    field: string;
+    range_field?: string;
+    range_interval: string;
+    range_from: string;
+    range_to: string;
+    entity?: string;
+    datasets?: any[];
+    [key: string]: any;
+}
+
 
 export class LayoutChart extends Layout {
-    private config:any = {};
+    private config:ChartLayoutConfig = <ChartLayoutConfig> {};
     private parsed_datasets: any = {};
 
     public async init() {
@@ -109,20 +123,26 @@ export class LayoutChart extends Layout {
             controller = view_schema.controller;
         }
 
+        let params:any = {
+            get: controller,
+            type: this.config.type,
+            entity: this.config.entity,
+            group_by: this.config.group_by,
+            field: this.config.field,
+            range_interval: this.config.range_interval,
+            range_from: (new DateReference(this.config.range_from)).getDate().toISOString(),
+            range_to: (new DateReference(this.config.range_to)).getDate().toISOString(),
+            datasets: this.parsed_datasets,
+            mode: this.view.getMode(),
+            ...this.view.getParams()
+        };
+
+        if(this.config.range_field) {
+            params.range_field = this.config.range_field;
+        }
+
         try {
-            result = await ApiService.fetch('/', {
-                    get: controller,
-                    type: this.config.type,
-                    entity: this.config.entity,
-                    group_by: this.config.group_by,
-                    field: this.config.field,
-                    range_interval: this.config.range_interval,
-                    range_from: (new DateReference(this.config.range_from)).getDate().toISOString(),
-                    range_to: (new DateReference(this.config.range_to)).getDate().toISOString(),
-                    datasets: this.parsed_datasets,
-                    mode: this.view.getMode(),
-                    ...this.view.getParams()
-                });
+            result = await ApiService.fetch('/', params);
         }
         catch(response) {
             console.warn(response);
