@@ -112,6 +112,17 @@ export class _EnvService {
         }
     }
 
+    private getEnvValue(keys: string[], defaultValue: any = null): any {
+        if(this.environment) {
+            for(let key of keys) {
+                if(this.environment.hasOwnProperty(key)) {
+                    return this.environment[key];
+                }
+            }
+        }
+        return defaultValue;
+    }
+
     /**
      * #memo precision, thousand_sep and decimal_sep must be left empty by default : if not provided values are assigned from envinfo
      *
@@ -123,22 +134,22 @@ export class _EnvService {
      */
     public formatNumber(value: number, precision: number = -1, thousand_sep: string = '', decimal_sep: string = ''): string {
         if(precision == -1) {
-            precision = 0;
-            if(this.environment && this.environment.hasOwnProperty('core.locale.numbers.decimal_precision')) {
-                precision = this.environment['core.locale.numbers.decimal_precision'];
-            }
+            precision = this.getEnvValue([
+                'core.locale.numbers.decimal_precision',
+                'core.locale.number.decimal_precision'
+            ], 0);
         }
         if(thousand_sep == '') {
-            thousand_sep = ',';
-            if(this.environment && this.environment.hasOwnProperty('core.locale.numbers.thousands_separator')) {
-                thousand_sep = this.environment['core.locale.numbers.thousands_separator'];
-            }
+            thousand_sep = this.getEnvValue([
+                'core.locale.numbers.thousands_separator',
+                'core.locale.number.thousands_separator'
+            ], ',');
         }
         if(decimal_sep == '') {
-            decimal_sep = '.';
-            if(this.environment && this.environment.hasOwnProperty('core.locale.numbers.decimal_separator')) {
-                decimal_sep = this.environment['core.locale.numbers.decimal_separator'];
-            }
+            decimal_sep = this.getEnvValue([
+                'core.locale.numbers.decimal_separator',
+                'core.locale.number.decimal_separator'
+            ], '.');
         }
         // sanitize received value
         let n = Number(value)
@@ -163,9 +174,7 @@ export class _EnvService {
      * @returns
      */
     public formatFinancialNumber(value: number, precision: number = 2, thousand_sep: string = '', decimal_sep: string = ''): string {
-        if(this.environment && this.environment.hasOwnProperty('core.locale.currency.decimal_precision')) {
-            precision = this.environment['core.locale.currency.decimal_precision'];
-        }
+        precision = this.getEnvValue(['core.locale.currency.decimal_precision'], precision);
         return this.formatNumber(value, precision, thousand_sep, decimal_sep);
     }
 
@@ -180,12 +189,16 @@ export class _EnvService {
      */
     public formatCurrency(value: number, precision: number = 2, thousand_sep: string = '', decimal_sep: string = ''): string {
         let result = this.formatFinancialNumber(value, precision, thousand_sep, decimal_sep);
-        if(this.environment.hasOwnProperty('core.locale.currency')) {
-            if(this.environment.hasOwnProperty('core.locale.currency.symbol_position') && this.environment['core.locale.currency.symbol_position'] == 'before') {
-                result = this.environment['core.locale.currency'] + ' ' + result;
+        let symbol = this.getEnvValue([
+            'core.locale.currency',
+            'core.locale.currency.symbol'
+        ]);
+        if(symbol !== null) {
+            if(this.getEnvValue(['core.locale.currency.symbol_position']) == 'before') {
+                result = symbol + ' ' + result;
             }
             else {
-                result = result + ' ' + this.environment['core.locale.currency'];
+                result = result + ' ' + symbol;
             }
         }
         else {
