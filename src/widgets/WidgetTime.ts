@@ -15,7 +15,6 @@ export default class WidgetTime extends Widget {
     }
 
     public render(): JQuery {
-        // adaptIN - times are always UTC - (browser time offset is applied)
         let value: any = this.adaptIn(this.value ?? '');
 
         switch(this.mode) {
@@ -28,7 +27,6 @@ export default class WidgetTime extends Widget {
                 // #memo - not dealing with keydown is preferred to avoid confusion about special keys role
                 // #memo - we use 'change' event to cover float and integers changes with up and down buttons (same timeout)
                 this.$elem.find('input').on('change', (event: any) => {
-                    // adapt-OUT - times are always be UTC
                     const newValue = this.adaptOut();
                     if(this.value !== newValue) {
                         this.value = newValue;
@@ -69,39 +67,15 @@ export default class WidgetTime extends Widget {
     }
 
     /**
-     * Adapt UTC time (HH:mm[:ss]) to local time (HH:mm)
+     * Adapt backend time (HH:mm[:ss]) to view time (HH:mm).
      */
     private adaptIn(value: any): string {
         if(!value) {
             return '';
         }
 
-        const env = this.getLayout().getEnv();
-        const encoding = env?.['core.locale.time_encoding'] ?? 'frontend';
-
-        // normalize human time formats like "10h30", "10 h", "10 h 30"
-        // #memo - this format should never be provided here
-        value = value
-            .trim()
-            .toLowerCase()
-            .replace(/\s+/g, '')
-            .replace(/^(\d{1,2})h(\d{0,2})$/, (match: string, h: string, m: string) => {
-                    const hh = h.padStart(2, '0');
-                    const mm = m.padStart(2, '0');
-                    return `${hh}:${mm}`;
-                }
-            );
-
-        // Date object assumed UTC
         if(Object.prototype.toString.call(value) === '[object Date]') {
             const date = value as Date;
-            // frontend mode : adapt browser TZ → UTC
-             if(encoding === 'frontend') {
-                const h = date.getUTCHours().toString().padStart(2, '0');
-                const m = date.getUTCMinutes().toString().padStart(2, '0');
-                return `${h}:${m}`;
-             }
-            // backend mode : no timezone shift
             const h = date.getHours().toString().padStart(2, '0');
             const m = date.getMinutes().toString().padStart(2, '0');
             return `${h}:${m}`;
@@ -111,33 +85,15 @@ export default class WidgetTime extends Widget {
             return '';
         }
 
-        const parts = value.split(':').map(Number);
-        const h = parts[0] ?? 0;
-        const m = parts[1] ?? 0;
-        const s = parts[2] ?? 0;
+        const parts = this.normalizeTimeString(value).split(':');
+        const h = this.parseTimePart(parts[0]);
+        const m = this.parseTimePart(parts[1]);
 
-        // frontend mode : adapt browser TZ → UTC
-        if(encoding === 'frontend') {
-            const now = new Date();
-            const utcDate = new Date(Date.UTC(
-                now.getUTCFullYear(),
-                now.getUTCMonth(),
-                now.getUTCDate(),
-                h, m, s
-            ));
-
-            const lh = utcDate.getHours().toString().padStart(2, '0');
-            const lm = utcDate.getMinutes().toString().padStart(2, '0');
-
-            return `${lh}:${lm}`;
-        }
-
-        // backend mode : no adaptation
-        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+        return `${this.formatTimePart(h)}:${this.formatTimePart(m)}`;
     }
 
     /**
-     * Adapt local time (HH:mm) to UTC time (HH:mm:ss)
+     * Adapt view time (HH:mm) to backend time (HH:mm:ss).
      */
     private adaptOut(): string {
         const input = this.$elem?.find('input').val();
@@ -145,12 +101,16 @@ export default class WidgetTime extends Widget {
             return '';
         }
 
-        const env = this.getLayout().getEnv();
-        const encoding = env?.['core.locale.time_encoding'] ?? 'frontend';
+        const parts = this.normalizeTimeString(String(input)).split(':');
+        const h = this.parseTimePart(parts[0]);
+        const m = this.parseTimePart(parts[1]);
+        const s = this.parseTimePart(parts[2]);
 
-        let value = String(input);
+        return `${this.formatTimePart(h)}:${this.formatTimePart(m)}:${this.formatTimePart(s)}`;
+    }
 
-        value = value
+    private normalizeTimeString(value: string): string {
+        return value
             .trim()
             .toLowerCase()
             .replace(/\s+/g, '')
@@ -160,29 +120,15 @@ export default class WidgetTime extends Widget {
                     return `${hh}:${mm}`;
                 }
             );
+    }
 
-        const parts = value.split(':').map(Number);
-        const h = parts[0] ?? 0;
-        const m = parts[1] ?? 0;
-        const s = parts[2] ?? 0;
+    private parseTimePart(value: any): number {
+        const parsed = parseInt(value ?? '0', 10);
+        return Number.isNaN(parsed) ? 0 : parsed;
+    }
 
-        // frontend mode : adapt browser TZ → UTC
-        if(encoding === 'frontend') {
-            const localDate = new Date();
-            localDate.setHours(h, m, s, 0);
-
-            const uh = localDate.getUTCHours().toString().padStart(2, '0');
-            const um = localDate.getUTCMinutes().toString().padStart(2, '0');
-            const us = localDate.getUTCSeconds().toString().padStart(2, '0');
-
-            return `${uh}:${um}:${us}`;
-        }
-
-        // backend mode : no adaptation
-        const hh = h.toString().padStart(2, '0');
-        const mm = m.toString().padStart(2, '0');
-        const ss = s.toString().padStart(2, '0');
-        return `${hh}:${mm}:${ss}`;
+    private formatTimePart(value: number): string {
+        return value.toString().padStart(2, '0');
     }
 
 }
