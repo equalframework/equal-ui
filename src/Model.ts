@@ -173,7 +173,11 @@ export class Model {
             else if(type && ['time', 'date', 'datetime'].indexOf(type) > -1) {
                 result[field] = (object[field] && object[field].length) ? object[field] : 'null';
             }
-            else if(type && ['one2many', 'many2many'].indexOf(type) > -1) {
+            else if(type == 'one2many') {
+                // one2many relations are owned by the target object's foreign field.
+                continue;
+            }
+            else if(type == 'many2many') {
                 // #todo
                 result[field] = object[field];
             }
