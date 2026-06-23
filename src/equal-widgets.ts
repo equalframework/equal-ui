@@ -1,4 +1,4 @@
-import Widget from "./widgets/Widget";
+﻿import Widget from "./widgets/Widget";
 
 import WidgetBoolean from "./widgets/WidgetBoolean";
 import WidgetDate from "./widgets/WidgetDate";
@@ -264,6 +264,8 @@ class WidgetFactory {
             type = this.getTypeFromUsage(config.usage, type);
             console.debug('retrieved type from usage: ' + type);
         }
+
+        // #memo - type can still be overridden through `config = {...config, ...item.widget}`  (@see below)
         config.type = type;
 
         if(def.hasOwnProperty('foreign_object')) {
