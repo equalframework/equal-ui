@@ -198,21 +198,22 @@ export class LayoutChart extends Layout {
                 'rgb(201, 203, 207)',   // grey
                 'rgb(203, 101, 207)',   // violet
                 'rgb(153, 102, 255)',   // pink
-                'rgb(153, 102, 255)'    // darkgreen
+                'rgb(25, 100, 25)'      // darkgreen
             ];
 
             let datasets: any, options: any;
 
             if(['pie', 'doughnut', 'polarArea'].indexOf(this.config.type) >= 0) {
-                datasets = result.datasets.map( (a:any, index: number) => { return {label: (layout.datasets[index])?layout.datasets[index].label:'', data: a, backgroundColor: CHART_COLORS}; });
+                datasets = result.datasets.map( (a:any, index: number) => { return {label: (layout.datasets[index]) ? layout.datasets[index].label:'', data: a, backgroundColor: CHART_COLORS}; });
                 options = {
                     responsive: true,
                     maintainAspectRatio: false
                 };
             }
+            // bar, bubble, line, scatter, radar
             else {
                 datasets = result.datasets.map( (a:any, index: number) => { return {
-                        label: (result.legends && result.legends[index])? result.legends[index] : ((layout.datasets[index])?layout.datasets[index].label:''),
+                        label: (result.legends && result.legends[index])? result.legends[index] : ((layout.datasets[index]) ? layout.datasets[index].label:''),
                         data: a,
                         backgroundColor: CHART_COLORS[index%10]
                     }; });
