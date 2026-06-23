@@ -1253,6 +1253,25 @@ export class View {
             }
         }
 
+        for(const actions of [view_schema.header?.actions, this.config.header?.actions]) {
+            if(typeof actions !== 'object' || actions === null) {
+                continue;
+            }
+            for(const action of Object.values(actions)) {
+                for(const item of (Array.isArray(action) ? action : [action])) {
+                    if(typeof item !== 'object' || item === null) {
+                        continue;
+                    }
+                    processNode(item);
+                    for(const mode of ['view', 'edit', 'create', 'update']) {
+                        if(item[mode] && Array.isArray(item[mode])) {
+                            this.extractFieldsFromDomain(item[mode]).forEach( (f: string) => {this.view_fields[f] = {type: 'field', value: f};});
+                        }
+                    }
+                }
+            }
+        }
+
         if(view_schema.hasOwnProperty('layout')) {
             stack.push(view_schema['layout']);
             const path = ['groups', 'sections', 'rows', 'columns'];
@@ -2255,9 +2274,9 @@ export class View {
             header_actions['ACTION.CANCEL'] = default_header_actions['ACTION.CANCEL'];
         }
 
-        let has_action_save = !header_actions_disabled && this.isActionEnabled(header_actions['ACTION.SAVE'], this.mode);
-        let has_action_cancel = !header_actions_disabled && this.isActionEnabled(header_actions['ACTION.CANCEL'], this.mode);
-        let has_action_update = !header_actions_disabled && this.isActionEnabled(this.config?.header?.actions?.['ACTION.EDIT'] ?? true, this.mode);
+        let has_action_save = !header_actions_disabled && header_actions['ACTION.SAVE'] !== false && (!Array.isArray(header_actions['ACTION.SAVE']) || header_actions['ACTION.SAVE'].length > 0);
+        let has_action_cancel = !header_actions_disabled && header_actions['ACTION.CANCEL'] !== false && (!Array.isArray(header_actions['ACTION.CANCEL']) || header_actions['ACTION.CANCEL'].length > 0);
+        let has_action_update = !header_actions_disabled && (this.config?.header?.actions?.['ACTION.EDIT'] ?? true) !== false && (!Array.isArray(this.config?.header?.actions?.['ACTION.EDIT']) || this.config.header.actions['ACTION.EDIT'].length > 0);
 
         // overlay to cover the buttons and prevent additional click while action is processing
         let $disable_overlay = $('<div />').addClass('disable-overlay');
@@ -2266,9 +2285,7 @@ export class View {
         switch(this.mode) {
             case 'view':
                 if(has_action_update && header_layout === 'full') {
-                    $std_actions
-                    .append(
-                        UIHelper.createButton(this.uuid + '_action-edit', TranslationService.instant('SB_ACTIONS_BUTTON_UPDATE'), 'raised')
+                    let $edit_button = UIHelper.createButton(this.uuid + '_action-edit', TranslationService.instant('SB_ACTIONS_BUTTON_UPDATE'), 'raised')
                         .on('click', async () => {
                             // #todo - allow overloading default action controller ('ACTION.EDIT')
                             await this.openContext({
@@ -2276,8 +2293,13 @@ export class View {
                                 // for UX consistency, inject current view widget context (currently selected tabs, ...)
                                 selected_sections: this.layout.getSelectedSections()
                             });
-                        })
-                    );
+                        });
+
+                    if(!this.isActionEnabled(this.config?.header?.actions?.['ACTION.EDIT'] ?? true, this.mode, {}, true)) {
+                        $edit_button.hide();
+                    }
+
+                    $std_actions.append($edit_button);
                 }
                 break;
             case 'edit':
@@ -2515,11 +2537,11 @@ export class View {
                     });
                 }
 
-                if(!has_action_save) {
+                if(!has_action_save || !this.isActionEnabled(header_actions['ACTION.SAVE'], this.mode)) {
                     $save_button.hide();
                 }
 
-                if(!has_action_cancel) {
+                if(!has_action_cancel || !this.isActionEnabled(header_actions['ACTION.CANCEL'], this.mode)) {
                     $cancel_button.hide();
                 }
 
@@ -2531,6 +2553,47 @@ export class View {
 
         // attach elements to header toolbar
         this.$headerContainer.append( $elem );
+    }
+
+    public refreshFormHeaderActions(object: any = {}) {
+        if(this.type !== 'form') {
+            return;
+        }
+
+        const header_actions_disabled = ( typeof this.config.header?.actions === 'boolean' && !this.config.header.actions );
+        if(header_actions_disabled) {
+            return;
+        }
+
+        const default_header_actions: any = {
+            "ACTION.EDIT":     [],
+            "ACTION.SAVE":     [ {"id": "SAVE_AND_CLOSE"} ],
+            "ACTION.CANCEL":   [ {"id": "CANCEL_AND_CLOSE"} ]
+        };
+
+        const header_actions: any = {
+            "ACTION.EDIT":     this.config?.header?.actions?.['ACTION.EDIT'] ?? true,
+            "ACTION.SAVE":     this.custom_actions.hasOwnProperty('ACTION.SAVE') ? this.custom_actions['ACTION.SAVE'] : default_header_actions['ACTION.SAVE'],
+            "ACTION.CANCEL":   this.custom_actions.hasOwnProperty('ACTION.CANCEL') ? this.custom_actions['ACTION.CANCEL'] : default_header_actions['ACTION.CANCEL']
+        };
+
+        if(this.mode === 'view') {
+            const $edit_button = this.$headerContainer.find('#' + this.uuid + '_action-edit');
+            if($edit_button.length) {
+                this.isActionEnabled(header_actions['ACTION.EDIT'], this.mode, object, true) ? $edit_button.show() : $edit_button.hide();
+            }
+        }
+        else if(this.mode === 'edit') {
+            const $save_button = this.$headerContainer.find('#' + this.uuid + '_action-save');
+            if($save_button.length) {
+                this.isActionEnabled(header_actions['ACTION.SAVE'], this.mode, object) ? $save_button.show() : $save_button.hide();
+            }
+
+            const $cancel_button = this.$headerContainer.find('#' + this.uuid + '_action-cancel');
+            if($cancel_button.length) {
+                this.isActionEnabled(header_actions['ACTION.CANCEL'], this.mode, object) ? $cancel_button.show() : $cancel_button.hide();
+            }
+        }
     }
 
 
@@ -3640,9 +3703,8 @@ export class View {
      * @see https://doc.equal.run/usage/views/lists/#actions
      * #isVisible #isActionVisible
      */
-    private isActionEnabled(action: any, mode: string): boolean {
-        // #todo - these are actions in header - find a way to inject current object for form views
-        console.debug("View::isActionEnabled - evaluating action", action, mode);
+    private isActionEnabled(action: any, mode: string, object: any = {}, default_view_enabled: boolean = false): boolean {
+        console.debug("View::isActionEnabled - evaluating action", action, mode, object);
         // direct boolean (visibility)
         if(typeof action === 'boolean') {
             return action;
@@ -3664,7 +3726,7 @@ export class View {
                 else if(Array.isArray(action.visible)) {
                     // visibility domain
                     let domain = new Domain(action.visible);
-                    if(!domain.evaluate({}, this.getUser(), {}, this.getEnv())) {
+                    if(!domain.evaluate(object, this.getUser(), {}, this.getEnv())) {
                         return false;
                     }
                 }
@@ -3678,12 +3740,12 @@ export class View {
                 // visibility domain
                 else if(Array.isArray(action[mode])) {
                     let domain = new Domain(action[mode]);
-                    return domain.evaluate({}, this.getUser(), {}, this.getEnv());
+                    return domain.evaluate(object, this.getUser(), {}, this.getEnv());
                 }
                 return false;
             }
             else if(mode === 'view') {
-                return false;
+                return default_view_enabled;
             }
             return true;
         }

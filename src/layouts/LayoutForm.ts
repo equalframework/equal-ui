@@ -267,6 +267,7 @@ export class LayoutForm extends Layout {
             let object: any = objects[0];
 
             this.view.setActiveObjectId(object.id);
+            this.view.refreshFormHeaderActions(object);
 
             // update actions in view header
             let $view_actions = this.view.getContainer().find('.sb-view-header-actions-view').first().empty();
