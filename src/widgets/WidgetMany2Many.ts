@@ -180,7 +180,7 @@ export default class WidgetMany2Many extends Widget {
                     if(this.config.header?.actions?.hasOwnProperty('ACTION.SELECT')) {
                         if( Array.isArray(this.config.header.actions['ACTION.SELECT']) ) {
                             let item = this.config.header.actions['ACTION.SELECT'][0];
-                            if(item.hasOwnProperty('domain')) {
+                            if(typeof item === 'object' && item !== null && item.hasOwnProperty('domain')) {
                                 let tmpDomain = new Domain(domain);
                                 tmpDomain.merge(new Domain(item.domain));
                                 domain = tmpDomain.toArray();
@@ -331,7 +331,7 @@ export default class WidgetMany2Many extends Widget {
         }
         if(Array.isArray(action)) {
             if(action.length <= 0) {
-                return false;
+                return true;
             }
             action = action[0];
         }
@@ -359,9 +359,6 @@ export default class WidgetMany2Many extends Widget {
                     let domain = new Domain(action[mode]);
                     return domain.evaluate({}, user, {}, env);
                 }
-                return false;
-            }
-            else if(mode === 'view') {
                 return false;
             }
             return true;
