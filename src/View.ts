@@ -909,7 +909,7 @@ export class View {
      */
     public triggerAction(action: string) {
         console.debug('View::triggerAction - received action: ' + action, this);
-        if(action == 'ACTION.SELECT') {
+        if(action === 'ACTION.SELECT') {
             let target = this.$headerContainer.find('#' + this.uuid + '_action-add').first();
 
             if(!target.length) {
@@ -920,13 +920,13 @@ export class View {
                 target.trigger('click');
             }
         }
-        else if(action == 'ACTION.EDIT') {
-            if(this.mode == 'view') {
+        else if(action === 'ACTION.EDIT') {
+            if(this.mode === 'view') {
                 this.$headerContainer.find('#' + this.uuid + '_action-edit').first().trigger('click');
             }
         }
-        else if(action == 'ACTION.SAVE') {
-            if(this.mode == 'edit') {
+        else if(action === 'ACTION.SAVE') {
+            if(this.mode === 'edit') {
                 // retrieve the first button amongst the view actions and trigger a click
                 let $saveButton = this.$headerContainer.find('#' + this.uuid + '_action-save').first();
                 // blur any active input (in order to trigger `_updatedWidget`)
@@ -937,7 +937,7 @@ export class View {
                 }, 250);
             }
         }
-        else if(action == 'ACTION.CANCEL') {
+        else if(action === 'ACTION.CANCEL') {
             // retrieve the first button amongst the view actions and trigger a click
             this.$headerContainer.find('#' + this.uuid + '_action-cancel').first().trigger('click');
         }
@@ -1364,15 +1364,15 @@ export class View {
         let $view_actions = $('<div />').addClass('sb-view-header-actions-view').appendTo($actions_set);
 
         // assign select & create default behavior
-        let has_action_select = false;
-        let has_action_create = (this.mode === 'view') ? false : (this.type === 'list' && (this.purpose !== 'widget' || this.mode === 'edit'));
+        let has_action_select = this.purpose === 'add' || this.purpose === 'select';
+        let has_action_create = ['list', 'cards'].indexOf(this.type) >= 0 && (this.purpose !== 'widget' || this.mode === 'edit');
         let has_action_create_inline = (this.mode === 'view') ? false : (header_layout === 'inline' && !header_actions_disabled);
 
         if(this.custom_actions.hasOwnProperty('ACTION.SELECT')) {
-            has_action_select = this.isActionEnabled(this.custom_actions['ACTION.SELECT'], this.mode);
+            has_action_select = this.isActionEnabled(this.custom_actions['ACTION.SELECT'], this.mode, {}, has_action_select);
         }
         if(this.custom_actions.hasOwnProperty('ACTION.CREATE') && !header_actions_disabled) {
-            has_action_create = this.isActionEnabled(this.custom_actions['ACTION.CREATE'], this.mode);
+            has_action_create = this.isActionEnabled(this.custom_actions['ACTION.CREATE'], this.mode, {}, true);
             if(!has_action_create) {
                 // explicit disabling of create implies no create_inline as well
                 has_action_create_inline = false;
@@ -2276,7 +2276,7 @@ export class View {
 
         let has_action_save = !header_actions_disabled && header_actions['ACTION.SAVE'] !== false && (!Array.isArray(header_actions['ACTION.SAVE']) || header_actions['ACTION.SAVE'].length > 0);
         let has_action_cancel = !header_actions_disabled && header_actions['ACTION.CANCEL'] !== false && (!Array.isArray(header_actions['ACTION.CANCEL']) || header_actions['ACTION.CANCEL'].length > 0);
-        let has_action_update = !header_actions_disabled && (this.config?.header?.actions?.['ACTION.EDIT'] ?? true) !== false && (!Array.isArray(this.config?.header?.actions?.['ACTION.EDIT']) || this.config.header.actions['ACTION.EDIT'].length > 0);
+        let has_action_update = !header_actions_disabled && this.isActionEnabled(this.config?.header?.actions?.['ACTION.EDIT'] ?? true, this.mode, {}, true);
 
         // overlay to cover the buttons and prevent additional click while action is processing
         let $disable_overlay = $('<div />').addClass('disable-overlay');
@@ -3712,7 +3712,7 @@ export class View {
         // array of descriptors
         if(Array.isArray(action)) {
             if(action.length <= 0) {
-                return false;
+                return true;
             }
             action = action[0];
         }
