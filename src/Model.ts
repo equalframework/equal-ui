@@ -161,6 +161,9 @@ export class Model {
             if(!object.hasOwnProperty(field)) {
                 continue;
             }
+            if(schema[field]?.readonly === true) {
+                continue;
+            }
             let type: string | null = this.getFinalType(field);
             if(type == 'many2one') {
                 if(typeof object[field] == 'object' && object[field]) {
@@ -174,8 +177,14 @@ export class Model {
                 result[field] = (object[field] && object[field].length) ? object[field] : 'null';
             }
             else if(type == 'one2many') {
-                // one2many relations are owned by the target object's foreign field.
-                continue;
+                // one2many additions are owned by the target object's foreign field.
+                // Negative ids are kept because the ORM interprets them as detach requests.
+                if(Array.isArray(object[field])) {
+                    const ids_to_detach = object[field].filter((id: number) => id < 0);
+                    if(ids_to_detach.length) {
+                        result[field] = ids_to_detach;
+                    }
+                }
             }
             else if(type == 'many2many') {
                 // #todo
@@ -300,11 +309,16 @@ export class Model {
                 if(object.hasOwnProperty('id') && object.id == id) {
                     for(let field in values) {
                         if(schema.hasOwnProperty(field)) {
+                            // update field
+                            this.objects[index][field] = values[field];
+
+                            if(schema[field]?.readonly === true) {
+                                continue;
+                            }
+
                             if(!this.has_changed.hasOwnProperty(id)) {
                                 this.has_changed[id] = [];
                             }
-                            // update field
-                            this.objects[index][field] = values[field];
                             // mark field as changed
                             this.has_changed[id].push(field);
                         }

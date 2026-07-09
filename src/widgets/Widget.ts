@@ -226,6 +226,9 @@ export default class Widget {
             case 'float':
                 return Widget.formatFloat(value, usage);
         }
+        if(value === null || value === undefined) {
+            return '';
+        }
         return String(value);
     }
 
@@ -258,8 +261,8 @@ export default class Widget {
 
     private static formatInteger(value: any, usage?: string | null): string {
         let result: string = '';
-        if(value) {
-            let parsedValue = Number(value);
+        let parsedValue = Number(value);
+        if(value !== null && value !== undefined && value !== '' && !Number.isNaN(parsedValue)) {
             result = parsedValue.toFixed(0);
         }
         return result;

@@ -64,31 +64,45 @@ export class _ApiService {
      * schemas methods
      */
     private loadSchema(entity: string, domain: any[]) {
-        var package_name = EntityHelper.getPackageName(entity);
-        var class_name = EntityHelper.getClassName(entity);
+        const entity_parts = entity.split('\\');
+        const file = entity_parts.pop() || '';
+        const is_controller_entity = /^[a-z]/.test(file);
 
-        if(typeof(this.schemas[package_name]) == 'undefined'
-        || typeof(this.schemas[package_name][class_name]) == 'undefined') {
-            if(typeof(this.schemas[package_name]) == 'undefined') {
-                this.schemas[package_name] = {};
-            }
-            this.schemas[package_name][class_name] = $.Deferred();
+        const requestSchema = () => {
+            const deferred = $.Deferred();
 
             EnvService.getEnv().then( (environment:any) => {
                 $.get({
                     url: environment.backend_url + '?get=model_schema&entity=' + entity + '&domain=' + JSON.stringify(domain)
                 })
                 .then( (json_data) => {
-                    this.schemas[package_name][class_name].resolve(json_data);
+                    deferred.resolve(json_data);
                 })
                 .catch( (response:any) => {
                     console.debug('ApiService::loadSchema error', response.responseJSON);
-                    this.schemas[package_name][class_name].resolve({});
+                    deferred.resolve({});
                 });
-            })
+            });
 
+            return deferred;
+        };
+
+        if(is_controller_entity) {
+            return requestSchema();
         }
-       return this.schemas[package_name][class_name];
+
+        var package_name = EntityHelper.getPackageName(entity);
+        var class_name = EntityHelper.getClassName(entity);
+
+        if(typeof(this.schemas[package_name]) == 'undefined') {
+            this.schemas[package_name] = {};
+        }
+
+        if(typeof(this.schemas[package_name][class_name]) == 'undefined') {
+            this.schemas[package_name][class_name] = requestSchema();
+        }
+
+        return this.schemas[package_name][class_name];
     }
 
     // the view_id matches the following convention : view_type.view_name

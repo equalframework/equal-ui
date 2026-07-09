@@ -30,7 +30,7 @@ export class LayoutDashboard extends Layout {
             this.layout();
         }
         // feed layout (render widgets)
-        this.feed([]);
+        await this.feed([]);
     }
 
     /**
@@ -213,8 +213,8 @@ export class LayoutDashboard extends Layout {
             if(!widget) continue;
 
             let $parent = this.$layout.find('#'+widget.getId()).parent();
-            // $parent.empty().append(widget.render());
-            $parent.append(widget.render());
+            $parent.empty().append(widget.render());
+            // $parent.append(widget.render());
         }
     }
 

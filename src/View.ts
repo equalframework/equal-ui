@@ -1133,12 +1133,12 @@ export class View {
 
     public getParams() {
         return {
+            ...this.params,
             lang:   this.getLang(),
             order:  this.getOrder(),
             sort:   this.getSort(),
             start:  this.getStart(),
-            limit:  this.getLimit(),
-            ...this.params
+            limit:  this.getLimit()
         };
     }
 

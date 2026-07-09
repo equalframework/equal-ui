@@ -15,6 +15,9 @@ export default class WidgetString extends Widget {
      */
     public change(value: any) {
         console.log('WidgetString::change', value, this);
+        if(value === null || value === undefined) {
+            value = '';
+        }
         if(typeof value == 'string') {
             value = value.replace(/"/g, "&quot;");
         }
@@ -34,7 +37,7 @@ export default class WidgetString extends Widget {
     }
 
     public render(): JQuery {
-        let value: any = (typeof this.value != undefined && this.value != undefined) ? this.value : '';
+        let value: any = (this.value !== null && this.value !== undefined) ? this.value : '';
         let usage = (this.config.hasOwnProperty('usage')) ? this.config.usage : '';
 
         const debugPopoversEnabled = this.mode === 'view' && this.getLayout().getView().getEnv()?.debug;

@@ -32,7 +32,15 @@ export default class WidgetInteger extends WidgetString {
             });
         }
         else if(this.mode == 'view') {
+            const value = this.toString();
+
             // for lists, item is a DIV
+            if(this.config.layout == 'list') {
+                this.$elem.html(value);
+            }
+            else {
+                $input.val(value);
+            }
             this.$elem.css({'text-align': this.config.align});
         }
 
