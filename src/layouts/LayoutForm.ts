@@ -633,14 +633,14 @@ export class LayoutForm extends Layout {
                                 };
                                 // for `file` widgets, we relay only meta instead of full binary data (see below)
                                 if(['file', 'binary', 'upload', 'image'].includes(widget.getType())) {
-                                    if(this.view.getModelFields()[field]?.readonly !== true) {
+                                    if(this.view.getModelFields()[field]?.readonly !== true || object.state === 'draft') {
                                         params.changes[field] = widget.getMeta();
                                     }
                                     params.values = this.getOnchangeValues(object);
                                 }
                                 else {
                                     const [current_object = object] = await this.view.getModel().get([object.id]);
-                                    params.changes = this.view.getModel().export(values);
+                                    params.changes = this.view.getModel().export(values, current_object);
                                     params.values  = this.getOnchangeValues(current_object);
                                 }
 

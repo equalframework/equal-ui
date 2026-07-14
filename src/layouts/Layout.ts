@@ -129,12 +129,14 @@ export class Layout implements LayoutInterface{
     public checkRequiredFields(): boolean {
         if(this.view.getMode() == 'edit') {
             let msg = TranslationService.instant('SB_ERROR_MISSING_MANDATORY');
+            const active_object = this.view.getModel().find(this.view.getActiveObjectId());
+            const is_draft = active_object?.state === 'draft';
             for(let object_id in this.model_widgets) {
                 let widgets = this.model_widgets[object_id];
                 for(let field in widgets) {
                     let widget = widgets[field];
                     let config = widget.getConfig();
-                    if(config.hasOwnProperty('required') && config.required) {
+                    if(config.hasOwnProperty('required') && config.required && !is_draft) {
                         let value = widget.getValue();
                         if(config.type == 'many2one' && config.hasOwnProperty('object_id')) {
                             value = config.object_id;

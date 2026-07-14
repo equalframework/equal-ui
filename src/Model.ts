@@ -149,7 +149,7 @@ export class Model {
         return (Object.keys(this.has_changed).length > 0);
     }
 
-    public export(object: any) {
+    public export(object: any, context: any = object) {
         console.debug('Model::export', object);
         let result: any = {};
         let schema = this.view.getModelFields();
@@ -164,7 +164,7 @@ export class Model {
             if(field == 'state' && object[field] == 'draft') {
                 continue;
             }
-            if(schema[field]?.readonly === true) {
+            if(schema[field]?.readonly === true && context.state !== 'draft') {
                 continue;
             }
             let type: string | null = this.getFinalType(field);
@@ -315,7 +315,7 @@ export class Model {
                             // update field
                             this.objects[index][field] = values[field];
 
-                            if(schema[field]?.readonly === true) {
+                            if(schema[field]?.readonly === true && object.state !== 'draft') {
                                 continue;
                             }
 
@@ -355,6 +355,10 @@ export class Model {
             return [];
         }
         return this.objects.map( (object:any) => object.id );
+    }
+
+    public find(id: number) {
+        return this.objects.find((object: any) => object.id == id);
     }
 
     /**

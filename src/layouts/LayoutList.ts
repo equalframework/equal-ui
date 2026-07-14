@@ -1478,7 +1478,7 @@ export class LayoutList extends Layout {
                 const result = await ApiService.call('?do=model_onchange', {
                         entity: this.view.getEntity(),
                         view_id: this.view.getId(),
-                        changes: this.view.getModel().export(values),
+                        changes: this.view.getModel().export(values, object),
                         values: this.view.getModel().export(object),
                         lang: this.view.getLang()
                     });
