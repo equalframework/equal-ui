@@ -175,15 +175,28 @@ export default class WidgetMany2Many extends Widget {
                 }
 
                 if(has_action_select) {
-                    let domain: any[] = (new Domain(this.config.domain)).toArray();
+                    let view_type = 'list';
+                    let view_name = 'default';
+                    let configDomain = new Domain(this.config.domain);
+                    let domain: any[] = configDomain.toArray();
 
                     if(this.config.header?.actions?.hasOwnProperty('ACTION.SELECT')) {
                         if( Array.isArray(this.config.header.actions['ACTION.SELECT']) ) {
                             let item = this.config.header.actions['ACTION.SELECT'][0];
-                            if(typeof item === 'object' && item !== null && item.hasOwnProperty('domain')) {
-                                let tmpDomain = new Domain(domain);
-                                tmpDomain.merge(new Domain(item.domain));
-                                domain = tmpDomain.toArray();
+                            if(typeof item === 'object' && item !== null) {
+                                if(item.hasOwnProperty('view_id')) {
+                                    let parts = item.view_id.split('.');
+                                    if(parts.length) {
+                                        view_type = <string> parts.shift();
+                                    }
+                                    if(parts.length) {
+                                        view_name = <string> parts.shift();
+                                    }
+                                }
+                                if(item.hasOwnProperty('domain')) {
+                                    configDomain.merge(new Domain(item.domain));
+                                    domain = configDomain.toArray();
+                                }
                             }
                         }
                     }
@@ -204,8 +217,8 @@ export default class WidgetMany2Many extends Widget {
                             let purpose = (this.rel_type == 'many2many') ? 'add' : 'select';
                             let context_config: any = {
                                 entity: this.config.entity,
-                                type: 'list',
-                                name: 'default',
+                                type: view_type,
+                                name: view_name,
                                 domain: domain,
                                 mode: 'view',
                                 purpose: purpose,
