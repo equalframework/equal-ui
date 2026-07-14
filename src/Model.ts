@@ -161,6 +161,9 @@ export class Model {
             if(!object.hasOwnProperty(field)) {
                 continue;
             }
+            if(field == 'state' && object[field] == 'draft') {
+                continue;
+            }
             if(schema[field]?.readonly === true) {
                 continue;
             }
