@@ -145,6 +145,8 @@ export default class WidgetMany2Many extends Widget {
             view.isReady().then( () => {
                 let $container = view.getContainer();
 
+                const action_select = this.config.header?.actions?.['ACTION.SELECT'];
+
                 // default values
                 let has_action_select: boolean = (this.mode === 'edit') && (this.rel_type === 'many2many');
                 let has_action_create: boolean = (this.mode === 'edit');
@@ -152,8 +154,8 @@ export default class WidgetMany2Many extends Widget {
                 // override with view schema
                 if(this.config.header?.hasOwnProperty('actions')) {
                     // #memo - adding `select` for a one2many is generally meaningless, since a child can only be linked to a single parent
-                    if(this.config.header.actions?.hasOwnProperty('ACTION.SELECT')) {
-                        has_action_select = this.isActionEnabled(this.config.header.actions['ACTION.SELECT'], this.mode);
+                    if(action_select !== undefined) {
+                        has_action_select = this.isActionEnabled(action_select, this.mode);
                     }
                     if(this.config.header.actions?.hasOwnProperty('ACTION.CREATE')) {
                         has_action_create = this.isActionEnabled(this.config.header.actions['ACTION.CREATE'], this.mode);
@@ -169,8 +171,9 @@ export default class WidgetMany2Many extends Widget {
                     $actions_set = $container.find('.sb-view-header-list-navigation');
                 }
 
-                // #memo - for m2m, selection is only available in edit mode (it has no effect if parent is not saved)
-                if(this.rel_type === 'many2many' && this.mode !== 'edit') {
+                // #memo - for m2m, selection is only available in edit mode by default.
+                // It can still be forced for a specific mode through header.actions, e.g. {"view": true}.
+                if(this.rel_type === 'many2many' && this.mode !== 'edit' && !this.isActionForcedForMode(action_select, this.mode)) {
                     has_action_select = false;
                 }
 
@@ -379,4 +382,16 @@ export default class WidgetMany2Many extends Widget {
         return false;
     }
 
+    private isActionForcedForMode(action: any, mode: string): boolean {
+        if(Array.isArray(action)) {
+            if(action.length <= 0) {
+                return false;
+            }
+            action = action[0];
+        }
+        if(typeof action !== 'object' || action === null || !action.hasOwnProperty(mode)) {
+            return false;
+        }
+        return this.isActionEnabled(action, mode);
+    }
 }
