@@ -136,33 +136,37 @@ export class LayoutList extends Layout {
         // pre-processing: check columns width consistency
         let item_width_total = 0;
 
-        // 1) sum total width and items with null width
-        for(let item of view_schema.layout.items) {
+        // consider only visible items
+        const width_items = view_schema.layout.items.filter((item: any) => {
             if(!item.hasOwnProperty('value')) {
-                continue;
+                return false;
             }
             let field = item.value;
             if(!(model_fields[field] ?? false)) {
-                continue;
+                return false;
             }
-            if(!item.hasOwnProperty('visible') || item.visible) {
-                // set minimum width to 10%
-                let width = 10;
-                if(item.hasOwnProperty('width')) {
-                    width = Math.round(parseInt(item.width, 10) * 100) / 100.0;
-                    if(width < 10) {
-                        width = 10;
-                    }
+            let config = WidgetFactory.getWidgetConfig(this.view, field, translation, model_fields, view_fields);
+            return !!config && (!config.hasOwnProperty('visible') || (!!config.visible && config.visible !== 'false'));
+        });
+
+        // 1) sum total width and items with null width
+        for(let item of width_items) {
+            // set minimum width to 10%
+            let width = 10;
+            if(item.hasOwnProperty('width')) {
+                width = Math.round(parseInt(item.width, 10) * 100) / 100.0;
+                if(width < 10) {
+                    width = 10;
                 }
-                item.width = width;
-                item_width_total += width;
             }
+            item.width = width;
+            item_width_total += width;
         }
         // 2) normalize columns widths (to be exactly 100%)
-        if(item_width_total != 100) {
+        if(item_width_total > 0 && item_width_total != 100) {
             let ratio = 100.0 / item_width_total;
-            for(let item of view_schema.layout.items) {
-                if( (!item.hasOwnProperty('visible') || item.visible) && item.hasOwnProperty('width')) {
+            for(let item of width_items) {
+                if(item.hasOwnProperty('width')) {
                     item.width *= ratio;
                 }
             }
