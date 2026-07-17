@@ -385,8 +385,8 @@ export class View {
                 }
             }
 
-            // override of default controller
-            if(this.view_schema.hasOwnProperty("controller")) {
+            // override of default controller, unless an explicit controller was provided by config
+            if(this.view_schema.hasOwnProperty("controller") && !this.config.hasOwnProperty("controller")) {
                 this.controller = this.view_schema.controller;
             }
 
