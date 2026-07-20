@@ -65,6 +65,18 @@ export class Layout implements LayoutInterface{
 
     protected async feed(objects: any) {}
 
+    protected getOnchangeValues(object: any) {
+        const values = this.view.getModel().export(object);
+
+        // id is not an updatable field, so Model.export() excludes it.
+        // For onchange calls it is still useful context for the backend.
+        if(object.hasOwnProperty('id')) {
+            values.id = object.id;
+        }
+
+        return values;
+    }
+
     public getUuid() {
         return this.uuid;
     }

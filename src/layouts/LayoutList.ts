@@ -1483,7 +1483,7 @@ export class LayoutList extends Layout {
                         entity: this.view.getEntity(),
                         view_id: this.view.getId(),
                         changes: this.view.getModel().export(values, object),
-                        values: this.view.getModel().export(object),
+                        values: this.getOnchangeValues(object),
                         lang: this.view.getLang()
                     });
 

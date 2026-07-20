@@ -233,18 +233,6 @@ export class LayoutForm extends Layout {
         this.$layout.append($elem);
     }
 
-    protected getOnchangeValues(object: any) {
-        const values = this.view.getModel().export(object);
-
-        // `id` is not an updatable field, so Model.export() excludes it.
-        // For onchange calls it is still useful context for the backend.
-        if(object.hasOwnProperty('id')) {
-            values.id = object.id;
-        }
-
-        return values;
-    }
-
     protected async feed(objects: any) {
         console.debug('LayoutForm::feed', objects);
         // display the first object from the collection
