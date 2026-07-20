@@ -528,6 +528,7 @@ body > .header-view-details-popup .header-view-details-body div {
     /* #memo - do not use display none, to preserve top padding */
     /* #memo - inline layout does not imply no actions on view */
     /* visibility: hidden; */
+    /* #memo - there is an exception for .sb-view-dashboard-row (see below)*/
 }
 
 .sb-view-header-list-actions button {
@@ -867,12 +868,16 @@ body > .header-view-details-popup .header-view-details-body div {
     box-sizing: content-box;
 }
 
+.sb-view-dashboard-row .mdc-layout-grid__cell {
+    overflow: hidden !important;
+}
+
 .sb-view-dashboard-row .sb-view-dashboard-cell-title {
     position: absolute;
     font-weight: 500;
     width: 100%;
     text-align: left;
-    margin-top: -10px;
+    margin-top: -5px;
 }
 
 .sb-view-form-group {
