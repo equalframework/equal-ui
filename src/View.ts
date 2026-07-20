@@ -1430,8 +1430,25 @@ export class View {
                                         }
                                     }
                                 }
+
+                                const contextConfig: any = {
+                                    entity: this.entity,
+                                    type: view_type,
+                                    name: view_name,
+                                    domain: domain,
+                                    mode: 'edit',
+                                    purpose: 'create'
+                                };
+
+                                if(this.purpose === 'widget' && this.config?.type === 'one2many' && this.getContext().getMode() === 'edit') {
+                                    // #memo - refresh is made for context at Frame level in 'view' mode
+                                    contextConfig.callback = async (data: any) => {
+                                        await this.onchangeView();
+                                    };
+                                }
+
                                 // request a new Context for editing a new object
-                                await this.openContext({entity: this.entity, type: view_type, name: view_name, domain: domain, mode: 'edit', purpose: 'create'});
+                                await this.openContext(contextConfig);
                             }
                             catch(response) {
                                 try {
@@ -1458,11 +1475,7 @@ export class View {
                         $createActionButton.on('click', async () => {
                             console.debug('layoutListHeader::inline $createActionButton.on(click)');
                             try {
-                                /*
-                                    créer un objet et le charger
-                                    ajouter une ligne en tête de liste
-                                    passer la ligne en mode edit
-                                */
+                                // creates a new object; loads it; prepend a line to the list; and switch line to edit mode
                                 await this.actionCreateInline();
                             }
                             catch(response) {
