@@ -711,7 +711,7 @@ export class View {
 
             }
 
-            const header_layout = ( (this.config.header?.layout ?? 'full') === 'inline') ? 'inline' : 'full';
+            const header_layout = this.getHeaderLayout();
             this.$container.addClass('header-' + header_layout);
 
             if(['list', 'cards'].indexOf(this.type) >= 0) {
@@ -1035,6 +1035,20 @@ export class View {
         return mode;
     }
 
+    private getHeaderLayout(): string {
+        return ((this.config.header?.layout ?? 'full') === 'inline') ? 'inline' : 'full';
+    }
+
+    private getPaginationLayout(header_layout: string): string {
+        const pagination = this.config.header?.pagination ?? null;
+
+        if(['full', 'compact', 'none'].indexOf(pagination) >= 0) {
+            return pagination;
+        }
+
+        return (header_layout === 'full') ? 'full' : 'compact';
+    }
+
     /**
      * Arbitrary mark parent context as changed (for requesting it to refresh parent contexts when view closes)
      */
@@ -1345,7 +1359,8 @@ export class View {
             </div>'
         );
 
-        const header_layout = ( (this.config.header?.layout ?? 'full') === 'inline') ? 'inline' : 'full';
+        const header_layout = this.getHeaderLayout();
+        const pagination_layout = this.getPaginationLayout(header_layout);
         const header_actions_disabled = ( typeof this.config.header?.actions === 'boolean' && !this.config.header.actions );
 
         let $elem = this.$headerContainer.find('.sb-view-header-list');
@@ -1809,7 +1824,7 @@ export class View {
 
         let $paginationTotal = $pagination.find('.pagination-total');
 
-        if(header_layout != 'full') {
+        if(pagination_layout != 'full') {
             $paginationTotal.hide();
         }
 
@@ -1820,7 +1835,7 @@ export class View {
 
         let $paginationNavigation = $pagination.find('.pagination-navigation');
 
-        if(header_layout == 'full') {
+        if(pagination_layout == 'full') {
             $paginationNavigation.append(
                 UIHelper.createButton('pagination-first_' + this.getUuid(), '', 'icon', 'first_page').addClass('sb-view-header-list-pagination-first_page')
                 .on('click', (event: any) => {
@@ -1843,7 +1858,7 @@ export class View {
                 })
             );
 
-        if(header_layout == 'full') {
+        if(pagination_layout == 'full') {
             $paginationNavigation.append(
                 UIHelper.createButton('pagination-last_' + this.getUuid(), '', 'icon', 'last_page').addClass('sb-view-header-list-pagination-last_page')
                 .on('click', (event: any) => {
@@ -1852,7 +1867,7 @@ export class View {
             );
         }
 
-        if(header_layout == 'full') {
+        if(pagination_layout == 'full') {
             let $select = UIHelper.createPaginationSelect('pagination-select_' + this.getUuid(), '', [5, 10, 25, 50, 100, 500], this.limit).addClass('sb-view-header-list-pagination-limit_select');
 
             $pagination.find('.pagination-rows-per-page')
@@ -1883,7 +1898,9 @@ export class View {
             $level2.append( $('<div class="sb-view-header-actions-inline"></div>') );
         }
 
-        $level2.append( $pagination );
+        if(pagination_layout !== 'none') {
+            $level2.append( $pagination );
+        }
         $level2.append( $export_button );
         $level2.append( $fieldsToggleButton );
 
@@ -2051,7 +2068,7 @@ export class View {
         let end: number = start + limit - 1;
         end = (total) ? Math.min(end, start + this.model.ids().length - 1) : 0;
 
-        const header_layout = this.config.header?.layout ?? 'full';
+        const header_layout = this.getHeaderLayout();
         const header_exports_disabled = ( typeof this.config.header?.exports === 'boolean' && !this.config.header.exports );
 
         this.$headerContainer.find('.sb-view-header-list-pagination-total').html(total);
@@ -2268,7 +2285,7 @@ export class View {
             "ACTION.CANCEL":   [ {"id": "CANCEL_AND_CLOSE"} ]
         };
 
-        const header_layout = ( (this.config.header?.layout ?? 'full') === 'inline') ? 'inline' : 'full';
+        const header_layout = this.getHeaderLayout();
         const header_actions_disabled = ( typeof this.config.header?.actions === 'boolean' && !this.config.header.actions );
 
         let header_actions: any = {};
@@ -3022,7 +3039,7 @@ export class View {
 
     private async actionSelectionInlineEdit(selection: any) {
         if(selection.length && !this.$container.find('.sb-view-header-list-actions-selected-edit').length) {
-            const header_layout = ( (this.config.header?.layout ?? 'full') === 'inline') ? 'inline' : 'full';
+            const header_layout = this.getHeaderLayout();
 
             this.$headerContainer.find('#' + 'SB_ACTION_ITEM-' + 'SB_ACTIONS_BUTTON_INLINE_UPDATE').hide();
             this.$headerContainer.find('#' + 'SB_ACTION_ITEM-' + 'SB_ACTIONS_BUTTON_BULK_ASSIGN').show();
