@@ -3378,6 +3378,10 @@ export class View {
                 if(widget_containers[field].attr('data-visible') !== '1') {
                     continue;
                 }
+                widget_containers[field]
+                    .find('input, textarea, select')
+                    .trigger('change');
+
                 let widget = widgets[field];
                 let value = widget.getValue();
                 if(typeof value == 'object' && value.hasOwnProperty('id')) {
