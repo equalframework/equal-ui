@@ -155,10 +155,10 @@ export default class WidgetMany2Many extends Widget {
                 if(this.config.header?.hasOwnProperty('actions')) {
                     // #memo - adding `select` for a one2many is generally meaningless, since a child can only be linked to a single parent
                     if(action_select !== undefined) {
-                        has_action_select = this.isActionEnabled(action_select, this.mode);
+                        has_action_select = this.isActionEnabled(action_select, this.mode, this.config.object ?? {});
                     }
                     if(this.config.header.actions?.hasOwnProperty('ACTION.CREATE')) {
-                        has_action_create = this.isActionEnabled(this.config.header.actions['ACTION.CREATE'], this.mode);
+                        has_action_create = this.isActionEnabled(this.config.header.actions['ACTION.CREATE'], this.mode, this.config.object ?? {});
                     }
                 }
 
@@ -341,7 +341,7 @@ export default class WidgetMany2Many extends Widget {
         return this.$elem.addClass('sb-widget').attr('id', this.getId()).attr('data-type', this.config.type).attr('data-usage', this.config.usage||'');
     }
 
-    private isActionEnabled(action: any, mode: string): boolean {
+    private isActionEnabled(action: any, mode: string, object: any = {}): boolean {
         if(typeof action === 'boolean') {
             return action;
         }
@@ -361,7 +361,7 @@ export default class WidgetMany2Many extends Widget {
                 }
                 else if(Array.isArray(action.visible)) {
                     let domain = new Domain(action.visible);
-                    if(!domain.evaluate({}, user, {}, env)) {
+                    if(!domain.evaluate(object, user, {}, env)) {
                         return false;
                     }
                 }
@@ -373,7 +373,7 @@ export default class WidgetMany2Many extends Widget {
                 }
                 else if(Array.isArray(action[mode])) {
                     let domain = new Domain(action[mode]);
-                    return domain.evaluate({}, user, {}, env);
+                    return domain.evaluate(object, user, {}, env);
                 }
                 return false;
             }
@@ -392,6 +392,6 @@ export default class WidgetMany2Many extends Widget {
         if(typeof action !== 'object' || action === null || !action.hasOwnProperty(mode)) {
             return false;
         }
-        return this.isActionEnabled(action, mode);
+        return this.isActionEnabled(action, mode, this.config.object ?? {});
     }
 }
