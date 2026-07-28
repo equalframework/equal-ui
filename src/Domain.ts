@@ -267,20 +267,44 @@ export class Domain {
                 let operator = condition.operator;
                 let value = condition.value;
 
-                if(typeof operand == 'string' && object.hasOwnProperty(operand)) {
-                    operand = object[operand];
-                    // handle many2one operands
-                    if(typeof operand === 'object' && operand !== null) {
-                        if(operand.hasOwnProperty('id')) {
-                            operand = operand.id;
+                if(typeof operand === 'string') {
+                    let resolved_operand: any = operand;
+                    let has_resolved_operand: boolean = false;
+
+                    if(operand.indexOf('object.') === 0) {
+                        const path: string = operand.substring('object.'.length);
+                        let target: any = object;
+                        has_resolved_operand = true;
+
+                        for(const subfield of path.split('.')) {
+                            if(target == null || !target.hasOwnProperty(subfield)) {
+                                has_resolved_operand = false;
+                                break;
+                            }
+                            target = target[subfield];
                         }
-                        else {
-                            operand = null;
+
+                        if(has_resolved_operand) {
+                            resolved_operand = target;
                         }
                     }
-                }
-                else {
-                    // #memo - in all other situations operand is a value that we use as-is for the comparison (integer, string, boolean)
+                    else if(object.hasOwnProperty(operand)) {
+                        resolved_operand = object[operand];
+                        has_resolved_operand = true;
+                    }
+
+                    if(has_resolved_operand) {
+                        operand = resolved_operand;
+                        // handle many2one operands
+                        if(typeof operand === 'object' && operand !== null) {
+                            if(operand.hasOwnProperty('id')) {
+                                operand = operand.id;
+                            }
+                            else {
+                                operand = null;
+                            }
+                        }
+                    }
                 }
 
                 let cc_res: boolean;
