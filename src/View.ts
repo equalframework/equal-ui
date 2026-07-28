@@ -329,13 +329,14 @@ export class View {
 
             // assign schemas by copy
 
-            const translation = await ApiService.getTranslation(this.entity);
+            const [translation, model, view] = await Promise.all([
+                ApiService.getTranslation(this.entity),
+                ApiService.getSchema(this.entity, this.getDomain()),
+                ApiService.getView(this.entity, this.type + '.' + this.name)
+            ]);
+
             this.translation = this.deepCopy(translation);
-
-            const model = await ApiService.getSchema(this.entity, this.getDomain());
             this.model_schema = this.deepCopy(model);
-
-            let view = await ApiService.getView(this.entity, this.type + '.' + this.name);
             if(!Object.keys(view).length) {
                 // #memo - fallback to default view is performed in the back-end
                 console.warn("no result for " + this.entity + "." + this.type + "." + this.name + ", stop processing");
@@ -1382,12 +1383,13 @@ export class View {
         let has_action_select = this.purpose === 'add' || this.purpose === 'select';
         let has_action_create = ['list', 'cards'].indexOf(this.type) >= 0 && (this.purpose !== 'widget' || this.mode === 'edit');
         let has_action_create_inline = (this.mode === 'view') ? false : (header_layout === 'inline' && !header_actions_disabled);
+        const action_object = (this.purpose === 'widget' && this.config.object) ? this.config.object : {};
 
         if(this.custom_actions.hasOwnProperty('ACTION.SELECT')) {
-            has_action_select = this.isActionEnabled(this.custom_actions['ACTION.SELECT'], this.mode, {}, has_action_select);
+            has_action_select = this.isActionEnabled(this.custom_actions['ACTION.SELECT'], this.mode, action_object, has_action_select);
         }
         if(this.custom_actions.hasOwnProperty('ACTION.CREATE') && !header_actions_disabled) {
-            has_action_create = this.isActionEnabled(this.custom_actions['ACTION.CREATE'], this.mode, {}, true);
+            has_action_create = this.isActionEnabled(this.custom_actions['ACTION.CREATE'], this.mode, action_object, true);
             if(!has_action_create) {
                 // explicit disabling of create implies no create_inline as well
                 has_action_create_inline = false;
@@ -1397,7 +1399,7 @@ export class View {
         if(this.custom_actions.hasOwnProperty('ACTION.CREATE_INLINE') || (this.mode !== 'view' && header_layout === 'inline' && has_action_create && !header_actions_disabled)) {
             // create & create_inline are mutually exclusive
             has_action_create = false;
-            has_action_create_inline = this.isActionEnabled(this.custom_actions['ACTION.CREATE_INLINE'], this.mode);
+            has_action_create_inline = this.isActionEnabled(this.custom_actions['ACTION.CREATE_INLINE'], this.mode, action_object);
         }
 
         console.debug('View::layoutListHeader:resulting = has_action_ ', has_action_select, has_action_create, has_action_create_inline, header_layout, this.custom_actions, this.entity, this.getId());
