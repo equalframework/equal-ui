@@ -958,6 +958,7 @@ export class LayoutList extends Layout {
                 else {
                     config.domain = [];
                 }
+                config.object = object;
 
                 // by convention, `name` subfield is always loaded for relational fields
                 if(config.type == 'many2one') {
@@ -1472,6 +1473,7 @@ export class LayoutList extends Layout {
 
         values[field] = widget.getValue();
         let model_fields: any = {};
+        let current_object: any = {...object, ...values};
 
         // if value is less than 1k, relay onchange to server
         // #todo - choose a proportionate (objectivable) limit
@@ -1482,8 +1484,8 @@ export class LayoutList extends Layout {
                 const result = await ApiService.call('?do=model_onchange', {
                         entity: this.view.getEntity(),
                         view_id: this.view.getId(),
-                        changes: this.view.getModel().export(values, object),
-                        values: this.getOnchangeValues(object),
+                        changes: this.view.getModel().export(values, current_object),
+                        values: this.getOnchangeValues(current_object),
                         lang: this.view.getLang()
                     });
 
@@ -1548,6 +1550,8 @@ export class LayoutList extends Layout {
             }
         }
 
+        current_object = {...object, ...values};
+
         // update model schema of the view if necessary
         if(Object.keys(model_fields).length > 0) {
             // we need to retrieve the widget based on the field name
@@ -1574,6 +1578,16 @@ export class LayoutList extends Layout {
                 if(values.hasOwnProperty(field)) {
                     widget.setValue(values[field]);
                 }
+                if(['one2many', 'many2one', 'many2many'].indexOf(widget.config.type) > -1) {
+                    if(widget.config.hasOwnProperty('original_domain')) {
+                        let tmpDomain = new Domain(widget.config.original_domain);
+                        widget.config.domain = tmpDomain.parse(current_object, user, {}, this.getEnv()).toArray();
+                    }
+                    else {
+                        widget.config.domain = [];
+                    }
+                    widget.config.object = current_object;
+                }
 
                 // #memo - this differ from FORM view, since we cannot perform a layout refresh
                 let $targetCell = $parentRow.find(
@@ -1587,7 +1601,7 @@ export class LayoutList extends Layout {
 
                 let visible = true;
                 if(widget.config.hasOwnProperty('visible')) {
-                    visible = this.isVisible(widget.config.visible, {...object, ...values}, user, {}, this.getEnv());
+                    visible = this.isVisible(widget.config.visible, current_object, user, {}, this.getEnv());
                 }
 
                 $targetCell.empty();
