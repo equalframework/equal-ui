@@ -735,7 +735,13 @@ export class View {
             }
 
             await this.layout.init();
-            await this.model.init();
+            if(this.type !== 'dashboard') {
+                if(this.purpose === 'widget') {
+                    this.$container.show();
+                    this.layout.loading(true);
+                }
+                await this.model.init();
+            }
         }
         catch(err) {
             console.warn('Unable to init view (' + this.entity + '.' + this.getId() + ')', err);
@@ -2195,8 +2201,6 @@ export class View {
             }
 
         }
-
-        this.layout.loading(false);
     }
 
     private layoutChartRefresh(full: boolean = false) {
@@ -2244,11 +2248,7 @@ export class View {
                 UIHelper.decorateMenu($export_actions_menu);
                 $export_actions_menu_button.find('button').on('click', () => $export_actions_menu.trigger('_toggle') );
             }
-
-
         }
-
-        this.layout.loading(false);
     }
 
     private layoutFormHeader() {
@@ -2628,17 +2628,24 @@ export class View {
         }
     }
 
-
     private async layoutRefresh(full: boolean = false) {
         console.debug('View::layoutRefresh', full);
-        await this.layout.refresh(full);
-        if(['list', 'cards'].indexOf(this.type) >= 0) {
-            this.layoutListRefresh(full);
-        }
-        if(['chart'].indexOf(this.type) >= 0) {
-            this.layoutChartRefresh(full);
-        }
+        try {
+            await this.layout.refresh(full);
 
+            if(['list', 'cards'].indexOf(this.type) >= 0) {
+                this.layoutListRefresh(full);
+            }
+            else if(['chart'].indexOf(this.type) >= 0) {
+                this.layoutChartRefresh(full);
+            }
+            else if(['form'].indexOf(this.type) >= 0) {
+                // nothing to do for form
+            }
+        }
+        finally {
+            this.layout.loading(false);
+        }
     }
 
     private decorateBulkAssignDialog($dialog: JQuery) {
@@ -2942,6 +2949,11 @@ export class View {
             return;
         }
 
+        if(this.type === 'dashboard') {
+            await this.layoutRefresh(full);
+            this.updatedContext();
+            return;
+        }
 
         // reset selection
         this.selected_ids = [];
