@@ -149,41 +149,51 @@ export class Model {
         return (Object.keys(this.has_changed).length > 0);
     }
 
-    public export(object: any, context: any = object) {
-        console.debug('Model::export', object);
+    /**
+     * Export model values to the backend payload format.
+     *
+     * @param fields   May be a partial map of changed fields only.
+     * @param object   The complete object (with updated values) used to interpret export rules, such as
+     *                  allowing readonly fields while the target object is still a draft.
+     * @param mode     Empty by default for model_update payloads. Use "onchange" to keep readonly fields
+     *                  and id so model_onchange receives the complete context.
+     */
+    public export(fields: any, object: any = {}, mode: string = '') {
+        console.debug('Model::export', fields);
         let result: any = {};
         let schema = this.view.getModelFields();
+        const onchange = mode === 'onchange';
         for(let field in schema) {
             // `id` identifies the target record and must never be sent as an updatable field.
-            if(field == 'id') {
+            if(field == 'id' && !onchange) {
                 continue;
             }
-            if(!object.hasOwnProperty(field)) {
+            if(!fields.hasOwnProperty(field)) {
                 continue;
             }
-            if(field == 'state' && object[field] == 'draft') {
+            if(field == 'state' && fields[field] == 'draft') {
                 continue;
             }
-            if(schema[field]?.readonly === true && context.state !== 'draft') {
+            if(schema[field]?.readonly === true && object?.state !== 'draft' && !onchange) {
                 continue;
             }
             let type: string | null = this.getFinalType(field);
             if(type == 'many2one') {
-                if(typeof object[field] == 'object' && object[field]) {
-                    result[field] = object[field].id;
+                if(typeof fields[field] == 'object' && fields[field]) {
+                    result[field] = fields[field].id;
                 }
                 else {
-                    result[field] = (object[field]) ? object[field] : 'null';
+                    result[field] = (fields[field]) ? fields[field] : 'null';
                 }
             }
             else if(type && ['time', 'date', 'datetime'].indexOf(type) > -1) {
-                result[field] = (object[field] && object[field].length) ? object[field] : 'null';
+                result[field] = (fields[field] && fields[field].length) ? fields[field] : 'null';
             }
             else if(type == 'one2many') {
                 // one2many additions are owned by the target object's foreign field.
                 // Negative ids are kept because the ORM interprets them as detach requests.
-                if(Array.isArray(object[field])) {
-                    const ids_to_detach = object[field].filter((id: number) => id < 0);
+                if(Array.isArray(fields[field])) {
+                    const ids_to_detach = fields[field].filter((id: number) => id < 0);
                     if(ids_to_detach.length) {
                         result[field] = ids_to_detach;
                     }
@@ -191,10 +201,10 @@ export class Model {
             }
             else if(type == 'many2many') {
                 // #todo
-                result[field] = object[field];
+                result[field] = fields[field];
             }
             else {
-                result[field] = object[field];
+                result[field] = fields[field];
             }
         }
         return result;
@@ -265,9 +275,17 @@ export class Model {
 
     /**
      * Update model by requesting data from server using parent View parameters
-    */
+     */
     public async refresh(full: boolean = false) {
         console.debug('Model::refresh');
+
+        if(this.view.getType() == 'dashboard') {
+            this.objects = [];
+            this.total = 0;
+            this.loaded_promise.resolve();
+            await this.view.onchangeModel(full);
+            return;
+        }
 
         try {
             let body: any = {
