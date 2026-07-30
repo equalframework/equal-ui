@@ -16,16 +16,14 @@ export class WidgetDashboardItem extends Widget {
         this.$elem = $('<div />');
 
         let view = new View(this.getLayout().getView().getContext(), this.config.entity, this.config.view_type, this.config.view_name, this.config.domain, this.mode, 'widget', this.getLayout().getView().getLang(), this.config);
+        let $container = view.getContainer();
 
-        view.isReady().then( () => {
-            let $container = view.getContainer();
-            // inject View in parent Context object
-            this.$elem.append($container);
+        this.$elem.append($container);
+
+        this.$elem.addClass('sb-widget').attr('id', this.getId()).css({
+            'height': '100%'
         });
-
-        this.$elem.addClass('sb-widget').attr('id', this.getId()).css('height', '100%');
 
         return this.$elem;
     }
-
 }
