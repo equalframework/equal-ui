@@ -1,6 +1,6 @@
 import { $ } from "../jquery-lib";
 import { UIHelper } from '../material-lib';
-import { Widget, WidgetFactory } from "../equal-widgets";
+import { WidgetFactory } from "../equal-widgets";
 import { Layout } from './Layout';
 import { TranslationService, ApiService, EnvService } from "../equal-services";
 import { Domain, Clause, Condition, Reference } from "../Domain";
@@ -204,7 +204,7 @@ export class LayoutChart extends Layout {
             let datasets: any, options: any;
 
             if(['pie', 'doughnut', 'polarArea'].indexOf(this.config.type) >= 0) {
-                datasets = result.datasets.map( (a:any, index: number) => { return {label: (layout.datasets[index]) ? layout.datasets[index].label:'', data: a, backgroundColor: CHART_COLORS}; });
+                datasets = result.datasets.map( (a:any, index: number) => { return {label: (layout.datasets[index]) ? layout.datasets[index].label:'', data: this.formatDatasetData(a, this.parsed_datasets[index]), backgroundColor: CHART_COLORS}; });
                 options = {
                     responsive: true,
                     maintainAspectRatio: false
@@ -214,7 +214,7 @@ export class LayoutChart extends Layout {
             else {
                 datasets = result.datasets.map( (a:any, index: number) => { return {
                         label: (result.legends && result.legends[index])? result.legends[index] : ((layout.datasets[index]) ? layout.datasets[index].label:''),
-                        data: a,
+                        data: this.formatDatasetData(a, this.parsed_datasets[index]),
                         backgroundColor: CHART_COLORS[index%10]
                     }; });
                 options = {
@@ -246,6 +246,88 @@ export class LayoutChart extends Layout {
 
         this.$layout.append($elem);
 
+    }
+
+    private formatDatasetData(data: any[], dataset: any): any[] {
+        const operation = dataset?.operation;
+        const op_type = (Array.isArray(operation)) ? operation[0] : operation;
+
+        if(op_type === 'COUNT') {
+            return data;
+        }
+
+        const op_field = this.getOperationField(operation);
+        if(!op_field) {
+            return data;
+        }
+
+        let viewSchema = this.view.getViewSchema();
+        const item = viewSchema.layout?.items?.find( (item: any) => item.value === op_field );
+        const model_def = this.view.getModelFields()[op_field] ?? null;
+        const usage = dataset?.usage ?? item?.usage ?? model_def?.usage ?? null;
+
+        let type = item?.result_type
+            ?? item?.type
+            ?? model_def?.result_type
+            ?? model_def?.type
+            ?? this.view.getModel().getFinalType(op_field)
+            ?? 'string';
+
+        if(usage) {
+            type = WidgetFactory.getTypeFromUsage(usage, type);
+        }
+
+        return data.map( (value: any) => {
+            if(value === null || value === undefined || value === '') {
+                return value;
+            }
+
+            const parsed = Number(value);
+            if(Number.isNaN(parsed)) {
+                return value;
+            }
+
+            switch(type) {
+                case 'time':
+                    return parsed / 3600;
+            }
+
+            return value;
+        });
+    }
+
+    private getOperationField(operation: any): string | null {
+        if(!Array.isArray(operation)) {
+            return null;
+        }
+
+        const normalize = (op_field: any): string | null => {
+            if(typeof op_field !== 'string' || !op_field.length) {
+                return null;
+            }
+
+            if(op_field.startsWith('object.')) {
+                return op_field.substring('object.'.length);
+            }
+
+            return op_field;
+        };
+
+        const [op, ...args] = operation;
+
+        switch(op) {
+            case 'SUM':
+            case 'COUNT':
+            case 'MIN':
+            case 'MAX':
+            case 'AVG':
+                return normalize(args[0]);
+
+            case 'DIFF':
+                return this.getOperationField(args[0]) ?? this.getOperationField(args[1]);
+        }
+
+        return null;
     }
 
 }
