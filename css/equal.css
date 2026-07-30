@@ -870,6 +870,7 @@ body > .header-view-details-popup .header-view-details-body div {
 
 .sb-view-dashboard-row .mdc-layout-grid__cell {
     overflow: hidden !important;
+    width: 100%;
 }
 
 .sb-view-dashboard-row .sb-view-dashboard-cell-title {
