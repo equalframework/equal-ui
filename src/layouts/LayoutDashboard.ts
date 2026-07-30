@@ -13,6 +13,7 @@ export class LayoutDashboard extends Layout {
         try {
             // initialize the layout
             this.layout();
+            await this.feed([]);
         }
         catch(err) {
             console.warn('Something went wrong ', err);
@@ -53,6 +54,8 @@ export class LayoutDashboard extends Layout {
             console.warn("invalid layout, stop processing");
             return;
         }
+
+        this.model_widgets[0] = {};
 
         $.each(view_schema.layout.groups, (i:number, group) => {
             let group_id = 'group-'+i;
@@ -186,10 +189,7 @@ export class LayoutDashboard extends Layout {
 
                                 let widget:Widget = new WidgetDashboardItem(this, item.label, '', config);
 
-                                // store widget in widgets Map, using field name as key
-                                if(typeof this.model_widgets[0] == 'undefined') {
-                                    this.model_widgets[0] = {};
-                                }
+                                // store widget in widgets Map, using item id as key
                                 this.model_widgets[0][item.id] = widget;
                                 $cell.append(widget.attach());
                             }
@@ -206,6 +206,10 @@ export class LayoutDashboard extends Layout {
 
     protected async feed(objects: any) {
         // nothing to feed : dashboard is read only
+        if(typeof this.model_widgets[0] == 'undefined') {
+            return;
+        }
+
         for(let widget_id of Object.keys(this.model_widgets[0])) {
             let widget = this.model_widgets[0][widget_id];
 
