@@ -735,6 +735,7 @@ export class View {
             }
 
             await this.layout.init();
+
             if(this.type !== 'dashboard') {
                 if(this.purpose === 'widget') {
                     this.$container.show();
@@ -2201,6 +2202,8 @@ export class View {
             }
 
         }
+
+        this.layout.loading(false);
     }
 
     private layoutChartRefresh(full: boolean = false) {
@@ -2249,6 +2252,12 @@ export class View {
                 $export_actions_menu_button.find('button').on('click', () => $export_actions_menu.trigger('_toggle') );
             }
         }
+        this.layout.loading(false);
+    }
+
+    private layoutFormRefresh(full: boolean = false) {
+        console.debug('View::layoutFormRefresh', full);
+        this.layout.loading(false);
     }
 
     private layoutFormHeader() {
@@ -2630,17 +2639,22 @@ export class View {
 
     private async layoutRefresh(full: boolean = false) {
         console.debug('View::layoutRefresh', full);
+
         try {
             await this.layout.refresh(full);
 
-            if(['list', 'cards'].indexOf(this.type) >= 0) {
-                this.layoutListRefresh(full);
-            }
-            else if(['chart'].indexOf(this.type) >= 0) {
-                this.layoutChartRefresh(full);
-            }
-            else if(['form'].indexOf(this.type) >= 0) {
-                // nothing to do for form
+            switch(this.type) {
+                case 'form':
+                    this.layoutFormRefresh(full);
+                    break;
+                case 'list':
+                case 'cards':
+                    this.layoutListRefresh(full);
+                    break;
+                case 'chart':
+                    this.layoutChartRefresh(full);
+                    break;
+                default:
             }
         }
         finally {
@@ -2950,8 +2964,6 @@ export class View {
         }
 
         if(this.type === 'dashboard') {
-            await this.layoutRefresh(full);
-            this.updatedContext();
             return;
         }
 
