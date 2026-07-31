@@ -57,8 +57,8 @@ export class LayoutDashboard extends Layout {
 
         this.model_widgets[0] = {};
 
-        $.each(view_schema.layout.groups, (i:number, group) => {
-            let group_id = 'group-'+i;
+        $.each(view_schema.layout.groups, (i: number, group) => {
+            let group_id = 'group-' + i;
             let $group = $('<div />').addClass('sb-view-dashboard-group').appendTo($elem);
 
             let selected_section = 0;
@@ -72,7 +72,7 @@ export class LayoutDashboard extends Layout {
                 $group.append($tabs);
             }
 
-            $.each(group.sections, (j:number, section) => {
+            $.each(group.sections, (j: number, section) => {
                 let section_id = group_id+'-section-'+j;
 
                 let $section = $('<div />').attr('id', section_id).addClass('sb-view-dashboard-section mdc-layout-grid').appendTo($group);
@@ -83,15 +83,15 @@ export class LayoutDashboard extends Layout {
 
                 if(group.sections.length > 1 || section.hasOwnProperty('label')) {
                     // try to resolve the section title
-                    let section_title = (section.hasOwnProperty('label'))?section.label:section_id;
+                    let section_title = (section.hasOwnProperty('label')) ? section.label : section_id;
                     if(section.hasOwnProperty('id')) {
                         section_title = TranslationService.resolve(translation, 'view', [this.view.getId(), 'layout'], section.id, section_title);
                     }
 
-                    let $tab = UIHelper.createTabButton(section_id+'-tab', section_title, (j == selected_section)).addClass('sb-view-form-section-tab')
+                    let $tab = UIHelper.createTabButton(section_id + '-tab', section_title, (j == selected_section)).addClass('sb-view-form-section-tab')
                     .on('click', () => {
                         $group.find('.sb-view-form-section').hide();
-                        $group.find('#'+section_id).show();
+                        $group.find('#' + section_id).show();
                     });
 
                     if(section.hasOwnProperty('visible')) {
@@ -187,7 +187,7 @@ export class LayoutDashboard extends Layout {
                                 config.view_type = view_type;
                                 config.view_name = view_name;
 
-                                let widget:Widget = new WidgetDashboardItem(this, item.label, '', config);
+                                let widget: Widget = new WidgetDashboardItem(this, item.label, '', config);
 
                                 // store widget in widgets Map, using item id as key
                                 this.model_widgets[0][item.id] = widget;
@@ -214,9 +214,11 @@ export class LayoutDashboard extends Layout {
             let widget = this.model_widgets[0][widget_id];
 
             // widget might be missing (if not visible)
-            if(!widget) continue;
+            if(!widget) {
+                continue;
+            }
 
-            let $parent = this.$layout.find('#'+widget.getId()).parent();
+            let $parent = this.$layout.find('#' + widget.getId()).parent();
             $parent.empty().append(widget.render());
             // $parent.append(widget.render());
         }
