@@ -279,14 +279,6 @@ export class Model {
     public async refresh(full: boolean = false) {
         console.debug('Model::refresh');
 
-        if(this.view.getType() == 'dashboard') {
-            this.objects = [];
-            this.total = 0;
-            this.loaded_promise.resolve();
-            await this.view.onchangeModel(full);
-            return;
-        }
-
         try {
             let body: any = {
                     get: this.view.getController(),
