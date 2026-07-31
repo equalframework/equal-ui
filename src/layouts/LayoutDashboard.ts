@@ -173,6 +173,11 @@ export class LayoutDashboard extends Layout {
                                 $cell.css({'height': item.height});
                             }
 
+                            let $widget_container = $('<div />')
+                                .addClass('sb-view-dashboard-cell-widget')
+                                .css({'height': '100%'})
+                                .appendTo($cell);
+
                             if(item.hasOwnProperty('entity') && item.hasOwnProperty('view')) {
 
                                 let config = {...item};
@@ -191,7 +196,7 @@ export class LayoutDashboard extends Layout {
 
                                 // store widget in widgets Map, using item id as key
                                 this.model_widgets[0][item.id] = widget;
-                                $cell.append(widget.attach());
+                                $widget_container.append(widget.attach());
                             }
 
                         });
@@ -218,7 +223,7 @@ export class LayoutDashboard extends Layout {
                 continue;
             }
 
-            let $parent = this.$layout.find('#' + widget.getId()).parent();
+            let $parent = this.$layout.find('#' + widget.getId()).closest('.sb-view-dashboard-cell-widget');
             $parent.empty().append(widget.render());
             // $parent.append(widget.render());
         }
