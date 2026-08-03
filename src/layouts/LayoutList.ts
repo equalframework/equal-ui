@@ -44,17 +44,6 @@ export class LayoutList extends Layout {
         console.debug('LayoutList::layout - fetched objects', objects);
         await this.feed(objects);
         console.debug('LayoutList::layout - finished feed()');
-
-        // auto open (unfold) groups, if requested
-        let group_by = this.view.getGroupBy();
-        if(group_by.length > 0) {
-            let $fold_toggle = this.$layout.find('thead tr th.sb-group-cell');
-            let is_open = !($fold_toggle.hasClass('folded'));
-            if(typeof group_by[0] === 'object' && group_by[0].hasOwnProperty('open') && group_by[0].open != is_open) {
-                $fold_toggle.trigger('click');
-            }
-        }
-
     }
 
     public loading(loading: boolean) {
@@ -616,17 +605,7 @@ export class LayoutList extends Layout {
             }
         }
 
-        // adapt group fold state based on column
-        let $fold_toggle = this.$layout.find('thead tr th.sb-group-cell');
-        let folded = $fold_toggle.hasClass('folded');
-
-        $tbody.find('.sb-group-row').each( (index: number, elem: any) => {
-            let $this = $(elem);
-            let subfolded = $this.hasClass('folded');
-            if(subfolded != folded) {
-                $this.trigger('click');
-            }
-        });
+        this.applyGroupFoldState($tbody, this.view.getGroupBy());
 
         // handler for reordering through drag n drop
         $elem.off('_updateOrder').on('_updateOrder', (event: any, updates: any[]) => {
@@ -639,7 +618,7 @@ export class LayoutList extends Layout {
         });
     }
 
-    private feedListGroupObjects(objects: any[], group_by: string[]) {
+    private feedListGroupObjects(objects: any[], group_by: any[]) {
         let groups: any = {};
         let model_fields = this.view.getModelFields();
 
@@ -745,6 +724,68 @@ export class LayoutList extends Layout {
             }
         }
         return groups;
+    }
+
+    private applyGroupFoldState($tbody: any, group_by: any[]) {
+        if(group_by.length == 0) {
+            return;
+        }
+
+        const $fold_toggle = this.$layout.find('thead tr th.sb-group-cell');
+        const has_open_config = group_by.some((group: any) => {
+            return group !== null
+                && typeof group === 'object'
+                && group.hasOwnProperty('open');
+        });
+        const fallback_open = has_open_config ? false : !$fold_toggle.hasClass('folded');
+        const first_level_open = this.getGroupLevelFoldState(group_by, 0, fallback_open);
+
+        $fold_toggle.toggleClass('folded', !first_level_open);
+
+        const folded_by_id: Record<string, boolean> = {};
+        const visible_by_id: Record<string, boolean> = {};
+
+        $tbody.find('.sb-group-row').each((index: number, elem: any) => {
+            const $row = $(elem);
+            const group_id = $row.attr('data-id');
+            if(group_id === undefined) {
+                return;
+            }
+            const level = parseInt(<string> $row.attr('data-level') ?? '0', 10);
+            const is_open = this.getGroupLevelFoldState(group_by, level, fallback_open);
+
+            $row.toggleClass('folded', !is_open);
+            folded_by_id[group_id] = !is_open;
+        });
+
+        $tbody.children().each((index: number, elem: any) => {
+            const $row = $(elem);
+            const parent_group_id = <string> $row.attr('data-parent-id') ?? '';
+            let visible = true;
+
+            if(parent_group_id.length) {
+                visible = !!visible_by_id[parent_group_id] && !folded_by_id[parent_group_id];
+            }
+
+            $row.toggle(visible);
+
+            if($row.hasClass('sb-group-row')) {
+                const group_id = $row.attr('data-id');
+                if(group_id !== undefined) {
+                    visible_by_id[group_id] = visible;
+                }
+            }
+        });
+    }
+
+    private getGroupLevelFoldState(group_by: any[], level: number, fallback_open: boolean): boolean {
+        const group = group_by[level] ?? null;
+
+        if(group !== null && typeof group === 'object' && group.hasOwnProperty('open')) {
+            return !!group.open;
+        }
+
+        return fallback_open;
     }
 
     public prependObject(object: any, actions: any[] = []) {
