@@ -2412,7 +2412,7 @@ export class View {
                             let tmpDomain = new Domain(["id", "=", object_id]);
                             this.domain = tmpDomain.toArray();
                             // feedback the user (since we're not closing the context)
-                            let $snack = UIHelper.createSnackbar(TranslationService.instant('SB_ACTIONS_NOTIFY_CHANGES_SAVED', 'Changes saved.'), '', '', 4000);
+                            let $snack = UIHelper.createSnackbar(TranslationService.instant('SB_ACTIONS_NOTIFY_CHANGES_SAVED', 'Changes saved.'), '✓', '', 4000, '#1d8b1d');
                             this.$container.append($snack);
                             // refresh the layout since the content might have been changed server side
                             // #memo - only changed fields are sent, so we must reinject current content
@@ -3459,7 +3459,7 @@ export class View {
                 if(status == 202) {
                     console.debug('View::performAction - status `202`: no change');
                     // nothing to perform
-                    let $snack = UIHelper.createSnackbar(TranslationService.instant('SB_ACTIONS_NOTIFY_ACTION_SENT', 'Action request sent.'), '', '', 4000);
+                    let $snack = UIHelper.createSnackbar(TranslationService.instant('SB_ACTIONS_NOTIFY_ACTION_SENT', 'Action request sent.'), '✓', '', 4000, '#1d8b1d');
                     this.$container.append($snack);
                 }
                 // handle HTTP 205 (reset content)
@@ -3555,7 +3555,7 @@ export class View {
                         if(snack) {
                             setTimeout( () => {
                                 let title = TranslationService.resolve(translation, 'model', [], field, field, 'label');
-                                let $snack = UIHelper.createSnackbar(title+': '+translated_msg, TranslationService.instant('SB_ERROR_ERROR'), '', delay);
+                                let $snack = UIHelper.createSnackbar(title + ': ' + translated_msg, TranslationService.instant('SB_ERROR_ERROR'), '', delay);
                                 this.$container.append($snack);
                             }, delay * i );
                         }
@@ -3614,7 +3614,7 @@ export class View {
                             if(snack) {
                                 setTimeout( () => {
                                     let title = TranslationService.resolve(translation, 'model', [], field, field, 'label');
-                                    let $snack = UIHelper.createSnackbar(title+': '+translated_msg, TranslationService.instant('SB_ERROR_ERROR'), '', delay);
+                                    let $snack = UIHelper.createSnackbar(title + ': ' + translated_msg, TranslationService.instant('SB_ERROR_ERROR'), '', delay);
                                     this.$container.append($snack);
                                 }, delay * i );
                             }
@@ -3637,7 +3637,7 @@ export class View {
                                 }
                                 setTimeout( () => {
                                     let title = TranslationService.resolve(translation, 'model', [], field, field, 'label');
-                                    let $snack = UIHelper.createSnackbar(title+': '+translated_msg, TranslationService.instant('SB_ERROR_ERROR'), '', delay);
+                                    let $snack = UIHelper.createSnackbar(title + ': ' + translated_msg, TranslationService.instant('SB_ERROR_ERROR'), '', delay);
                                     this.$container.append($snack);
                                 }, delay * i );
                             }
@@ -3683,7 +3683,7 @@ export class View {
                         if(snack) {
                             setTimeout( () => {
                                 let title = TranslationService.resolve(translation, 'model', [], field, field, 'label');
-                                let $snack = UIHelper.createSnackbar(title+': '+msg, TranslationService.instant('SB_ERROR_ERROR'), '', delay);
+                                let $snack = UIHelper.createSnackbar(title + ': ' + msg, TranslationService.instant('SB_ERROR_ERROR'), '', delay);
                                 this.$container.append($snack);
                             }, delay * i);
                         }

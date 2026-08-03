@@ -359,19 +359,19 @@ class UIHelper {
         return $elem;
     }
 
-    public static createSnackbar(label: string, action: string = '', link: string = '', timeout: number = 4000) {
+    public static createSnackbar(label: string, action: string = '', link: string = '', timeout: number = 4000, action_color: string = '') {
         let elem = ' \
         <div class="mdc-snackbar"> \
             <div class="mdc-snackbar__surface" role="status" aria-relevant="additions"> \
                 <div class="mdc-snackbar__label" aria-atomic="false"> \
-                '+label+' \
+                ' + label + ' \
                 </div> \
                 <div class="mdc-snackbar__actions" aria-atomic="true">';
         if(action.length) {
             elem += '\
                     <button type="button" class="mdc-button mdc-snackbar__action"> \
                         <div class="mdc-button__ripple"></div> \
-                        <span class="mdc-button__label">'+action+'</span> \
+                        <span class="mdc-button__label">' + action + '</span> \
                     </button>';
         }
         elem += '\
@@ -380,6 +380,9 @@ class UIHelper {
             </div> \
         </div>';
         let $elem = $(elem);
+        if(action.length && action_color.length) {
+            $elem.find('.mdc-snackbar__action .mdc-button__label').css({'color': action_color});
+        }
         let snackbar = new MDCSnackbar($elem[0]);
         snackbar.timeoutMs = timeout;
         snackbar.open();
