@@ -291,19 +291,11 @@ export class Layout implements LayoutInterface{
             if(route.hasOwnProperty('context')) {
                 let context: any = {...route.context};
                 if(context.hasOwnProperty('domain') && Array.isArray(context.domain)) {
-                    let domain = JSON.stringify(context.domain);
-                    for(let object_field of Object.keys(object)) {
-                        target_id = object[object_field];
-                        // handle m2o sub-objects (assuming id is always loaded)
-                        if(typeof target_id == 'object' && target_id !== null && target_id.hasOwnProperty('id')) {
-                            target_id = target_id.id;
-                        }
-                        domain = domain.replace('object.' + object_field, target_id);
-                    }
-                    context.domain = JSON.parse(domain);
+                    let domain = new Domain(context.domain);
+                    context.domain = domain.parse(object, this.getView().getUser(), {}, this.getEnv()).toArray();
                 }
-                else if(target_id) {
-                    context.domain = ['id', '=', target_id];
+                else if(object.hasOwnProperty('id')) {
+                    context.domain = ['id', '=', object.id];
                 }
                 if(context.hasOwnProperty('display_mode') && context.display_mode === 'popup') {
                     const eq = this.getView().getContext().getFrame().getEventListener();
