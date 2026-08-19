@@ -671,7 +671,7 @@ class EventsListener {
                     }
                     this.$sbEvents.trigger('_closeAll');
                     setTimeout(() => {
-                        this.$sbEvents.trigger('_openContext', {entity: item.entity, type: type, name: name, domain: item.domain} );
+                        this.$sbEvents.trigger('_openContext', {...item, entity: item.entity, type: type, name: name, domain: item.domain} );
                     });
                 });
             }
