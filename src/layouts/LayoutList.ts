@@ -317,7 +317,7 @@ export class LayoutList extends Layout {
             }
         }
 
-        UIHelper.decorateTable($elem, view_schema);
+        UIHelper.decorateTable($elem, this.getTableViewSchema(view_schema));
     }
 
     protected async feed(objects: any) {
@@ -523,7 +523,7 @@ export class LayoutList extends Layout {
         }
 
         // decorate table with MDC styles
-        UIHelper.decorateTable($elem, view_schema);
+        UIHelper.decorateTable($elem, this.getTableViewSchema(view_schema));
 
         // add support for operations, group fold, and drag-n-drop (requires to be present in DOM)
         this.view.isDomReady().then( () => {
@@ -607,15 +607,34 @@ export class LayoutList extends Layout {
 
         this.applyGroupFoldState($tbody, this.view.getGroupBy());
 
+        if(this.view.getMode() !== 'edit') {
+            $elem.off('_updateOrder');
+            if($tbody.data('ui-sortable')) {
+                $tbody.sortable('destroy');
+            }
+            return;
+        }
+
         // handler for reordering through drag n drop
         $elem.off('_updateOrder').on('_updateOrder', (event: any, updates: any[]) => {
             for(let object of updates) {
                 // update displayed value of 'order' field (handler will retrieve matching widget)
                 this.$layout.find('tr[data-id="' + object.id + '"]').trigger('_setValue', ['order', object.order]);
-                // #memo - drag n drop is limited to view mode and in view mode _updatedWidget is never triggered
+                // #memo - drag n drop updates the order field directly, without triggering _updatedWidget
                 ApiService.update(this.view.getEntity(), [object.id], {order: object.order}, true, this.view.getLang());
             }
         });
+    }
+
+    private getTableViewSchema(view_schema: any) {
+        if(!view_schema.hasOwnProperty('draggable') || !view_schema.draggable || this.view.getMode() === 'edit') {
+            return view_schema;
+        }
+
+        return {
+            ...view_schema,
+            draggable: false
+        };
     }
 
     private feedListGroupObjects(objects: any[], group_by: any[]) {
