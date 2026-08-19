@@ -168,6 +168,7 @@ export default class WidgetString extends Widget {
         }
 
         this.applyHeading();
+        this.applyMultilangIndicator();
 
         return this.$elem
             .addClass('sb-widget')

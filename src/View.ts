@@ -2412,7 +2412,7 @@ export class View {
                             let tmpDomain = new Domain(["id", "=", object_id]);
                             this.domain = tmpDomain.toArray();
                             // feedback the user (since we're not closing the context)
-                            let $snack = UIHelper.createSnackbar(TranslationService.instant('SB_ACTIONS_NOTIFY_CHANGES_SAVED', 'Changes saved.'), '✓', '', 4000, '#1d8b1d');
+                            let $snack = UIHelper.createSnackbar(TranslationService.instant('SB_ACTIONS_NOTIFY_CHANGES_SAVED', 'Changes saved.'), '✓', '', 4000, '#29b829');
                             this.$container.append($snack);
                             // refresh the layout since the content might have been changed server side
                             // #memo - only changed fields are sent, so we must reinject current content
@@ -2907,6 +2907,245 @@ export class View {
 
         $dialog.on('_accept', () => {
             $dialog.trigger('_ok', []);
+        });
+    }
+
+    public async openDialogTranslate(request: any = {}) {
+        const field = String(request?.field ?? '');
+        const object_id = parseInt(String(request?.object_id ?? this.getActiveObjectId() ?? 0), 10);
+
+        if(!field.length || object_id <= 0) {
+            console.warn('View::openDialogTranslate - missing object id or field', request);
+            return;
+        }
+
+        if(!(this.model_fields[field]?.multilang === true)) {
+            console.warn('View::openDialogTranslate - field is not multilang', field);
+            return;
+        }
+
+        let $dialog = UIHelper.createDialog(
+            this.getUuid() + '_' + object_id + '_' + field.replace(/[^a-zA-Z0-9_-]/g, '_') + '_translate_dialog',
+            TranslationService.instant('SB_ACTIONS_TRANSLATE', 'Translations') + ' [' + field + ']',
+            TranslationService.instant('SB_DIALOG_SEND'),
+            TranslationService.instant('SB_DIALOG_CANCEL')
+        );
+
+        $dialog
+            .data('object_id', object_id)
+            .data('field', field)
+            .addClass('sb-view-dialog')
+            .appendTo(this.$container);
+
+        await this.decorateDialogTranslate($dialog);
+        $dialog.trigger('Dialog:_open');
+    }
+
+    private async decorateDialogTranslate($dialog: JQuery) {
+        const object_id = parseInt(String($dialog.data('object_id') ?? 0), 10);
+        const field = String($dialog.data('field') ?? '');
+        const object = this.model.find(object_id) ?? {};
+        const value = (object.hasOwnProperty(field)) ? object[field] : '';
+        const field_label = TranslationService.resolve(
+            this.translation,
+            'model',
+            [],
+            field,
+            this.view_fields[field]?.label ?? field,
+            'label'
+        );
+
+        let translations: any = {};
+        let languages: any = {};
+
+        try {
+            const [translations_response, languages_response] = await Promise.all([
+                ApiService.fetch('', {
+                    get: 'core_model_translations',
+                    entity: this.entity,
+                    id: object_id,
+                    field: field
+                }),
+                ApiService.collect('core\\Lang', [], ['id', 'code', 'name'], 'name', 'asc', 0, 100, this.getLang())
+            ]);
+
+            translations = translations_response ?? {};
+            for(let language of languages_response ?? []) {
+                languages[language.code] = language.name ?? language.code;
+            }
+        }
+        catch(response) {
+            console.warn('View::decorateDialogTranslate - unable to load translations', response);
+        }
+
+        let language_codes = Object.keys(translations);
+        if(!language_codes.length) {
+            language_codes = [this.getLang()];
+            translations[this.getLang()] = {[field]: value};
+        }
+
+        const preferred_primary_lang = String(this.getEnv()?.DEFAULT_LANG ?? this.getEnv()?.default_lang ?? this.getLang());
+        const primary_lang = language_codes.indexOf(preferred_primary_lang) >= 0 ? preferred_primary_lang : language_codes[0];
+        const primary_label = languages[primary_lang] ?? primary_lang;
+        const valueToString = (val: any) => (val === null || val === undefined) ? '' : String(val);
+
+        let $elem = $('<div />')
+            .addClass('sb-view-translate-dialog')
+            .css({
+                'display': 'flex',
+                'flex-direction': 'column',
+                'gap': '16px',
+                'min-width': '100%',
+                'max-width': '100%'
+            });
+
+        let $primary = $('<div />')
+            .addClass('sb-view-translate-dialog-primary')
+            .addClass('sb-view-translate-dialog-row')
+            .attr('data-lang', primary_lang)
+            .css({
+                'position': 'sticky',
+                'top': '0',
+                'z-index': '1',
+                'background': '#fff',
+                'padding': '12px',
+                'border': '1px solid rgba(0, 0, 0, 0.12)',
+                'border-radius': '4px'
+            })
+            .append($('<div />')
+                .css({'font-weight': '600', 'margin-bottom': '8px'})
+                .text(primary_label + ' (main)')
+            )
+            .appendTo($elem);
+
+        let $primary_input = UIHelper.createInput(
+                this.getUuid() + '_translate_' + primary_lang + '_value',
+                '',
+                valueToString(translations[primary_lang]?.[field] ?? value),
+                '',
+                '',
+                false,
+                'outlined'
+            )
+            .css({'width': '100%'})
+            .appendTo($primary);
+
+        $primary_input.find('input')
+            .addClass('sb-view-translate-dialog-value');
+
+        let $list = $('<div />')
+            .addClass('sb-view-translate-dialog-list')
+            .css({
+                'display': 'flex',
+                'flex-direction': 'column',
+                'gap': '12px',
+                'max-height': 'min(440px, 55vh)',
+                'overflow-y': 'auto',
+                'padding-right': '4px'
+            })
+            .appendTo($elem);
+
+        for(let lang of language_codes) {
+            if(lang === primary_lang) {
+                continue;
+            }
+
+            const existing_value = translations[lang]?.[field] ?? null;
+            const language_label = languages[lang] ?? lang;
+
+            let $row = $('<div />')
+                .addClass('sb-view-translate-dialog-row')
+                .attr('data-lang', lang)
+                .css({
+                    'border': '1px solid rgba(0, 0, 0, .12)',
+                    'border-radius': '4px',
+                    'padding': '12px'
+                })
+                .appendTo($list);
+
+            let $header = $('<div />')
+                .css({
+                    'display': 'flex',
+                    'align-items': 'center',
+                    'gap': '12px'
+                })
+                .appendTo($row);
+
+            $('<div />')
+                .css({'font-weight': '600'})
+                .text(language_label)
+                .appendTo($header);
+
+            let $body = $('<div />')
+                .css({
+                    'margin-top': '12px'
+                })
+                .appendTo($row);
+
+            let $input = UIHelper.createInput(
+                    this.getUuid() + '_translate_' + lang + '_value',
+                    '',
+                    valueToString(existing_value),
+                    '',
+                    '',
+                    false,
+                    'outlined'
+                )
+                .css({'width': '100%'})
+                .appendTo($body);
+
+            $input.find('input')
+                .addClass('sb-view-translate-dialog-value');
+        }
+
+        if(!$list.children().length) {
+            $('<div />')
+                .css({'color': 'rgba(0, 0, 0, .62)', 'font-style': 'italic'})
+                .text(TranslationService.instant('SB_TRANSLATIONS_NO_OTHER_LANGUAGE', 'No other language is available.'))
+                .appendTo($list);
+        }
+
+        $dialog.find('.mdc-dialog__content').append($elem);
+
+        $dialog.on('_accept', async () => {
+            const values: any = {};
+
+            $elem.find('.sb-view-translate-dialog-row').each((index: number, row: any) => {
+                const $row = $(row);
+                const lang = String($row.attr('data-lang') ?? '');
+                if(!lang.length) {
+                    return;
+                }
+                values[lang] = $row.find('.sb-view-translate-dialog-value').val();
+            });
+
+            try {
+                const promises: Promise<any>[] = [];
+
+                for(let lang of Object.keys(values)) {
+                    promises.push(ApiService.update(this.entity, [object_id], {[field]: values[lang]}, true, lang));
+                }
+
+                await Promise.all(promises);
+                await this.onchangeView();
+
+                let $snack = UIHelper.createSnackbar(
+                    TranslationService.instant('SB_ACTIONS_NOTIFY_CHANGES_SAVED', 'Changes saved.'),
+                    '✓',
+                    '',
+                    4000,
+                    '#29b829'
+                );
+                this.$container.append($snack);
+            }
+            catch(response) {
+                try {
+                    await this.displayErrorFeedback(this.translation, response);
+                }
+                catch(error) {
+                    console.warn(error);
+                }
+            }
         });
     }
 
@@ -3459,21 +3698,21 @@ export class View {
                 if(status == 202) {
                     console.debug('View::performAction - status `202`: no change');
                     // nothing to perform
-                    let $snack = UIHelper.createSnackbar(TranslationService.instant('SB_ACTIONS_NOTIFY_ACTION_SENT', 'Action request sent.'), '✓', '', 4000, '#1d8b1d');
+                    let $snack = UIHelper.createSnackbar(TranslationService.instant('SB_ACTIONS_NOTIFY_ACTION_SENT', 'Action request sent.'), '✓', '', 4000, '#29b829');
                     this.$container.append($snack);
-                }
-                // handle HTTP 205 (reset content)
-                else if(status == 205) {
-                    console.debug('View::performAction - status `205`: closing context');
-                    // mark context as changed to refresh parent lists or views showing deleted object
-                    this.setChanged();
-                    // close context
-                    await this.closeContext();
                 }
                 // handle HTTP 302 (found - redirect)
                 else if(status == 302 && headers.hasOwnProperty('location')) {
                     console.debug('View::performAction - status `302`: redirecting to Location');
                     window.location.href = headers['location'];
+                }
+                // handle HTTP 205 (reset content)
+                else if(status == 205 && this.getType() === 'form') {
+                    console.debug('View::performAction - status `205`: closing context');
+                    // mark context as changed to refresh parent lists or views showing deleted object
+                    this.setChanged();
+                    // close context
+                    await this.closeContext();
                 }
                 // handle other HTTP status (200 - success, 201 - created, 204 - no content)
                 else {

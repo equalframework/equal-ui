@@ -212,6 +212,56 @@ export default class Widget {
         }
     }
 
+    protected isMultilang(): boolean {
+        const field = this.config?.field;
+        if(!field) {
+            return false;
+        }
+
+        const modelField = this.getLayout()?.getView?.()?.getModelFields?.()?.[field];
+        return modelField?.multilang === true;
+    }
+
+    protected applyMultilangIndicator() {
+        if(!this.isMultilang()) {
+            return;
+        }
+
+        if(this.config.layout === 'list') {
+            return;
+        }
+
+        this.$elem
+            .addClass('sb-widget-multilang')
+            .css({'position': 'relative'});
+
+        this.$elem.find('.sb-ui-text-field-input').css({'padding-right': '42px'});
+        this.$elem.find('.sb-ui-text-field-label').css({'max-width': 'calc(100% - 52px)'});
+
+        if(this.mode !== 'edit') {
+            this.$elem.append(
+                $('<span title="Translations">translate</span>')
+                    .addClass('material-icons sb-widget-multilang-icon')
+            );
+            return;
+        }
+
+        const $button = $('<button type="button" tabindex="-1" title="Translations"></button>')
+            .addClass('mdc-icon-button sb-widget-multilang-button')
+            .append($('<span class="material-icons mdc-icon-button__icon">translate</span>'))
+            .on('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                this.$elem.trigger('_translateWidget', [{
+                    field: this.config.field,
+                    value: this.value
+                }]);
+                return false;
+            });
+
+        this.$elem.append($button);
+    }
+
     public static toString(type: string, value: any, usage?: string | null): string {
         console.debug("Widget::toString - parsing value", type, value, usage);
         switch(type) {

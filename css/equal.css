@@ -967,6 +967,23 @@ body > .header-view-details-popup .header-view-details-body div {
     max-width: 10px;
 }
 
+.sb-widget-multilang-button {
+    position: absolute;
+    scale: 0.5;
+    top: -10px;
+    right: -10px;
+    z-index: 2;
+    color: rgba(0, 0, 0, 0.54);
+}
+
+.sb-widget-multilang-icon {
+    position: absolute;
+    scale: 0.5;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
+    color: rgba(0, 0, 0, 0.54);
+}
 
 .sb-widget {
     position: relative;

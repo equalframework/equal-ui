@@ -196,6 +196,9 @@ export default class WidgetText extends Widget {
             this.$elem.append( $('<div class="textarea-title" />').text(this.label) );
         }
 
+        // #todo - confirm
+        // this.applyMultilangIndicator();
+
         return this.$elem
             .addClass('sb-widget')
             .addClass('sb-widget-mode-' + this.mode)
