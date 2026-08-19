@@ -698,10 +698,16 @@ export class Frame {
     }
 
     /**
-     * Generate an object mapping fields of current entity with default values, based on current domain.
-     * #todo - use Model class (@see `Model::getModelDefaults()`)
+     * Generate an object mapping fields of the current entity with default values,
+     * based on the current domain.
      *
-     * @returns Object  A map of fields with their related default values
+     * @param {string} entity - Entity name.
+     * @param {Array} domain - Domain intended for object creation or many2one joint conditions.
+     *
+     * @todo Use Model class.
+     * @see Model#getModelDefaults
+     *
+     * @returns {Object} A map of fields with their related default values.
      */
      private async getNewObjectDefaults(entity: string, domain: [] = []) {
         // create a new object as draft
