@@ -588,6 +588,13 @@ export class LayoutForm extends Layout {
                     // prevent refreshing objects that haven't changed
                     else if(has_changed) {
                         let $widget = widget.render();
+                        $widget.on('_translateWidget', (event: any, request: any = {}) => {
+                            event.stopPropagation();
+                            this.view.openDialogTranslate({
+                                ...request,
+                                object_id: object.id
+                            });
+                        });
                         /*
                         // #memo - is this necessary ?
                         $widget.on('click', () => {
