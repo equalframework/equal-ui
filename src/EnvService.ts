@@ -135,24 +135,24 @@ export class _EnvService {
     public formatNumber(value: number, precision: number = -1, thousand_sep: string = '', decimal_sep: string = ''): string {
         if(precision == -1) {
             precision = this.getEnvValue([
-                'core.locale.numbers.decimal_precision',
-                'core.locale.number.decimal_precision'
+                'core.locale.number.decimal_precision',
+                'core.locale.numbers.decimal_precision'
             ], 0);
         }
         if(thousand_sep == '') {
             thousand_sep = this.getEnvValue([
-                'core.locale.numbers.thousands_separator',
-                'core.locale.number.thousands_separator'
+                'core.locale.number.thousands_separator',
+                'core.locale.numbers.thousands_separator'
             ], ',');
         }
         if(decimal_sep == '') {
             decimal_sep = this.getEnvValue([
-                'core.locale.numbers.decimal_separator',
-                'core.locale.number.decimal_separator'
+                'core.locale.number.decimal_separator',
+                'core.locale.numbers.decimal_separator'
             ], '.');
         }
         // sanitize received value
-        let n = Number(value)
+        let n = Number(value);
         if(isNaN(n)) {
             n = 0;
         }
