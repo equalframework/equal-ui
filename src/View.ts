@@ -3682,7 +3682,7 @@ export class View {
                 const headers = ApiService.getLastHeaders();
 
                 // handle binary data response
-                if(content_type != 'application/json') {
+                if(status != 204 && content_type != 'application/json') {
                     let blob = new Blob([result], {type: content_type});
                     let filename = "file.download";
                     if(headers.hasOwnProperty('content-disposition')) {
