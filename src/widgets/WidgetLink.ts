@@ -55,7 +55,12 @@ export default class WidgetLink extends Widget {
 
                 if(this.config.layout == 'list') {
                     if(value.length > 0) {
-                        if(this.config.hasOwnProperty('link') && this.config.link == 'icon'){
+                        if(this.config.interactions === false) {
+                            this.$elem.text(value).on('click', (event) => {
+                                event.stopPropagation();
+                            });
+                        }
+                        else if(this.config.hasOwnProperty('link') && this.config.link == 'icon'){
                             this.$elem.append($button_open);
                         }
                         else {
