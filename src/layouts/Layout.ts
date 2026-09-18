@@ -379,7 +379,7 @@ export class Layout implements LayoutInterface{
 
                 // dispatcher event (to be handled by target app `App`)
                 window.dispatchEvent(
-                    new CustomEvent('App:open-component', {
+                    new CustomEvent('equal-ui:open-component', {
                         detail: {
                             component: action.component.name,
                             data: data,

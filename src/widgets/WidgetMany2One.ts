@@ -225,7 +225,7 @@ export default class WidgetMany2One extends Widget {
 
                             // dispatcher event (to be handled by target app `App`)
                             window.dispatchEvent(
-                                new CustomEvent('App:open-component', {
+                                new CustomEvent('equal-ui:open-component', {
                                     detail: {
                                         component: this.config.component.name,
                                         data: data,
@@ -624,7 +624,14 @@ export default class WidgetMany2One extends Widget {
                             this.$elem.addClass('sb-string-wrap');
                         }
 
-                        if(this.is_first) {
+                        if(this.config.interactions === false) {
+                            this.$elem
+                                .css({"cursor": "default", "text-decoration": "none"})
+                                .on('click', (event: any) => {
+                                    event.stopPropagation();
+                                });
+                        }
+                        else if(this.is_first) {
                             // by convention, first column of each row opens the object no matter the type of the field
                             this.$elem.addClass('is-first');
                         }
