@@ -299,7 +299,7 @@ export default class WidgetText extends Widget {
         if(this.$elem.data('quill')) {
             const editor = this.$elem.data('quill');
             if(usage.includes('text/html')) {
-                // leave unchanged : this will not require any Quill processing at next load (and <p>, <ol>, <ul> paddings are ignore at rendering)
+                // Leave HTML unchanged to preserve WYSIWYG rendering across loads.
                 /*
                 const container = document.createElement('div');
                 container.innerHTML = result;
