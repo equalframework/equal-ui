@@ -588,13 +588,30 @@ export class LayoutForm extends Layout {
                     // prevent refreshing objects that haven't changed
                     else if(has_changed) {
                         let $widget = widget.render();
+
                         $widget.on('_translateWidget', (event: any, request: any = {}) => {
                             event.stopPropagation();
-                            this.view.openDialogTranslate({
+
+                            const translationRequest = {
                                 ...request,
-                                object_id: object.id
+                                id: object.id,
+                                entity: this.view.getEntity(),
+                                lang: this.view.getLang(),
+                                object: object
+                            };
+
+                            const translationEvent = new CustomEvent('equal-ui:translate-widget', {
+                                cancelable: true,
+                                detail: translationRequest
                             });
+
+                            const useDefaultHandler = window.dispatchEvent(translationEvent);
+
+                            if(useDefaultHandler) {
+                                this.view.openDialogTranslate(translationRequest);
+                            }
                         });
+
                         /*
                         // #memo - is this necessary ?
                         $widget.on('click', () => {
