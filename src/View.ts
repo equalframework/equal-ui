@@ -350,7 +350,22 @@ export class View {
             // #memo - received config takes precedence
 
             if(this.view_schema.hasOwnProperty("header")) {
+                const schema_header = this.view_schema.header;
+
                 this.config.header = {...this.view_schema.header, ...this.config.header};
+
+                // A default injected by a relational widget must not override
+                // an explicit disabling from the target view.
+                if(this.purpose === 'widget') {
+                    if(schema_header.selection === false) {
+                        this.config.header.selection = false;
+                        this.config.selection_actions = [];
+                    }
+
+                    if(schema_header.actions === false) {
+                        this.config.header.actions = false;
+                    }
+                }
             }
 
             if(this.view_schema.hasOwnProperty("order") && this.order == View.DEFAULT_ORDER) {
@@ -426,6 +441,7 @@ export class View {
                         // if selection is disabled, force mode to view (to prevent displaying checkboxes)
                         // #memo - for child views, mode can be switched through parent view
                         this.mode = 'view';
+                        this.config.selection_actions = [];
                     }
                     else {
                         if(!this.config.header.selection.hasOwnProperty('default') || this.config.header.selection.default == true) {
@@ -2145,8 +2161,15 @@ export class View {
                 $export_actions_menu_button.find('button').on('click', () => $export_actions_menu.trigger('_toggle') );
             }
 
-            // create buttons with actions to apply on current selection
-            if(this.selected_ids.length > 0) {
+            // create buttons with visible actions to apply on current selection
+            const selection_actions = Array.isArray(this.config.selection_actions)
+                ? this.config.selection_actions.filter( (item:any) => item && item.visible !== false )
+                : [];
+
+            if(this.selected_ids.length > 0
+                && this.config.header?.selection !== false
+                && selection_actions.length > 0
+            ) {
                 let $container = $('<div />').addClass('sb-view-header-list-actions-selected')
 
                 if(header_layout === 'full') {
@@ -2169,7 +2192,7 @@ export class View {
 
                 // add actions defined in view
                 console.debug('View::LayoutListRefresh - Adding selection actions', this.config.selection_actions);
-                for(let item of this.config.selection_actions) {
+                for(let item of selection_actions) {
                     let item_id = 'SB_ACTION_ITEM-' + item.label;
                     // #todo #temp - attempt to translate with label as being a SB_ constant (we should only rely on ID instead)
                     let translated_label = TranslationService.instant(item.label);
@@ -2188,11 +2211,6 @@ export class View {
                         let $tooltip = UIHelper.createTooltip('selection-action-' + item.label, TranslationService.instant(item.label));
                         $container.append($tooltip);
                         UIHelper.decorateTooltip($tooltip);
-                    }
-                    if(item.hasOwnProperty('visible')) {
-                        if(!item.visible) {
-                            $list_item.hide();
-                        }
                     }
                 }
 
@@ -2912,7 +2930,7 @@ export class View {
 
     public async openDialogTranslate(request: any = {}) {
         const field = String(request?.field ?? '');
-        const object_id = parseInt(String(request?.object_id ?? this.getActiveObjectId() ?? 0), 10);
+        const object_id = parseInt(String(request?.id ?? this.getActiveObjectId() ?? 0), 10);
 
         if(!field.length || object_id <= 0) {
             console.warn('View::openDialogTranslate - missing object id or field', request);
