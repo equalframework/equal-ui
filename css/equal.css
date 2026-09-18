@@ -789,9 +789,19 @@ body > .header-view-details-popup .header-view-details-body div {
     transform-origin: top left;
 }
 
-/* prevent rendering variations on text/html when edited using Quill (which appends <p></p>) */
-.sb-widget.sb-ui-textarea p, .sb-widget.sb-ui-textarea ol, .sb-widget.sb-ui-textarea ul {
+/* Collapse Quill's block spacing for plain/structured text, but preserve HTML WYSIWYG spacing. */
+.sb-widget.sb-ui-textarea:not([data-usage^="text/html"]) p,
+.sb-widget.sb-ui-textarea:not([data-usage^="text/html"]) ol,
+.sb-widget.sb-ui-textarea:not([data-usage^="text/html"]) ul {
     margin: 0;
+}
+
+/* Quill resets block spacing; restore the HTML defaults in WYSIWYG mode. */
+.sb-widget.sb-ui-textarea[data-usage^="text/html"] .ql-editor p,
+.sb-widget.sb-ui-textarea[data-usage^="text/html"] .ql-editor ol,
+.sb-widget.sb-ui-textarea[data-usage^="text/html"] .ql-editor ul {
+    margin: revert;
+    padding: revert;
 }
 
 .sb-widget-mode-edit.mdc-select .mdc-floating-label.mdc-floating-label--float-above {
