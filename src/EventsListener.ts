@@ -333,10 +333,16 @@ class EventsListener {
             this.user = await ApiService.getUser();
 
             if(this.user.hasOwnProperty('language')) {
+                // this is the initial value that can be manually changed afterward
                 EnvService.setEnv('lang', this.user.language.slice(0, 2));
+
+                // #memo - as of 2026-09-01 user.language still mixes lang & locale
+                EnvService.setEnv('locale', this.user.language);
+
                 if(this.user.hasOwnProperty('locale')) {
                     EnvService.setEnv('locale', this.user.locale);
                 }
+
                 TranslationService.init();
             }
 
