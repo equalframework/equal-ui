@@ -3405,10 +3405,13 @@ export class View {
                     }
 
                     Promise.all(promises)
-                        .then( () => {
+                        .then( async () => {
                             $action_set_selected_edit_actions.remove();
                             this.$headerContainer.find('#' + 'SB_ACTION_ITEM-' + 'SB_ACTIONS_BUTTON_INLINE_UPDATE').show();
                             this.$headerContainer.find('#' + 'SB_ACTION_ITEM-' + 'SB_ACTIONS_BUTTON_BULK_ASSIGN').hide();
+                            // refresh from the local model to recompute list operations
+                            await this.onchangeModel();
+                            this.layout.setSelection(selection);
                         })
                         .catch( () => {
 
