@@ -239,7 +239,8 @@ body > .header-view-details-popup {
 
     min-width: 250px;
     max-width: 350px;
-    height:  150px;
+    min-height: 150px;
+    max-height: 250px;
     border:  solid 1px lightgrey;
     background: white;
     border-radius: 12px;
@@ -296,6 +297,9 @@ body > .header-view-details-popup .header-view-details-title .btn-copy:hover {
 
 body > .sb-popover .sb-popover-body,
 body > .header-view-details-popup .header-view-details-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
     font-size: 14px;
     line-height: 24px;
     padding: 12px;
