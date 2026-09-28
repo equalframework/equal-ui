@@ -71,6 +71,33 @@ class EventsListener {
         // setup event handlers
         this.init(domListenerId);
 
+        // Allow applications that do not have access to this instance to retrieve the current context through a synchronous browser event.
+        /*
+            Usage :
+            const request: any = {
+                target: '#mon-container'
+            };
+            window.dispatchEvent(
+                new CustomEvent('equal-ui:get-context', {
+                    detail: request
+                })
+            );
+            console.log(request.context);
+        */
+        window.addEventListener('equal-ui:get-context', (event: Event) => {
+            const request = event as CustomEvent;
+
+            if(!request.detail || typeof request.detail !== 'object') {
+                return;
+            }
+
+            const target = (typeof request.detail.target === 'string' && request.detail.target.length)
+                ? request.detail.target
+                : '#sb-container';
+
+            request.detail.context = this.getCurrentContext(target);
+        });
+
         /*
         // auto dark mode attempt (doesn't work for dynamic content loaded afterward)
         $(document).ready(function(){
@@ -122,6 +149,32 @@ class EventsListener {
             }
             this.subscribers[event].push(callback);
         }
+    }
+
+    /**
+     * Return a snapshot of the context currently displayed by the requested Frame.
+     */
+    private getCurrentContext(target: string) {
+        if(!this.frames.hasOwnProperty(target)) {
+            return null;
+        }
+
+        const context = this.frames[target].getContext();
+
+        if(!context || typeof context.getEntity !== 'function') {
+            return null;
+        }
+
+        return {
+            entity: context.getEntity(),
+            type: context.getType(),
+            name: context.getName(),
+            domain: context.getDomain(),
+            mode: context.getMode(),
+            purpose: context.getPurpose(),
+            lang: context.getLang(),
+            target: target
+        };
     }
 
     public navigate(route:string) {
