@@ -440,11 +440,11 @@ export class Frame {
                     }
                     this.closeContext();
                 });
-                this.createPopover($crumb, context);
+                await this.createPopover($crumb, context);
             }
             else {
                 $crumb = $('<span>' + context_purpose_string + '</span>');
-                this.createPopover($crumb, context);
+                await this.createPopover($crumb, context);
             }
 
             crumbs.push({ $node: $crumb, isContext: true, contextIndex: i });
@@ -478,7 +478,7 @@ export class Frame {
             $current = $('<span>' + current_purpose_string + '</span>');
         }
 
-        this.createPopover($current, this.context);
+        await this.createPopover($current, this.context);
 
         if(crumbs.length > 0) {
             crumbs.push({
@@ -548,11 +548,11 @@ export class Frame {
                         this.closeContext();
                     });
 
-                this.createPopover($ellipsis, context);
+                await this.createPopover($ellipsis, context);
             }
             else {
                 $ellipsis = $('<span>[...]</span>');
-                this.createPopover($ellipsis, context);
+                await this.createPopover($ellipsis, context);
             }
 
             // insert at beginning
@@ -665,16 +665,33 @@ export class Frame {
      * @param $crumb
      * @param context
      */
-    private createPopover($crumb: JQuery | undefined, context: Context) {
+    private async createPopover($crumb: JQuery | undefined, context: Context) {
         if(!this.environment?.debug || !$crumb) {
             return;
         }
 
+        const details: any = {
+            entity: context.getEntity(),
+            view: context.getType() + '.' + context.getName(),
+            purpose: context.getPurpose(),
+            mode: context.getMode()
+        };
+
         const $body = $('<div />')
-            .append( $('<div />').attr('title', context.getEntity()).html('Entity: <b>'+context.getEntity()+'</b>') )
-            .append( $('<div />').attr('title', context.getType()+'.'+context.getName()).html('View: <b>'+context.getType()+'.'+context.getName()+'</b>') )
-            .append( $('<div />').attr('title', context.getPurpose()).html('Purpose: <b>'+context.getPurpose()+'</b>') )
-            .append( $('<div />').attr('title', context.getMode()).html('Mode: <b>'+context.getMode()+'</b>') );
+            .append( $('<div />').attr('title', details.entity).html('Entity: <b>'+details.entity+'</b>') );
+
+        if(context.getType() === 'form') {
+            const objects = await context.getView().getModel().get();
+            if(objects.length && typeof objects[0].id !== 'undefined' && objects[0].id !== null) {
+                details.object_id = objects[0].id;
+                $body.append( $('<div />').attr('title', details.object_id).html('Object ID: <b>'+details.object_id+'</b>') );
+            }
+        }
+
+        $body
+            .append( $('<div />').attr('title', details.view).html('View: <b>'+details.view+'</b>') )
+            .append( $('<div />').attr('title', details.purpose).html('Purpose: <b>'+details.purpose+'</b>') )
+            .append( $('<div />').attr('title', details.mode).html('Mode: <b>'+details.mode+'</b>') );
 
         const url = '/workbench/#/package/' + EntityHelper.getPackageName(context.getEntity()) + '/view/' + EntityHelper.getClassName(context.getEntity()) + ':' + context.getType() + '.' + context.getName() + '/edit';
 
@@ -682,14 +699,7 @@ export class Frame {
             title: 'View details',
             body: $body,
             externalLink: url,
-            clipboardValue: JSON.stringify(
-                {
-                    entity: context.getEntity(),
-                    view: context.getType() + '.' + context.getName(),
-                    purpose: context.getPurpose(),
-                    mode: context.getMode()
-                },
-                null, 4),
+            clipboardValue: JSON.stringify(details, null, 4),
             popupClass: 'header-view-details-popup',
             group: Frame.BREADCRUMB_POPOVER_GROUP,
             openDelay: 1200,
