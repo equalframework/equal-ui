@@ -284,7 +284,7 @@ class UIHelper {
 
     public static createListItem(id: string, label: string, icon:string = '') {
         let $elem = $('\
-        <li class="mdc-list-item" tabindex="-1" id="' + id + '"> \
+        <li class="mdc-list-item" tabindex="-1" id="' + id + '" title="' + label + '"> \
             <span class="mdc-list-item__text">' + label + '</span> \
             <span class="mdc-list-item__ripple"></span> \
         </li>');
@@ -395,9 +395,9 @@ class UIHelper {
         <div id="'+id+'" class="mdc-select mdc-select--filled mdc-menu-surface--anchor '+( (label.length)?'':'mdc-select--no-label' )+' '+ ( (disabled)?'mdc-select--disabled':'' ) +'"> \
             <div class="mdc-select__anchor" role="button" tabindex="0"> \
                 <span class="mdc-select__ripple"></span> \
-                '+ ( (label.length)?'<span class="mdc-floating-label">'+label+'</span>':'' ) +'\
+                '+ ( (label.length)?'<span class="mdc-floating-label">' + label + '</span>':'' ) +'\
                 <span class="mdc-select__selected-text-container"> \
-                    <span class="mdc-select__selected-text">'+selected+'</span> \
+                    <span class="mdc-select__selected-text">' + selected + '</span> \
                 </span> \
                 <span class="mdc-select__dropdown-icon"> \
                     <svg class="mdc-select__dropdown-icon-graphic" viewBox="7 10 10 5"> \
@@ -407,12 +407,12 @@ class UIHelper {
                 </span> \
                 <span class="mdc-line-ripple"></span> \
             </div> \
-            <div id="'+id+'_menu" tabindex="-1" class="mdc-select__menu mdc-menu mdc-menu-surface--fixed mdc-menu-surface" role="listbox"> \
-                <input id="'+id+'_input" type="text" style="display: none" value="'+selected+'" /> \
-                <ul id="'+id+'_menu_list" class="mdc-list"></ul> \
+            <div id="' + id + '_menu" tabindex="-1" class="mdc-select__menu mdc-menu mdc-menu-surface--fixed mdc-menu-surface" role="listbox"> \
+                <input id="' + id + '_input" type="text" style="display: none" value="' + selected + '" /> \
+                <ul id="' + id + '_menu_list" class="mdc-list"></ul> \
             </div> \
             <div class="mdc-text-field-helper-line"> \
-                <div class="mdc-text-field-helper-text" aria-hidden="true" title="'+helper+'">'+helper+'</div> \
+                <div class="mdc-text-field-helper-text" aria-hidden="true" title="' + helper + '">' + helper + '</div> \
             </div> \
         </div>');
 
@@ -421,9 +421,9 @@ class UIHelper {
         if( !Array.isArray(values) ) {
             for(let key in values) {
                 let $line = $(' \
-                    <li id="'+id+'_menu_list-'+key+'" class="mdc-list-item" role="option" data-value="'+key+'"> \
+                    <li id="' + id + '_menu_list-'+key+'" class="mdc-list-item" role="option" data-value="' + key + '" title="' + values[key] + '"> \
                         <span class="mdc-list-item__ripple"></span> \
-                        <span class="mdc-list-item__text">'+values[key]+'</span> \
+                        <span class="mdc-list-item__text">' + values[key] + '</span> \
                     </li>');
                 if(key == selected) {
                     $line.addClass('mdc-list-item--selected').attr('aria-selected', 'true');
@@ -441,9 +441,9 @@ class UIHelper {
         else {
             for(let value of values) {
                 let $line = $(' \
-                    <li class="mdc-list-item" tabindex="-1" role="option" data-value="'+value+'"> \
+                    <li class="mdc-list-item" tabindex="-1" role="option" data-value="' + value + '" title="' + value + '"> \
                         <span class="mdc-list-item__ripple"></span> \
-                        <span class="mdc-list-item__text">'+value+'</span> \
+                        <span class="mdc-list-item__text">' + value + '</span> \
                     </li>');
                 if(value == selected) {
                     $line.addClass('mdc-list-item--selected').attr('aria-selected', 'true');
