@@ -377,7 +377,7 @@ export class Layout implements LayoutInterface{
                     setTimeout( () => $disable_overlay.hide(), 1000);
                 };
 
-                // dispatcher event (to be handled by target app `App`)
+                // dispatcher event (can be intercepted by App)
                 window.dispatchEvent(
                     new CustomEvent('equal-ui:open-component', {
                         detail: {
