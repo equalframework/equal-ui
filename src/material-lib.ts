@@ -284,10 +284,12 @@ class UIHelper {
 
     public static createListItem(id: string, label: string, icon:string = '') {
         let $elem = $('\
-        <li class="mdc-list-item" tabindex="-1" id="' + id + '" title="' + label + '"> \
+        <li class="mdc-list-item" tabindex="-1" id="' + id + '"> \
             <span class="mdc-list-item__text">' + label + '</span> \
             <span class="mdc-list-item__ripple"></span> \
         </li>');
+
+        $elem.attr('title', $('<div/>').html(label).text());
 
         if(icon.length) {
             $elem.prepend($('<span/>').addClass('mdc-list-item__graphic material-icons').text(icon));
