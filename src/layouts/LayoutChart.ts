@@ -133,7 +133,7 @@ export class LayoutChart extends Layout {
             range_from: (new DateReference(this.config.range_from)).getDate().toISOString(),
             range_to: (new DateReference(this.config.range_to)).getDate().toISOString(),
             datasets: this.parsed_datasets,
-            mode: this.view.getMode(),
+            mode: this.view.getMode() === 'grid' ? 'grid' : 'chart',
             ...this.view.getParams()
         };
 
