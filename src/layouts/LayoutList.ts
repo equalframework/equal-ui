@@ -163,7 +163,7 @@ export class LayoutList extends Layout {
 
         let first_column: boolean = true;
 
-        for(let item of view_schema.layout.items) {
+        for(let item of width_items) {
             if(!item.hasOwnProperty('value')) {
                 continue;
             }
@@ -231,10 +231,7 @@ export class LayoutList extends Layout {
                 // $op_div.append($title);
                 let $op_row = $('<div>').addClass('operation-row').appendTo($op_div);
                 let pos = 0;
-                for(let item of view_schema.layout.items) {
-                    if(item.hasOwnProperty('visible') && !item.visible) {
-                        continue;
-                    }
+                for(let item of width_items) {
                     let width = Math.floor(10 * item.width) / 10;
                     let $cell = $('<div>').addClass('operation-cell mdc-data-table__cell').css({width: width + '%'});
                     if(pos == 0) {
@@ -1330,6 +1327,7 @@ export class LayoutList extends Layout {
         const item = viewSchema.layout?.items.find( (item: any) => item.value === op_field );
         const model_def = this.view.getModelFields()[op_field] ?? null;
         const data = this.getGroupData(group, op_field);
+        usage = usage ?? item?.usage ?? model_def?.usage ?? null;
 
         if(op_type === 'COUNT') {
             return data.filter(v => v !== null && v !== undefined).length;
@@ -1358,7 +1356,14 @@ export class LayoutList extends Layout {
 
             switch(op_type) {
                 case 'SUM':
-                    result += val;
+                    val = Number(val);
+                    if(Number.isNaN(val)) {
+                        break;
+                    }
+                    result = this.getRoundedValueFromUsage(
+                        result + this.getRoundedValueFromUsage(val, usage),
+                        usage
+                    );
                     break;
 
                 /*
@@ -1389,6 +1394,27 @@ export class LayoutList extends Layout {
         }
 
         return result;
+    }
+
+    protected getRoundedValueFromUsage(value: number, usage?: string | null): number {
+        if(usage && (usage.indexOf('amount/percent') >= 0 || usage.indexOf('amount/rate') >= 0)) {
+            return EnvService.roundNumber(value, 2);
+        }
+
+        if(usage && usage.indexOf('amount/money') >= 0) {
+            return EnvService.roundFinancialNumber(value);
+        }
+
+        if(usage && usage.indexOf('number/real') >= 0) {
+            const match = usage.match(/number\/real:(\d+(\.\d+)?)/);
+            if(match) {
+                const number_parts = match[1].split('.');
+                const precision = parseInt(number_parts.length >= 2 ? number_parts[1] : number_parts[0], 10);
+                return EnvService.roundNumber(value, precision);
+            }
+        }
+
+        return EnvService.roundNumber(value);
     }
 
     private formatOperationValue(operation: any, value: number, fallbackType: string = 'string', usage?: string | null): string {
