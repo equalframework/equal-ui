@@ -2393,7 +2393,7 @@ export class View {
                             const response = await ApiService.call("?do=" + controller, {
                                     entity: this.getEntity(),
                                     ids: [object['id']],
-                                    fields: this.model.export(object),
+                                    fields: this.model.export(object, object),
                                     force: false,
                                     lang: this.getLang()
                                 });
@@ -3375,12 +3375,25 @@ export class View {
                                 }
                                 else {
                                     try {
-                                        const response = await ApiService.update(this.entity, [object_id], this.model.export(object), false, this.getLang());
+                                        const response = await ApiService.update(this.entity, [object_id], this.model.export(object, object), false, this.getLang());
                                         $tr.trigger('_toggle_mode', 'view');
                                         $tr.attr('data-edit', '0');
-                                        // update the modified field otherwise a confirmation will be displayed at next update
+                                        // keep the display value of updated many2one fields: model_update only returns their id
                                         if(Array.isArray(response) && response.length) {
-                                            this.model.reset(object_id, response[0]);
+                                            const response_values = {...response[0]};
+
+                                            for(const field of Object.keys(object)) {
+                                                const local_value = object[field];
+
+                                                if(this.model.getFinalType(field) === 'many2one'
+                                                    && response_values[field] == local_value.id
+                                                    && local_value !== null && typeof local_value === 'object'
+                                                ) {
+                                                    response_values[field] = local_value;
+                                                }
+                                            }
+
+                                            this.model.reset(object_id, response_values);
                                         }
                                         resolve(true);
                                     }
@@ -3511,7 +3524,7 @@ export class View {
                         let objects = await this.model.get();
                         object = objects.find( (o: any) => o.id == object.id );
                         try {
-                            const response = await ApiService.update(this.entity, [object.id], this.model.export(object), false, this.getLang());
+                            const response = await ApiService.update(this.entity, [object.id], this.model.export(object, object), false, this.getLang());
                             $tr.trigger('_toggle_mode', 'view');
                             $tr.attr('data-edit', '0');
                             $tr.find('.sb-action-cell').empty();
@@ -3602,6 +3615,19 @@ export class View {
 
             let def = params[field];
 
+            // Action parameters have their own schema. A parameter can share its name with a
+            // field of the parent model while having a different type,
+            // therefore its widget type must not be inferred from the parent model.
+            let widget_type = (def.type === 'computed' && def.hasOwnProperty('result_type'))
+                ? def.result_type
+                : def.type;
+            if(def.hasOwnProperty('usage')) {
+                widget_type = WidgetFactory.getTypeFromUsage(def.usage, widget_type);
+            }
+            if(def.hasOwnProperty('selection')) {
+                widget_type = 'select';
+            }
+
             let model_fields:any = {};
             model_fields[field] = def;
 
@@ -3610,7 +3636,8 @@ export class View {
                 "type": "field",
                 "value": field,
                 "widget": {
-                    "header": false
+                    "header": false,
+                    "type": widget_type
                 }
             };
 
@@ -3959,7 +3986,7 @@ export class View {
                         });
                         // #toto - this does not cover case where an action uses a custom controller
                         // (saving should not occur here)
-                        const response = await ApiService.update(this.entity, [object['id']], this.model.export(object), true, this.getLang());
+                        const response = await ApiService.update(this.entity, [object['id']], this.model.export(object, object), true, this.getLang());
                         // this.closeContext();
                         return response;
                     }
