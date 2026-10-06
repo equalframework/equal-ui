@@ -124,6 +124,32 @@ export class _EnvService {
     }
 
     /**
+     * Round a number using HalfAwayFromZero.
+     */
+    public roundNumber(value: number, precision: number = -1): number {
+        if(precision == -1) {
+            precision = this.getEnvValue([
+                'core.locale.number.decimal_precision',
+                'core.locale.numbers.decimal_precision'
+            ], 0);
+        }
+
+        let n = Number(value);
+        if(isNaN(n)) {
+            n = 0;
+        }
+
+        const factor = Math.pow(10, precision);
+        const scaled = Math.abs(n) * factor;
+        return Math.sign(n) * Math.round(scaled + Number.EPSILON * Math.max(1, scaled)) / factor;
+    }
+
+    public roundFinancialNumber(value: number, precision: number = 2): number {
+        precision = this.getEnvValue(['core.locale.currency.decimal_precision'], precision);
+        return this.roundNumber(value, precision);
+    }
+
+    /**
      * #memo precision, thousand_sep and decimal_sep must be left empty by default : if not provided values are assigned from envinfo
      *
      * @param value
@@ -151,11 +177,7 @@ export class _EnvService {
                 'core.locale.numbers.decimal_separator'
             ], '.');
         }
-        // sanitize received value
-        let n = Number(value);
-        if(isNaN(n)) {
-            n = 0;
-        }
+        const n = this.roundNumber(value, precision);
         let parts: any = n.toFixed(precision).split(".");
         parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, thousand_sep);
         if(precision > 0 && parts.length == 1) {
