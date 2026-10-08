@@ -90,11 +90,25 @@ export default class WidgetMany2Many extends Widget {
                                     icon: 'playlist_remove',
                                     handler: (selection:any) => {
                                         for(let id of selection) {
+                                            if(this.rel_type === 'one2many') {
+                                                const addition = '+' + id;
+                                                const addition_index = this.value.indexOf(addition);
+                                                if(addition_index > -1) {
+                                                    // The relation was added locally and has not been saved yet:
+                                                    // removing it cancels the addition instead of creating a detach request.
+                                                    this.value.splice(addition_index, 1);
+                                                    continue;
+                                                }
+                                            }
                                             let index = this.value.indexOf(id);
                                             if( index > -1 ) {
                                                 this.value.splice(index, 1);
                                             }
                                             index = this.value.indexOf(-id);
+                                            if( index > -1 ) {
+                                                this.value.splice(index, 1);
+                                            }
+                                            index = this.value.indexOf('-' + id);
                                             if( index > -1 ) {
                                                 this.value.splice(index, 1);
                                             }
@@ -229,7 +243,8 @@ export default class WidgetMany2Many extends Widget {
                                     if(data && data.selection) {
                                         // add ids that are not yet in the Object value
                                         for(let id of data.selection) {
-                                            let index = this.value.indexOf(id);
+                                            const value = (this.rel_type === 'one2many') ? '+' + id : id;
+                                            let index = this.value.indexOf(value);
                                             if( index > -1 ) {
                                                 this.value.splice(index, 1);
                                             }
@@ -237,7 +252,11 @@ export default class WidgetMany2Many extends Widget {
                                             if( index > -1 ) {
                                                 this.value.splice(index, 1);
                                             }
-                                            this.value.push(id);
+                                            index = this.value.indexOf('-' + id);
+                                            if( index > -1 ) {
+                                                this.value.splice(index, 1);
+                                            }
+                                            this.value.push(value);
                                         }
                                         this.$elem.trigger('_updatedWidget');
                                     }

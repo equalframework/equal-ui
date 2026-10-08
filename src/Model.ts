@@ -190,12 +190,18 @@ export class Model {
                 result[field] = (fields[field] && fields[field].length) ? fields[field] : 'null';
             }
             else if(type == 'one2many') {
-                // one2many additions are owned by the target object's foreign field.
-                // Negative ids are kept because the ORM interprets them as detach requests.
+                // Existing relations are represented by positive integer ids and must not be
+                // re-saved. Explicit changes are represented by signed strings ("+id"/"-id").
+                // Negative integer ids are kept for backward-compatible detach requests.
                 if(Array.isArray(fields[field])) {
-                    const ids_to_detach = fields[field].filter((id: number) => id < 0);
-                    if(ids_to_detach.length) {
-                        result[field] = ids_to_detach;
+                    const relation_changes = fields[field].filter((id: any) => {
+                        if(typeof id === 'number') {
+                            return Number.isInteger(id) && id < 0;
+                        }
+                        return typeof id === 'string' && /^[+-]\d+$/.test(id);
+                    });
+                    if(relation_changes.length) {
+                        result[field] = relation_changes;
                     }
                 }
             }

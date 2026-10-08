@@ -202,6 +202,12 @@ export class LayoutSearch extends Layout {
                     .css({
                         'color': 'var(--mdc-theme-primary)'
                     })
+                    .on('keydown', (event: JQuery.KeyDownEvent) => {
+                        if((event.key === 'Enter' || event.which === 13) && $btn.is(':focus')) {
+                            event.preventDefault();
+                            $btn.trigger('click');
+                        }
+                    })
                     .on('click', () => this.applyChanges());
                 $searchColumn.append($btn);
             }
@@ -336,11 +342,9 @@ export class LayoutSearch extends Layout {
                             // for m2m fields, the value of the field is an array of ids
                             // by convention, when a relation is to be removed, the id field is set to its negative value
                             value = object[field];
-
                             // select ids to load by filtering targeted objects
-                            config.ids_to_add = object[field].filter( (id:number) => id > 0 );
-                            config.ids_to_del = object[field].filter( (id:number) => id < 0 ).map( (id:number) => -id );
-
+                            config.ids_to_add = object[field].filter( (id:any) => Number(id) > 0 ).map( (id:any) => Number(id) );
+                            config.ids_to_del = object[field].filter( (id:any) => Number(id) < 0 ).map( (id:any) => -Number(id) );
                             // we need the current object id for new objects creation
                             config.object_id = object.id;
                         }

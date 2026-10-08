@@ -465,7 +465,7 @@ export default class WidgetMany2One extends Widget {
                     // debounce
                     let timeout:any = null;
 
-                    $select.find('input').on('keydown', (event:any) => {
+                    $select.find('input').on('keydown', (event: any) => {
                             console.debug('WidgetMany2One: $select received keydown');
                             // tab
                             if(event.which == 9) {
@@ -473,7 +473,7 @@ export default class WidgetMany2One extends Widget {
                             }
                         });
 
-                    $select.find('input').on('keyup', (event:any) => {
+                    $select.find('input').on('keyup', (event: any) => {
                         console.debug('WidgetMany2One: $select received keyup');
                         // tab
                         if(event.which == 9) {

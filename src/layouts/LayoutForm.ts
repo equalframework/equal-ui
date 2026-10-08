@@ -551,8 +551,8 @@ export class LayoutForm extends Layout {
                             // by convention, when a relation is to be removed, the id field is set to its negative value
                             value = object[field];
                             // select ids to load by filtering targeted objects
-                            config.ids_to_add = object[field].filter( (id:number) => id > 0 );
-                            config.ids_to_del = object[field].filter( (id:number) => id < 0 ).map( (id:number) => -id );
+                            config.ids_to_add = object[field].filter( (id:any) => Number(id) > 0 ).map( (id:any) => Number(id) );
+                            config.ids_to_del = object[field].filter( (id:any) => Number(id) < 0 ).map( (id:any) => -Number(id) );
                             // we need the current object id for new objects creation
                             config.object_id = object.id;
                             // in some cases, we need the reference to the current object (refs in header domain)
