@@ -74,8 +74,7 @@ export default class WidgetMany2One extends Widget {
                 UIHelper.decorateMenu($menu);
 
                 $button_reset.on('click', (event:any) => {
-                    this.value = null;
-                    this.config.object_id = 0;
+                    this.setValue(null);
                     $select.attr('data-selected', 0);
                     $select.find('input').val('').trigger('change');
                     $button_reset.hide();
@@ -138,7 +137,7 @@ export default class WidgetMany2One extends Widget {
                                     if(data && data.selection && data.objects && data.selection.length) {
                                         // we should have received a single (partial) object with up-to-date name and id
                                         let object = data.objects.find( (o:any) => o.id == data.selection[0] );
-                                        this.value = {id: object.id, name: object.name};
+                                        this.setValue({id: object.id, name: object.name});
                                         // update widget displayed value in case it is not part of a view (e.g. filters)
                                         $select.find('input').val(object.name).trigger('change');
                                         this.$elem.trigger('_updatedWidget');
@@ -216,7 +215,7 @@ export default class WidgetMany2One extends Widget {
                                     $button_open.show();
                                     // m2o relations are always loaded as an object with {id:, name:}
                                     let object = data.objects.find( (o:any) => o.id == data.selection[0] );
-                                    this.value = {id: object.id, name: object.name};
+                                    this.setValue({id: object.id, name: object.name});
                                     // update widget displayed value in case it is not part of a view (e.g. filters)
                                     $select.find('input').val(object.name).trigger('change');
                                     this.$elem.trigger('_updatedWidget');
@@ -284,7 +283,7 @@ export default class WidgetMany2One extends Widget {
                                             $button_open.show();
                                             // m2o relations are always loaded as an object with {id:, name:}
                                             let object = data.objects.find( (o:any) => o.id == data.selection[0] );
-                                            this.value = {id: object.id, name: object.name};
+                                            this.setValue({id: object.id, name: object.name});
                                             // update widget displayed value in case it is not part of a view (e.g. filters)
                                             $select.find('input').val(object.name).trigger('change');
                                             this.$elem.trigger('_updatedWidget');
@@ -309,7 +308,7 @@ export default class WidgetMany2One extends Widget {
                     try {
                         let object = await ApiService.create(this.config.foreign_object, {name: value});
                         // if successful, select the newly created item
-                        this.value = {id: object.id, name: value};
+                        this.setValue({id: object.id, name: value});
                         // update widget displayed value in case it is not part of a view (e.g. filters)
                         $input.val(value).trigger('change');
                         this.$elem.trigger('_updatedWidget');
@@ -343,7 +342,7 @@ export default class WidgetMany2One extends Widget {
                             if(data && data.selection && data.objects && data.selection.length) {
                                 // m2o relations are always loaded as an object with {id:, name:}
                                 let object = data.objects.find( (o:any) => o.id == data.selection[0] );
-                                this.value = {id: object.id, name: object.name};
+                                this.setValue({id: object.id, name: object.name});
                                 // update widget displayed value in case it is not part of a view (e.g. filters)
                                 $select.find('input').val(object.name).trigger('change');
                                 // trigger parent view refresh
@@ -535,7 +534,7 @@ export default class WidgetMany2One extends Widget {
                             $button_open.show();
                         }
                         $button_create.hide();
-                        this.value = {id: object.id, name: object.name};
+                        this.setValue({id: object.id, name: object.name});
                         // #memo - this will give the focus back to the input
                         this.$elem.trigger('_updatedWidget');
                     }

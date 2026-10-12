@@ -288,8 +288,6 @@ class WidgetFactory {
         config.title = TranslationService.resolve(translation, 'model', [], field, label, 'label');
         config.description = TranslationService.resolve(translation, 'model', [], field, description, 'description');
 
-        config.required = (def.hasOwnProperty('required')) ? def.required : ((item.hasOwnProperty('required')) ? item['required'] : false);
-
         config.readonly = (view.getPurpose() === 'create')
             ? false
             : (def.hasOwnProperty('readonly') ? def.readonly : (item.hasOwnProperty('readonly') ? item['readonly'] : false));
@@ -313,6 +311,12 @@ class WidgetFactory {
             // overload config with widget config, if any
             config = {...config, ...item.widget};
         }
+
+        // A view can make a field required, but cannot relax a requirement
+        // imposed by the model definition.
+        config.required = def.required === true
+            || item.required === true
+            || item.widget?.required === true;
 
         if(def.hasOwnProperty('visible')) {
             config.visible = def.visible;

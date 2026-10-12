@@ -140,10 +140,30 @@ export class Layout implements LayoutInterface{
                     let config = widget.getConfig();
                     if(config.hasOwnProperty('required') && config.required) {
                         let value = widget.getValue();
-                        if(config.type == 'many2one' && config.hasOwnProperty('object_id')) {
-                            value = config.object_id;
+
+                        let missing = value === null || typeof value === 'undefined';
+
+                        if(config.type == 'many2one') {
+                            // Prefer the widget value, which reflects the current selection.
+                            // Fall back to object_id for widgets initialized from an existing object.
+                            let relation_id = config.object_id;
+                            if(value !== null && typeof value === 'object' && value.hasOwnProperty('id')) {
+                                relation_id = value.id;
+                            }
+
+                            const normalized_id = typeof relation_id === 'string' ? relation_id.trim() : relation_id;
+                            const numeric_id = Number(normalized_id);
+                            missing = normalized_id === null
+                                || typeof normalized_id === 'undefined'
+                                || normalized_id === ''
+                                || !Number.isFinite(numeric_id)
+                                || numeric_id <= 0;
                         }
-                        if(value === null || typeof value === 'undefined' || value.length == 0) {
+                        else if(typeof value === 'string' || Array.isArray(value)) {
+                            missing = value.length === 0;
+                        }
+
+                        if(missing) {
                             console.warn('missing required value for field ' + field);
                             this.markFieldAsInvalid(parseInt(object_id), field, msg);
                             return false;
