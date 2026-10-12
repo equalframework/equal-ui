@@ -401,7 +401,7 @@ export default class Widget {
         return `${n}px`;
     }
 
-    protected applyStyling($elem: any){
+    protected applyStyling($elem: any, styles: any = this.config.styles){
 
         // #todo - these first 2 should probably be moved to getWidgetConfig() or layout()
         if(this.config.hasOwnProperty('wrap') && this.config.wrap) {
@@ -412,9 +412,7 @@ export default class Widget {
         }
 
 
-        if(this.config.hasOwnProperty('styles')) {
-            const styles = this.config.styles;
-
+        if(styles && typeof styles === 'object' && !Array.isArray(styles)) {
             if(styles.hasOwnProperty('text_decoration') && styles.text_decoration) {
                 if(styles.text_decoration === 'underline') {
                     $elem.css({'border-bottom': 'solid 1px black'});
