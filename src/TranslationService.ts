@@ -14,36 +14,55 @@ export class _TranslationService {
     // remember if the file fetching has been done
     private resolved: any;
 
+    // locale currently loaded (or being loaded)
+    private locale: string = '';
+
     constructor() {
         this.resolved = null;
+        this.translations = $.Deferred();
 
         this.init();
     }
 
     public async init() {
-        this.translations = $.Deferred();
-        this.resolved = false;
-
-        const environment:any = await EnvService.getEnv();
+        const environment: any = await EnvService.getEnv();
 
         // load i18n file from server
         // #todo - do not fetch directly the file, but use a dedicated controller
         const locale = environment.locale.slice(0, 2);
+
+        // A second initialization for the same locale must reuse the current
+        // translations, including while their request is still in progress.
+        if(this.locale === locale) {
+            return;
+        }
+
+        // Keep the Deferred created by the constructor for the first load so
+        // early translate() calls do not remain attached to an abandoned one.
+        const translations = (this.locale.length) ? $.Deferred() : this.translations;
+
+        this.locale = locale;
+        this.translations = translations;
+        this.resolved = false;
+
         fetch('/assets/i18n/' + locale + '.json')
         .then( (response) => {
             if(response.ok) {
-                response.json().then( (data) => {
-                    this.resolved = data;
-                    this.translations.resolve(data);
-                });
+                return response.json();
             }
-            else {
-                this.translations.resolve({});
+            return {};
+        })
+        .then( (data) => {
+            // A slower response for a previous locale must not replace the
+            // translations selected by a more recent init() call.
+            if(this.locale === locale) {
+                this.resolved = data;
             }
+            translations.resolve(data);
         })
         .catch( (err:any) => {
             console.warn('error fetch UI translation file');
-            this.translations.resolve({});
+            translations.resolve({});
         });
 
     }
@@ -64,6 +83,11 @@ export class _TranslationService {
         }
         catch {}
         return translation;
+    }
+
+    public async getTranslations(): Promise<Record<string, string>> {
+        const translations = await this.translations;
+        return translations || {};
     }
 
 
@@ -132,7 +156,6 @@ export class _TranslationService {
     }
 
 }
-
 
 
 export default _TranslationService;
