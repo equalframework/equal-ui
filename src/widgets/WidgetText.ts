@@ -16,7 +16,7 @@ export default class WidgetText extends Widget {
         // this.$elem.find('textarea').val(value).trigger('change');
         if(this.$elem.data('quill')) {
             let editor = this.$elem.data('quill');
-            editor.root.innerHTML = this.adaptIn(value);
+            editor.clipboard.dangerouslyPasteHTML(this.adaptIn(value), 'silent');
         }
         return this;
     }
@@ -84,25 +84,29 @@ export default class WidgetText extends Widget {
                         Quill.register(SmallBlot);
                         Quill.register(BigBlot);
 
+                        const toolbar = this.getUsage().includes('text/plain')
+                            ? false
+                            : [
+                                ['bold', 'italic', 'underline', 'strike'],
+                                ['blockquote'],
+                                // [{ 'header': [1, 2, 3, 4, 5, 6, false]}],
+                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                [{ "align": '' }, { "align": 'center' }, { 'align': 'right' }],
+                                // [{ 'size': ['small', false, 'large', 'huge'] }],
+                                [
+                                    'small',
+                                    'big',
+                                    { 'color': ['#000000', '#e60000', '#ff9900', '#ffff00', '#008a00', '#0066cc', false] },
+                                    { 'background': ['#fff59d', '#fd4444', '#a5d6a7', '#81d4fa', '#ffccbc', false] }
+                                ],
+                                ['fullscreen']
+                            ];
+
                         const editor = new Quill($editor[0], {
                             placeholder: this.config.description,
                             theme: "snow",
                             modules: {
-                                toolbar: [
-                                    ['bold', 'italic', 'underline', 'strike'],
-                                    ['blockquote'],
-                                    // [{ 'header': [1, 2, 3, 4, 5, 6, false]}],
-                                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                                    [{ "align": '' }, { "align": 'center' }, { 'align': 'right' }],
-//                                    [{ 'size': ['small', false, 'large', 'huge'] }],
-                                    [
-                                        'small',
-                                        'big',
-                                        { 'color': ['#000000', '#e60000', '#ff9900', '#ffff00', '#008a00', '#0066cc', false] },
-                                        { 'background': ['#fff59d', '#fd4444', '#a5d6a7', '#81d4fa', '#ffccbc', false] }
-                                    ],
-                                    ['fullscreen']
-                                ]
+                                toolbar
                             }
                         });
 
@@ -120,10 +124,10 @@ export default class WidgetText extends Widget {
 
                         this.$elem.find('.ql-fullscreen').on('click', () => {
                             let elem: any = this.$elem[0];
-                            if (elem.requestFullscreen) {
+                            if(elem.requestFullscreen) {
                                 elem.requestFullscreen();
                             }
-                            else if (elem.hasOwnProperty('webkitRequestFullscreen')) {
+                            else if(elem.hasOwnProperty('webkitRequestFullscreen')) {
                                 elem['webkitRequestFullscreen']();
                             }
                         });
@@ -132,10 +136,9 @@ export default class WidgetText extends Widget {
 
                         this.$elem.data('quill', editor);
 
-                        editor.root.innerHTML = this.adaptIn(value);
+                        editor.clipboard.dangerouslyPasteHTML(this.adaptIn(value), 'silent');
 
                         let timeout: any;
-                        let initial_change = true;
 
                         editor.on('text-change', (delta, source) => {
                             this.value = editor.root.innerHTML;
@@ -145,13 +148,10 @@ export default class WidgetText extends Widget {
                                 if(timeout) {
                                     clearTimeout(timeout);
                                 }
-                                if(!initial_change) {
-                                    timeout = setTimeout( () => {
-                                        this.updateWidget();
-                                        // we set timeout to 1s as debounce (there is no hurry here)
-                                    }, 1000);
-                                }
-                                initial_change = false;
+                                timeout = setTimeout( () => {
+                                    this.updateWidget();
+                                    // we set timeout to 1s as debounce (there is no hurry here)
+                                }, 1000);
                             }
                         });
 
@@ -161,7 +161,7 @@ export default class WidgetText extends Widget {
                                 // simulate a text-change if content was actually updated
                                 this.value = editor.root.innerHTML;
                                 if(this.value != value) {
-                                    if (timeout) {
+                                    if(timeout) {
                                         clearTimeout(timeout);
                                     }
                                     timeout = setTimeout(() => {
@@ -224,64 +224,39 @@ export default class WidgetText extends Widget {
      * Adapt received to HTML (that will be processed by Quill)
      */
     private adaptIn(value: string): string {
-        let result: string = value;
+        let result: string = value ?? '';
         let usage: string = this.getUsage();
         let mode = (this.readonly && this.config.layout == 'form') ? 'view' : this.mode;
+        const isHtmlUsage = usage.includes('text/html');
+        const isPlainTextUsage = usage.includes('text/plain');
+
+        if(isHtmlUsage) {
+            const inputIsPlain = !this.containsHtmlMarkup(result);
+            result = inputIsPlain
+                ? this.plainTextToHtml(result)
+                : this.normalizeInputHtml(result);
+        }
+        else if(isPlainTextUsage && this.containsHtmlMarkup(result)) {
+            result = this.htmlToPlainText(result);
+        }
 
         switch(mode) {
             case 'edit':
-                if(usage.includes('text/html')) {
-                    // #memo - if generated at the back-end, it will be converted only once
-                    result = result.trim()
-                        // normalize CRLF
-                        .replace(/\r\n?/g, '\n');
-
-                    // #memo there might be legitimate break-spaces
-
-                    // normalize empty paragraphs
-                    result = result.replace(/<p>\s*<\/p>/gi, '<p><br></p>');
-
-                    // remove/normalize trailing <br> inside non-empty paragraphs
-                    result = result.replace(/<p>([\s\S]*?)(<br\s*\/?>\s*)+<\/p>/gi, (match, content, brs) => {
-                            // clean content (no space nor nbsp)
-                            const clean = content.replace(/&nbsp;|\s+/gi, '');
-                            const br_count = (brs.match(/<br\s*\/?>/gi) || []).length;
-
-                            if(clean === '') {
-                                return '<p><br></p>';
-                            }
-
-                            let html: string = `<p>${content}</p>`;
-
-                            // each additional <br> becomes <p><br></p>
-                            for(let i = 1; i < br_count; i++) {
-                                html += '<p><br></p>';
-                            }
-
-                            return html;
-                        }
-                    );
-
-                    // ensure everything is within a paragraph
-                    if (!/^<p[\s>]/i.test(result)) {
-                        result = `<p>${result}`;
-                    }
-                    if (!/<\/p>\s*$/i.test(result)) {
-                        result = `${result}</p>`;
-                    }
+                if(!isHtmlUsage) {
+                    result = this.plainTextToHtml(result);
                 }
                 break;
             case 'view':
                 // #memo - we don't use Quill here
-                if(usage.includes('text/plain')) {
-                    result = value.replace(/(?:\r\n|\r|\n)/g, '<br />');
-                }
-                else if(usage.includes('text/json')) {
+                if(usage.includes('text/json')) {
                     const escaped = result
                         .replace(/&/g, "&amp;")
                         .replace(/</g, "&lt;")
                         .replace(/>/g, "&gt;");
                     result = `<pre><code class="language-json">${escaped}</code></pre>`;
+                }
+                else if(!isHtmlUsage) {
+                    result = this.plainTextToHtml(result);
                 }
                 break;
         }
@@ -299,22 +274,233 @@ export default class WidgetText extends Widget {
         if(this.$elem.data('quill')) {
             const editor = this.$elem.data('quill');
             if(usage.includes('text/html')) {
-                // Leave HTML unchanged to preserve WYSIWYG rendering across loads.
-                /*
-                const container = document.createElement('div');
-                container.innerHTML = result;
-                result = Array.from(container.querySelectorAll('p'))
-                    .map(p => p.innerHTML)
-                    .join('<br/>');
-                */
+                // Quill already outputs standard semantic tags for the formats enabled above.
+                result = this.normalizeOutputHtml(editor.root.innerHTML);
             }
             else {
                 // use getText to remove html tags
-                result = editor.getText().trim();
+                result = editor.getText().replace(/\n$/, '');
             }
         }
 
         return result;
+    }
+
+    /**
+     * Check whether a value contains something that looks like HTML markup.
+     */
+    private containsHtmlMarkup(value: string): boolean {
+        return /<!--[\s\S]*?-->|<!doctype\b[^>]*>|<\/?[a-z][^>]*>/i.test(value);
+    }
+
+    /**
+     * Remove legacy HTML from a plain-text value while preserving explicit breaks.
+     */
+    private htmlToPlainText(value: string): string {
+        const container = document.createElement('div');
+        container.innerHTML = value.replace(/<br\b[^>]*>/gi, '\n');
+        return container.textContent ?? '';
+    }
+
+    /**
+     * Escape plain text before passing it to an HTML renderer and preserve line breaks.
+     */
+    private plainTextToHtml(value: string): string {
+        return value
+            .replace(/\r\n?/g, '\n')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\n/g, '<br>');
+    }
+
+    /**
+     * Normalize equivalent HTML spellings without imposing Quill's block structure.
+     */
+    private normalizeInputHtml(value: string): string {
+        let result = value.trim()
+            .replace(/\r\n?/g, '\n')
+            .replace(/<br\s*\/?>/gi, '<br>');
+
+        // Quill represents an empty block as <p><br></p>.
+        result = result.replace(
+            /(<p\b[^>]*>)\s*(?:&nbsp;|\u00a0)?\s*<\/p>/gi,
+            '$1<br></p>'
+        );
+
+        return result;
+    }
+
+    /**
+     * Normalize Quill's HTML to a stable, editor-agnostic representation.
+     */
+    private normalizeOutputHtml(value: string): string {
+        let result = value.trim()
+            .replace(/\r\n?/g, '\n')
+            .replace(/<br\s*\/?>/gi, '<br>');
+
+        const container = document.createElement('div');
+        container.innerHTML = result;
+        this.flattenParagraphs(container);
+        result = container.innerHTML.replace(/<br\s*\/?>/gi, '<br />');
+
+        return result;
+    }
+
+    /**
+     * Remove Quill's technical paragraphs while preserving logical lines.
+     * Paragraphs carrying block formatting are converted to neutral divs.
+     */
+    private flattenParagraphs(parent: HTMLElement): void {
+        const isEmptyParagraph = (paragraph: HTMLElement): boolean => {
+            return paragraph.innerHTML
+                .replace(/<br\s*\/?>/gi, '')
+                .replace(/&nbsp;|&#160;|&#x0*a0;|\u00a0|\s/gi, '') === '';
+        };
+
+        const haveSameAttributes = (first: HTMLElement, second: HTMLElement): boolean => {
+            return first.attributes.length === second.attributes.length &&
+                Array.from(first.attributes).every((attribute) =>
+                    second.getAttribute(attribute.name) === attribute.value
+                );
+        };
+
+        const collectAdjacentElements = (
+            first: HTMLElement,
+            matches: (element: HTMLElement) => boolean
+        ): {elements: HTMLElement[], next: ChildNode | null} => {
+            const elements: HTMLElement[] = [];
+            let cursor: ChildNode | null = first;
+
+            while(cursor instanceof HTMLElement && matches(cursor)) {
+                elements.push(cursor);
+                cursor = cursor.nextSibling;
+            }
+
+            return {elements, next: cursor};
+        };
+
+        const createLogicalLines = (
+            elements: HTMLElement[],
+            preserveEmptyRun: boolean
+        ): DocumentFragment => {
+            const fragment = document.createDocumentFragment();
+            const emptyElements = elements.map((element) => isEmptyParagraph(element));
+
+            elements.forEach((element, index) => {
+                if(index > 0) {
+                    fragment.appendChild(document.createElement('br'));
+                }
+                if(!emptyElements[index]) {
+                    while(element.firstChild) {
+                        fragment.appendChild(element.firstChild);
+                    }
+                }
+            });
+
+            if(preserveEmptyRun && emptyElements.every(Boolean)) {
+                fragment.appendChild(document.createElement('br'));
+            }
+
+            return fragment;
+        };
+
+        const mergeableInlineTags = new Set([
+            'A', 'BIG', 'EM', 'S', 'SMALL', 'SPAN', 'STRONG', 'U'
+        ]);
+
+        const flatten = (container: HTMLElement): void => {
+            let node: ChildNode | null = container.firstChild;
+
+            while(node) {
+                if(!(node instanceof HTMLElement)) {
+                    node = node.nextSibling;
+                    continue;
+                }
+
+                const element = node;
+
+                if(element.tagName === 'BLOCKQUOTE') {
+                    const {elements, next} = collectAdjacentElements(
+                        element,
+                        (candidate) =>
+                            candidate.tagName === 'BLOCKQUOTE' &&
+                            haveSameAttributes(element, candidate)
+                    );
+                    elements.forEach((candidate) => flatten(candidate));
+
+                    if(elements.length > 1) {
+                        element.appendChild(createLogicalLines(elements, true));
+                        elements.slice(1).forEach((candidate) => container.removeChild(candidate));
+                    }
+
+                    node = next;
+                    continue;
+                }
+
+                if(mergeableInlineTags.has(element.tagName)) {
+                    const {elements, next} = collectAdjacentElements(
+                        element,
+                        (candidate) =>
+                            candidate.tagName === element.tagName &&
+                            haveSameAttributes(element, candidate)
+                    );
+
+                    elements.slice(1).forEach((candidate) => {
+                        while(candidate.firstChild) {
+                            element.appendChild(candidate.firstChild);
+                        }
+                        container.removeChild(candidate);
+                    });
+                    flatten(element);
+
+                    node = next;
+                    continue;
+                }
+
+                if(element.tagName !== 'P') {
+                    flatten(element);
+                    node = element.nextSibling;
+                    continue;
+                }
+
+                const hasAttributes = element.attributes.length > 0;
+                const {elements, next} = collectAdjacentElements(
+                    element,
+                    (candidate) =>
+                        candidate.tagName === 'P' &&
+                        (hasAttributes
+                            ? haveSameAttributes(element, candidate)
+                            : candidate.attributes.length === 0)
+                );
+                elements.forEach((candidate) => flatten(candidate));
+
+                const previous = element.previousSibling;
+                const fragment = createLogicalLines(
+                    elements,
+                    hasAttributes || Boolean(previous || next)
+                );
+
+                if(hasAttributes) {
+                    const replacement = document.createElement('div');
+                    Array.from(element.attributes).forEach((attribute) => {
+                        replacement.setAttribute(attribute.name, attribute.value);
+                    });
+                    replacement.appendChild(fragment);
+
+                    container.replaceChild(replacement, element);
+                    elements.slice(1).forEach((candidate) => container.removeChild(candidate));
+                }
+                else {
+                    container.insertBefore(fragment, element);
+                    elements.forEach((candidate) => container.removeChild(candidate));
+                }
+
+                node = next;
+            }
+        };
+
+        flatten(parent);
     }
 
 }
