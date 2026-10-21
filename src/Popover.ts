@@ -27,6 +27,7 @@ export default class Popover {
     private closeTimer: any = null;
     private clipboardValue: any;
     private externalLink: string;
+    private $copyIcon?: JQuery;
 
     /**
      * Example:
@@ -54,16 +55,16 @@ export default class Popover {
         const $actions = $('<div />').addClass('sb-popover-actions');
 
         if(this.hasTextValue(this.clipboardValue)) {
-            $actions.append(
-                $('<span class="material-icons">content_copy</span>')
-                    .addClass('sb-popover-copy btn-copy')
-                    .attr('title', 'Copy')
-                    .on('click', async (event: any) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        await this.copyToClipboard();
-                    })
-            );
+            this.$copyIcon = $('<span class="material-icons">content_copy</span>')
+                .addClass('sb-popover-copy btn-copy')
+                .attr('title', 'Copy')
+                .on('click', async (event: any) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    await this.copyToClipboard();
+                    this.$copyIcon?.text('done');
+                });
+            $actions.append(this.$copyIcon);
         }
 
         if(this.hasTextValue(this.externalLink)) {
@@ -193,6 +194,7 @@ export default class Popover {
         this.clearTimers();
         this.$anchor.removeClass('has-mouseover');
         this.$popup.removeClass('has-mouseover');
+        this.$copyIcon?.text('content_copy');
 
         if(!this.isAnchorInDom()) {
             this.$popup.remove();

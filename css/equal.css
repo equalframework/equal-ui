@@ -168,9 +168,19 @@ body.no-scroll {
 .sb-container-header .context-close {
     position: absolute;
     transform: scale(0.5);
-    top: 3px;
+    top: 4px;
     background: #bababa;
     box-shadow: none;
+}
+
+.sb-container-header small {
+    color: #7d7d7d;
+    font-size: 18px;
+    display: inline-block;
+    max-width: 400px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    vertical-align: middle;
 }
 
 .sb-popup-wrapper .sb-container-header .context-close {

@@ -286,24 +286,25 @@ export class Frame {
             }
         }
         // when context relates to a single object, append object identifier to the breadcrumb
-        if(type == 'form') {
+        if(type == 'form' && purpose !== 'create') {
             let objects = await context.getView().getModel().get();
             if(objects.length) {
                 let object = objects[0];
-                result += ' <small>[';
+                let object_name = '';
                 if (
-                    purpose !== 'create' &&
                     typeof object.name === 'string' &&
                     object.name.trim() !== '' &&
                     object.name !== 'null' &&
                     object.name !== String(object.id)
                 ) {
-                    // escape HTML and limit name length
-                    let name = $('<a>' + object['name' ] + '</a>').text().substring(0, 25);
-                    result +=  name + ' - ';
+                    // escape HTML
+                    object_name = $('<a>' + object.name + '</a>').text();
                 }
-                result += object['id'];
-                result += ']</small>';
+
+                result += '&nbsp;&nbsp;' +
+                    $('<small />')
+                    .attr('title', object_name)
+                    .text(object_name).prop('outerHTML');
             }
         }
 
@@ -670,41 +671,46 @@ export class Frame {
             return;
         }
 
+        const modelSchema = context.getView().getModelSchema();
+
         const details: any = {
             entity: context.getEntity(),
+            table: modelSchema.table,
             view: context.getType() + '.' + context.getName(),
             purpose: context.getPurpose(),
             mode: context.getMode()
         };
 
         const $body = $('<div />')
-            .append( $('<div />').attr('title', details.entity).html('Entity: <b>'+details.entity+'</b>') );
+            .append( $('<div />').attr('title', details.entity).html('Entity: <b>'+details.entity+'</b>') )
+            .append( $('<div />').attr('title', modelSchema.table).html('Table: <b>' + modelSchema.table + '</b>') );
 
         if(context.getType() === 'form') {
             const objects = await context.getView().getModel().get();
             if(objects.length && typeof objects[0].id !== 'undefined' && objects[0].id !== null) {
                 details.object_id = objects[0].id;
-                $body.append( $('<div />').attr('title', details.object_id).html('Object ID: <b>'+details.object_id+'</b>') );
+                $body.append( $('<div />').attr('title', details.object_id).html('Id: <b>' + details.object_id + '</b>') );
             }
         }
 
         $body
-            .append( $('<div />').attr('title', details.view).html('View: <b>'+details.view+'</b>') )
-            .append( $('<div />').attr('title', details.purpose).html('Purpose: <b>'+details.purpose+'</b>') )
-            .append( $('<div />').attr('title', details.mode).html('Mode: <b>'+details.mode+'</b>') );
+            .append( $('<div />').attr('title', details.view).html('View: <b>' + details.view+'</b>') )
+            .append( $('<div />').attr('title', details.purpose).html('Purpose: <b>' + details.purpose + '</b>') )
+            .append( $('<div />').attr('title', details.mode).html('Mode: <b>' + details.mode + '</b>') );
+
 
         const url = '/workbench/#/package/' + EntityHelper.getPackageName(context.getEntity()) + '/view/' + EntityHelper.getClassName(context.getEntity()) + ':' + context.getType() + '.' + context.getName() + '/edit';
 
         new Popover($crumb, {
-            title: 'View details',
-            body: $body,
-            externalLink: url,
-            clipboardValue: JSON.stringify(details, null, 4),
-            popupClass: 'header-view-details-popup',
-            group: Frame.BREADCRUMB_POPOVER_GROUP,
-            openDelay: 1200,
-            closeDelay: 500
-        });
+                title: 'View details',
+                body: $body,
+                externalLink: url,
+                clipboardValue: JSON.stringify(details, null, 4),
+                popupClass: 'header-view-details-popup',
+                group: Frame.BREADCRUMB_POPOVER_GROUP,
+                openDelay: 1200,
+                closeDelay: 500
+            });
     }
 
     /**
