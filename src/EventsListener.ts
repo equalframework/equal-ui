@@ -45,6 +45,9 @@ class EventsListener {
     // User (requested as instantiation of the View). This value can be applied on subsequent Domain objects.
     private user: any = {id: 0};
 
+    // Error raised while retrieving the initial user, exposed to external authentication facades.
+    private userError: any = null;
+
     // global environment object
     private env: any = {};
 
@@ -52,6 +55,9 @@ class EventsListener {
     private mute: boolean = false;
 
     private subscribers: any = {};
+
+    // Promise resolved once environment, user and event handlers are initialized.
+    private readyPromise: Promise<void>;
 
     constructor(domListenerId: string = '') {
         this.frames = {};
@@ -68,8 +74,8 @@ class EventsListener {
             this.$sbEvents = $('<div/>').attr('id', domListenerId).css('display','none').appendTo('body');
         }
 
-        // setup event handlers
-        this.init(domListenerId);
+        // setup event handlers and expose initialization completion to external facades
+        this.readyPromise = this.init(domListenerId);
 
         // Allow applications that do not have access to this instance to retrieve the current context through a synchronous browser event.
         /*
@@ -383,21 +389,7 @@ class EventsListener {
             // get default (static) config
             this.env = await EnvService.getEnv();
             // attempt to retrieve user
-            this.user = await ApiService.getUser();
-
-            if(this.user.hasOwnProperty('language')) {
-                // this is the initial value that can be manually changed afterward
-                EnvService.setEnv('lang', this.user.language.slice(0, 2));
-
-                // #memo - as of 2026-09-01 user.language still mixes lang & locale
-                EnvService.setEnv('locale', this.user.language);
-
-                if(this.user.hasOwnProperty('locale')) {
-                    EnvService.setEnv('locale', this.user.locale);
-                }
-
-                TranslationService.init();
-            }
+            this.applyUser(await ApiService.getUser());
 
             // attempt to retrieve app config
             /*
@@ -410,6 +402,7 @@ class EventsListener {
             */
         }
         catch(err) {
+            this.userError = err ?? new Error('Unable to retrieve user info');
             console.warn('unable to retrieve user info, fallback to guest');
         }
 
@@ -675,8 +668,54 @@ class EventsListener {
         return this.user;
     }
 
+    /**
+     * Refresh the shared user from the server after an authentication change.
+     */
+    public async refreshUser() {
+        this.userError = null;
+        this.applyUser(await ApiService.getUser());
+        return this.user;
+    }
+
+    /**
+     * Return the error raised by the initial user request, if any.
+     */
+    public getUserError() {
+        return this.userError;
+    }
+
+    /**
+     * Reset the shared authentication state after sign-out.
+     */
+    public clearUser() {
+        this.userError = null;
+        this.user = {id: 0};
+    }
+
+    private applyUser(user: any) {
+        this.user = user || {id: 0};
+
+        if(this.user.language) {
+            // this is the initial value that can be manually changed afterward
+            EnvService.setEnv('lang', this.user.language.slice(0, 2));
+
+            // #memo - as of 2026-09-01 user.language still mixes lang & locale
+            EnvService.setEnv('locale', this.user.locale || this.user.language);
+
+            void TranslationService.init();
+        }
+    }
+
+    public ready(): Promise<void> {
+        return this.readyPromise;
+    }
+
     public getEnv() {
         return this.env;
+    }
+
+    public setEnv(property: string, value: any) {
+        EnvService.setEnv(property, value);
     }
 
     /**

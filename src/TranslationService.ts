@@ -1,5 +1,4 @@
 import { EnvService } from "./equal-services";
-import { $ } from "./jquery-lib";
 
 /**
  * This service is in charge of loading the UI translations and provide getters to retrieve requested values.
@@ -9,62 +8,58 @@ import { $ } from "./jquery-lib";
 export class _TranslationService {
 
     // promise object
-    private translations: any;
+    private translations: Promise<Record<string, string>>;
 
-    // remember if the file fetching has been done
-    private resolved: any;
+    // translations resolved for the current locale
+    private resolved: Record<string, string> | null;
 
     // locale currently loaded (or being loaded)
     private locale: string = '';
 
+    // one shared request per locale
+    private readonly requests: Map<string, Promise<Record<string, string>>> = new Map();
+
     constructor() {
         this.resolved = null;
-        this.translations = $.Deferred();
-
-        this.init();
+        this.translations = this.init();
     }
 
-    public async init() {
+    public async init(requestedLocale: string = ''): Promise<Record<string, string>> {
         const environment: any = await EnvService.getEnv();
 
         // load i18n file from server
         // #todo - do not fetch directly the file, but use a dedicated controller
-        const locale = environment.locale.slice(0, 2);
+        const locale = (requestedLocale || environment.locale).slice(0, 2);
 
-        // A second initialization for the same locale must reuse the current
-        // translations, including while their request is still in progress.
-        if(this.locale === locale) {
-            return;
+        const isCurrentLocale = this.locale === locale;
+        let translations = this.requests.get(locale);
+
+        if(!translations) {
+            translations = fetch('/assets/i18n/' + locale + '.json')
+            .then( (response) => response.ok ? response.json() : {})
+            .catch( () => {
+                console.warn('error fetch UI translation file');
+                return {};
+            });
+
+            this.requests.set(locale, translations);
         }
-
-        // Keep the Deferred created by the constructor for the first load so
-        // early translate() calls do not remain attached to an abandoned one.
-        const translations = (this.locale.length) ? $.Deferred() : this.translations;
 
         this.locale = locale;
         this.translations = translations;
-        this.resolved = false;
+        if(!isCurrentLocale) {
+            this.resolved = null;
+        }
 
-        fetch('/assets/i18n/' + locale + '.json')
-        .then( (response) => {
-            if(response.ok) {
-                return response.json();
-            }
-            return {};
-        })
-        .then( (data) => {
-            // A slower response for a previous locale must not replace the
-            // translations selected by a more recent init() call.
-            if(this.locale === locale) {
-                this.resolved = data;
-            }
-            translations.resolve(data);
-        })
-        .catch( (err:any) => {
-            console.warn('error fetch UI translation file');
-            translations.resolve({});
-        });
+        const data = await translations;
 
+        // A slower response for a previous locale must not replace the
+        // translations selected by a more recent init() call.
+        if(this.locale === locale) {
+            this.resolved = data;
+        }
+
+        return data;
     }
 
     /**
@@ -85,9 +80,8 @@ export class _TranslationService {
         return translation;
     }
 
-    public async getTranslations(): Promise<Record<string, string>> {
-        const translations = await this.translations;
-        return translations || {};
+    public getTranslations(locale: string = ''): Promise<Record<string, string>> {
+        return this.init(locale);
     }
 
 
