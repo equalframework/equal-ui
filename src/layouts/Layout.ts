@@ -712,7 +712,7 @@ export class Layout implements LayoutInterface{
     }
 
     protected isVisible(visible: boolean | string | [], object: any, user: any, parent: any = {}, env: any = {}) {
-        console.debug('LayoutForm::isVisible - evaluating visibility', JSON.stringify(visible), object, user, env);
+        console.debug('Layout::isVisible - evaluating visibility', JSON.stringify(visible), object, user, env);
         let result = true;
         if(typeof visible === 'boolean') {
             return visible;
@@ -741,7 +741,7 @@ export class Layout implements LayoutInterface{
                 }
             }
         }
-        console.debug('LayoutForm::isVisible - visibility result', result);
+        console.debug('Layout::isVisible - visibility result', result);
         return result;
     }
 
