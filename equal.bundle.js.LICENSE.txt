@@ -297,6 +297,8 @@ PERFORMANCE OF THIS SOFTWARE.
 
 /*! ../../expose-loader/dist/runtime/getGlobalThis.js */
 
+/*! ../ConditionalValue */
+
 /*! ../Domain */
 
 /*! ../Popover */
@@ -396,6 +398,8 @@ PERFORMANCE OF THIS SOFTWARE.
 /*! ../widgets/WidgetDashboardItem */
 
 /*! ./ApiService */
+
+/*! ./ConditionalValue */
 
 /*! ./Context */
 
@@ -836,6 +840,10 @@ PERFORMANCE OF THIS SOFTWARE.
 /*!*********************************!*\
   !*** ./css/material-basics.css ***!
   \*********************************/
+
+/*!***********************************!*\
+  !*** ./build/ConditionalValue.js ***!
+  \***********************************/
 
 /*!************************************!*\
   !*** ./build/jquery-datepicker.js ***!

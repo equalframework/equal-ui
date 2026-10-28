@@ -6,6 +6,7 @@ import { Context } from '../Context';
 import { Layout } from './Layout';
 import { TranslationService, ApiService, EnvService } from "../equal-services";
 import { Domain, Clause, Condition, Reference } from "../Domain";
+import { evaluateConditionalValue } from "../ConditionalValue";
 
 export class LayoutForm extends Layout {
 
@@ -301,7 +302,7 @@ export class LayoutForm extends Layout {
                 // filter actions and keep only visible ones (based on 'visible' and 'access' properties)
                 let actions = [];
                 for(let action of view_schema.actions) {
-                    let visible = this.isVisible(action?.visible ?? '', object, user, {}, this.getEnv());
+                    let visible = evaluateConditionalValue(action?.visible ?? '', object, user, {}, this.getEnv());
                     if(visible && action.hasOwnProperty('access') && action.access.hasOwnProperty('groups') && Array.isArray(action.access.groups)) {
                         visible = false;
                         if(user.hasOwnProperty('groups') && Array.isArray(user.groups)) {
@@ -392,7 +393,7 @@ export class LayoutForm extends Layout {
             let $groups = this.$layout.find('.sb-view-form-group');
             $groups.each( (i: number, elem: any) => {
                 let $group = $(elem);
-                let visible = this.isVisible($group.attr('data-visible') ?? '', object, user, {}, this.getEnv());
+                let visible = evaluateConditionalValue($group.attr('data-visible') ?? '', object, user, {}, this.getEnv());
                 if(!visible) {
                     $group.hide();
                 }
@@ -401,7 +402,7 @@ export class LayoutForm extends Layout {
                     // pass-1 - handle visibility of sub-elements
                     $group.find('.sb-view-form-section, .sb-view-form-row, .sb-view-form-column').each((index: number, elem: any) => {
                         const $elem = $(elem);
-                        const visible = this.isVisible($elem.attr('data-visible') ?? '', object, user, {}, this.getEnv());
+                        const visible = evaluateConditionalValue($elem.attr('data-visible') ?? '', object, user, {}, this.getEnv());
                         if(visible) {
                             $elem.show();
                         }
@@ -421,7 +422,7 @@ export class LayoutForm extends Layout {
                         let $tab = $(elem);
                         // by default, make sure related section is hidden
                         $group.find('#' + $tab.attr('data-section_id')).hide();
-                        const visible = this.isVisible($tab.attr('data-visible') ?? '', object, user, {}, this.getEnv());
+                        const visible = evaluateConditionalValue($tab.attr('data-visible') ?? '', object, user, {}, this.getEnv());
                         if(visible) {
                             $tab.show();
                             visible_tabs.push($tab);
@@ -448,7 +449,7 @@ export class LayoutForm extends Layout {
                 if(parseInt(<string> $group.attr('data-sections_count')) <= 1) {
                     // update section visibility
                     let $section = $group.find('.sb-view-form-section').first();
-                    let visible = this.isVisible($section.attr('data-visible') ?? '', object, user, {}, this.getEnv());
+                    let visible = evaluateConditionalValue($section.attr('data-visible') ?? '', object, user, {}, this.getEnv());
                     if(visible) {
                         $section.show();
                     }
@@ -474,7 +475,7 @@ export class LayoutForm extends Layout {
                     let visible = true;
                     // handle visibility tests (domain)
                     if(config.hasOwnProperty('visible')) {
-                        visible = this.isVisible(config.visible, object, user, {}, this.getEnv());
+                        visible = evaluateConditionalValue(config.visible, object, user, {}, this.getEnv());
                     }
                     let $parent = this.$layout.find('#' + widget.getId()).parent();
                     if(!visible) {
@@ -515,7 +516,7 @@ export class LayoutForm extends Layout {
                                         config.header.actions[id][index].domain = tmpDomain.parse(object, user, {}, this.getEnv()).toArray();
                                     }
                                     if(item.hasOwnProperty('visible')) {
-                                        config.header.actions[id][index].visible = this.isVisible(item.visible, object, user, {}, this.getEnv());
+                                        config.header.actions[id][index].visible = evaluateConditionalValue(item.visible, object, user, {}, this.getEnv());
                                     }
                                 }
                             }
@@ -567,6 +568,14 @@ export class LayoutForm extends Layout {
                         widget.setConfig({...config, changed: false});
                     }
 
+                    const readonly = evaluateConditionalValue(config.readonly ?? false, object, user, {}, this.getEnv(), false);
+
+                    if($parent.data('readonly') !== readonly) {
+                        has_changed = true;
+                    }
+                    $parent.data('readonly', readonly);
+                    widget.setReadonly(readonly);
+
                     widget.setConfig({...config, ready: true})
                         .setMode(this.view.getMode())
                         .setValue(value);
@@ -577,7 +586,7 @@ export class LayoutForm extends Layout {
                     let visible = true;
                     // handle visibility tests (domain)
                     if(config.hasOwnProperty('visible')) {
-                        visible = this.isVisible(config.visible, object, user, {}, this.getEnv());
+                        visible = evaluateConditionalValue(config.visible, object, user, {}, this.getEnv());
                     }
 
                     if(!visible) {

@@ -6,6 +6,7 @@ import { Context, Layout, Model, Domain } from "./equal-lib";
 import { Widget, WidgetFactory } from "./equal-widgets";
 import { LayoutFactory } from "./equal-layouts";
 import { Clause, Reference } from "./Domain";
+import { evaluateConditionalValue } from "./ConditionalValue";
 
 import { saveAs } from 'file-saver';
 export class View {
@@ -1270,6 +1271,10 @@ export class View {
             if(node.domain ?? false) {
                 this.extractFieldsFromDomain(node.domain).forEach( (f: string) => {this.view_fields[f] = {type: 'field', value: f};});
             }
+            const readonly = node.widget?.readonly ?? node.readonly;
+            if(readonly ?? false) {
+                this.extractFieldsFromDomain(readonly).forEach( (f: string) => {this.view_fields[f] = {type: 'field', value: f};});
+            }
         };
 
         if(view_schema.hasOwnProperty('routes')) {
@@ -1321,7 +1326,7 @@ export class View {
 
                 if(elem.hasOwnProperty('items')) {
                     for(let item of elem['items']) {
-                        processNode(elem);
+                        processNode(item);
                         if(item.type == 'field' && item.hasOwnProperty('value')) {
                             this.view_fields[item.value] = item;
                         }
@@ -3594,7 +3599,7 @@ export class View {
             for(let field of Object.keys(widgets)) {
                 const widget = widgets[field];
                 const $container = widget_containers[field];
-                const visible = this.isVisible(widget.getConfig().visible ?? true, values, user, parent, this.getEnv());
+                const visible = evaluateConditionalValue(widget.getConfig().visible ?? true, values, user, parent, this.getEnv());
                 if(visible) {
                     $container
                         .attr('data-visible', '1')
@@ -4048,7 +4053,7 @@ export class View {
      * Tells if an action button is visible, based on configuration from the View Header.
      * Action descriptor can either be a boolean, an object, or an array.
      * @see https://doc.equal.run/usage/views/lists/#actions
-     * #isVisible #isActionVisible
+     * #evaluateConditionalValue #isActionVisible
      */
     private isActionEnabled(action: any, mode: string, object: any = {}, default_view_enabled: boolean = false): boolean {
         console.debug("View::isActionEnabled - evaluating action", action, mode, object);
@@ -4097,40 +4102,6 @@ export class View {
             return true;
         }
         return false;
-    }
-
-    private isVisible(visible: boolean | string | [], object: any, user: any, parent: any = {}, env: any = {}) {
-        console.debug('View::isVisible - evaluating visibility', JSON.stringify(visible), object, user, env);
-        let result = true;
-        if(typeof visible === 'boolean') {
-            return visible;
-        }
-        if(visible.length) {
-            if(visible === 'false') {
-                result = false;
-            }
-            else if(visible === 'true') {
-                result = true;
-            }
-            else {
-                try {
-                    let array_domain = visible;
-                    if(typeof array_domain == 'string') {
-                        array_domain = JSON.parse(array_domain);
-                    }
-                    if(!Array.isArray(array_domain)) {
-                        throw new Error('non array visibility domain');
-                    }
-                    let domain = new Domain(array_domain);
-                    result = domain.evaluate(object, user, parent, env);
-                }
-                catch(error) {
-                    console.warn('Error parsing JSON', visible, error);
-                }
-            }
-        }
-        console.debug('View::isVisible - visibility result', result);
-        return result;
     }
 
     private openAuthPopup(url: string, title = "Authentication", width = 400, height = 600) {

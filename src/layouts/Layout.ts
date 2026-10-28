@@ -711,40 +711,6 @@ export class Layout implements LayoutInterface{
         }
     }
 
-    protected isVisible(visible: boolean | string | [], object: any, user: any, parent: any = {}, env: any = {}) {
-        console.debug('Layout::isVisible - evaluating visibility', JSON.stringify(visible), object, user, env);
-        let result = true;
-        if(typeof visible === 'boolean') {
-            return visible;
-        }
-        if(visible.length) {
-            if(visible === 'false') {
-                result = false;
-            }
-            else if(visible === 'true') {
-                result = true;
-            }
-            else {
-                try {
-                    let array_domain = visible;
-                    if(typeof array_domain == 'string') {
-                        array_domain = JSON.parse(array_domain);
-                    }
-                    if(!Array.isArray(array_domain)) {
-                        throw new Error('non array visibility domain');
-                    }
-                    let domain = new Domain(array_domain);
-                    result = domain.evaluate(object, user, parent, env);
-                }
-                catch(error) {
-                    console.warn('Error parsing JSON', visible, error);
-                }
-            }
-        }
-        console.debug('Layout::isVisible - visibility result', result);
-        return result;
-    }
-
     /**
      * Meant for date & datetime fields
      * #todo - adapt and complete based on retrieved locale from equal (@see packages/core/i18n/.../locale.json)

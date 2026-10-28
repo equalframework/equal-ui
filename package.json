@@ -3,6 +3,7 @@
     "version": "1.0.2",
     "author": "Cedric Francoys",
     "scripts": {
+        "test": "node tests/ConditionalValue.test.js",
         "build": "babel src --out-dir build --extensions .ts,.js",
         "webpack": "webpack"
     },

@@ -4,6 +4,7 @@ import { Widget, WidgetFactory } from "../equal-widgets";
 import { Layout } from './Layout';
 import { TranslationService, ApiService, EnvService } from "../equal-services";
 import { Domain, Clause, Condition, Reference } from "../Domain";
+import { evaluateConditionalValue } from "../ConditionalValue";
 
 /**
  * Special layout for advanced search input forms.
@@ -245,7 +246,7 @@ export class LayoutSearch extends Layout {
             let $tabs = this.$layout.find('.mdc-tab.sb-view-form-section-tab');
             $tabs.each( (i: number, elem: any) => {
                 let $tab = $(elem);
-                const visible = this.isVisible($tab.attr('data-visible') ?? '', object, user, {}, this.getEnv());
+                const visible = evaluateConditionalValue($tab.attr('data-visible') ?? '', object, user, {}, this.getEnv());
                 if(visible) {
                     $tab.show();
                 }
@@ -362,7 +363,7 @@ export class LayoutSearch extends Layout {
                     let visible = true;
                     // handle visibility tests (domain)
                     if(config.hasOwnProperty('visible')) {
-                        visible = this.isVisible(config.visible, object, user, {}, this.getEnv());
+                        visible = evaluateConditionalValue(config.visible, object, user, {}, this.getEnv());
                     }
 
                     if(!visible) {

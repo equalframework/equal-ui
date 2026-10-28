@@ -4,6 +4,7 @@ import { Widget, WidgetFactory } from "../equal-widgets";
 import { Layout, LayoutInterface } from './Layout';
 import { TranslationService, ApiService, EnvService } from "../equal-services";
 import { Domain, Clause, Condition, Reference } from "../Domain";
+import { evaluateConditionalValue } from "../ConditionalValue";
 import moment from 'moment/moment.js';
 
 export class LayoutList extends Layout {
@@ -400,7 +401,7 @@ export class LayoutList extends Layout {
                                 visible = false;
                             }
                             else if(action.hasOwnProperty('visible')) {
-                                visible = this.isVisible(action.visible, object, user, {}, this.getEnv());
+                                visible = evaluateConditionalValue(action.visible, object, user, {}, this.getEnv());
                             }
                             if(!visible) {
                                 continue;
@@ -421,7 +422,7 @@ export class LayoutList extends Layout {
                                 visible = false;
                             }
                             else if(route.hasOwnProperty('visible')) {
-                                visible = this.isVisible(route.visible, object, user, {}, this.getEnv());
+                                visible = evaluateConditionalValue(route.visible, object, user, {}, this.getEnv());
                             }
                             if(!visible) {
                                 continue;
@@ -930,7 +931,7 @@ export class LayoutList extends Layout {
                     let config = widget.getConfig();
                     // handle visibility tests (domain)
                     if(config.hasOwnProperty('visible')) {
-                        visible = this.isVisible(config.visible, object, user, {}, this.getEnv());
+                        visible = evaluateConditionalValue(config.visible, object, user, {}, this.getEnv());
                     }
 
                     /*
@@ -1056,7 +1057,9 @@ export class LayoutList extends Layout {
 
             let widget: Widget = WidgetFactory.getWidget(this, config.type, '', '', config);
             widget.setValue(value);
-            widget.setReadonly(config.readonly);
+            widget.setReadonly(
+                evaluateConditionalValue(config.readonly ?? false, object, user, {}, this.getEnv(), false)
+            );
             widget.setIsFirst(is_first);
             is_first = false;
 
@@ -1070,7 +1073,7 @@ export class LayoutList extends Layout {
             let visible = true;
             // handle visibility tests (domain)
             if(config.hasOwnProperty('visible')) {
-                visible = this.isVisible(config.visible, object, user, {}, this.getEnv());
+                visible = evaluateConditionalValue(config.visible, object, user, {}, this.getEnv());
             }
 
             // #memo - class is added by decorateTable() call in feed() method
@@ -1687,8 +1690,12 @@ export class LayoutList extends Layout {
 
                 let visible = true;
                 if(widget.config.hasOwnProperty('visible')) {
-                    visible = this.isVisible(widget.config.visible, current_object, user, {}, this.getEnv());
+                    visible = evaluateConditionalValue(widget.config.visible, current_object, user, {}, this.getEnv());
                 }
+
+                widget.setReadonly(
+                    evaluateConditionalValue(widget.config.readonly ?? false, current_object, user, {}, this.getEnv(), false)
+                );
 
                 $targetCell.empty();
 
