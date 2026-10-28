@@ -238,7 +238,7 @@ export default class Widget {
         this.$elem.find('.sb-ui-text-field-input').css({'padding-right': '42px'});
         this.$elem.find('.sb-ui-text-field-label').css({'max-width': 'calc(100% - 52px)'});
 
-        if(this.mode !== 'edit') {
+        if(this.mode !== 'edit' || this.readonly) {
             this.$elem.append(
                 $('<span title="Translations">translate</span>')
                     .addClass('material-icons sb-widget-multilang-icon')
