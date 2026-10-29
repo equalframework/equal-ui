@@ -258,7 +258,9 @@ export default class WidgetMany2Many extends Widget {
                                             }
                                             this.value.push(value);
                                         }
-                                        this.$elem.trigger('_updatedWidget');
+                                        this.$elem.trigger('_updatedWidget', [true, {
+                                            autosave: this.rel_type === 'many2many'
+                                        }]);
                                     }
                                 }
                             };

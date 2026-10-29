@@ -628,128 +628,164 @@ export class LayoutForm extends Layout {
                         } );
                         */
                         // Handle Widget update handler
-                        $widget.on('_updatedWidget', async (event:any, refresh: boolean = true) => {
-                        console.debug("Layout::feedForm : received _updatedWidget", field, widget.getValue(), refresh);
-                        // #memo - the focus must be given back to currently focused item, regardless of the updated widget
-                        // this.focused_widget_id = widget.getId();
+                        $widget.on('_updatedWidget', async (event:any, refresh: boolean = true, options: any = {}) => {
+                            console.debug("Layout::feedForm : received _updatedWidget", field, widget.getValue(), refresh);
+                            // #memo - the focus must be given back to currently focused item, regardless of the updated widget
+                            // this.focused_widget_id = widget.getId();
 
-                        // update object with new value
-                        let values: any = {};
-                        let model_fields: any = {};
+                            // update object with new value
+                            let values: any = {};
+                            let model_fields: any = {};
 
-                        values[field] = widget.getValue();
+                            values[field] = widget.getValue();
+                            const autosave = options.autosave === true && this.view.getMode() === 'view';
 
-                        // relay the change to back-end through onupdate
-                        // for binary fields, relay only meta data
-                        // if value is over 1k, do not relay onchange to server
-                        // #todo - choose a proportionate (objectivable) limit
-                        if(['file', 'binary', 'upload', 'image'].includes(widget.getType()) || widget.toString().length < 1000) {
-                            try {
-                                let params: any = {
-                                    entity: this.view.getEntity(),
-                                    view_id: this.view.getId(),
-                                    changes: {},
-                                    values: {},
-                                    lang: this.view.getLang()
-                                };
-                                // for `file` widgets, we relay only meta instead of full binary data (see below)
-                                if(['file', 'binary', 'upload', 'image'].includes(widget.getType())) {
-                                    if(this.view.getModelFields()[field]?.readonly !== true || object.state === 'draft') {
-                                        params.changes[field] = widget.getMeta();
+                            // relay the change to back-end through onupdate
+                            // for binary fields, relay only meta data
+                            // if value is over 1k, do not relay onchange to server
+                            // #todo - choose a proportionate (objectivable) limit
+                            if(!autosave && (['file', 'binary', 'upload', 'image'].includes(widget.getType()) || widget.toString().length < 1000)) {
+                                try {
+                                    let params: any = {
+                                        entity: this.view.getEntity(),
+                                        view_id: this.view.getId(),
+                                        changes: {},
+                                        values: {},
+                                        lang: this.view.getLang()
+                                    };
+                                    // for `file` widgets, we relay only meta instead of full binary data (see below)
+                                    if(['file', 'binary', 'upload', 'image'].includes(widget.getType())) {
+                                        if(this.view.getModelFields()[field]?.readonly !== true || object.state === 'draft') {
+                                            params.changes[field] = widget.getMeta();
+                                        }
+                                        params.values = this.getOnchangeValues(object);
                                     }
-                                    params.values = this.getOnchangeValues(object);
-                                }
-                                else {
-                                    const [current_object = object] = await this.view.getModel().get([object.id]);
-                                    params.changes = this.view.getModel().export(values, current_object);
-                                    params.values  = this.getOnchangeValues(current_object);
-                                }
+                                    else {
+                                        const [current_object = object] = await this.view.getModel().get([object.id]);
+                                        params.changes = this.view.getModel().export(values, current_object);
+                                        params.values  = this.getOnchangeValues(current_object);
+                                    }
 
-                                const result = await ApiService.call('?do=model_onchange', params);
+                                    const result = await ApiService.call('?do=model_onchange', params);
 
-                                if(typeof result === 'object' && result != null) {
+                                    if(typeof result === 'object' && result != null) {
 
-                                    for(let changed_field of Object.keys(result)) {
-                                        // there are changes to apply on the schema: we must force a re-feed on the Form
-                                        refresh = true;
+                                        for(let changed_field of Object.keys(result)) {
+                                            // there are changes to apply on the schema: we must force a re-feed on the Form
+                                            refresh = true;
 
-                                        let changed_field_type: string | null = this.view.getModel().getFinalType(changed_field);
-                                        // if some changes are returned from the back-end, append them to the view model update
-                                        if(typeof result[changed_field] === 'object' && result[changed_field] !== null) {
+                                            let changed_field_type: string | null = this.view.getModel().getFinalType(changed_field);
+                                            // if some changes are returned from the back-end, append them to the view model update
+                                            if(typeof result[changed_field] === 'object' && result[changed_field] !== null) {
 
-                                            if(!Array.isArray(result[changed_field])) {
-                                                model_fields[changed_field] = result[changed_field];
-                                            }
-
-                                            if(['many2one', 'many2many'].includes(changed_field_type ?? '') && result[changed_field].hasOwnProperty('domain')) {
-                                                if(!model_fields.hasOwnProperty(changed_field) || typeof model_fields[changed_field] !== 'object') {
+                                                if(!Array.isArray(result[changed_field])) {
                                                     model_fields[changed_field] = result[changed_field];
                                                 }
-                                                // #todo - using original_domain is probability no longer necessary (see above)
-                                                // force changing original_domain
-                                                model_fields[changed_field].original_domain = result[changed_field].domain;
-                                                this.view.updateModelField(changed_field, 'domain', result[changed_field].domain);
-                                            }
 
-                                            if(result[changed_field].hasOwnProperty('value')) {
-                                                values[changed_field] = result[changed_field].value;
-                                            }
-                                            else if(changed_field_type == 'many2one') {
-                                                console.debug('assigning value for ', changed_field);
-                                                // #memo - m2o widgets use an object as value
-                                                values[changed_field] = result[changed_field];
-                                            }
-                                            else if(changed_field_type == 'many2many') {
-                                                // m2m is a list of positive or negative integers
-                                                if(Array.isArray(result[changed_field])) {
+                                                if(['many2one', 'many2many'].includes(changed_field_type ?? '') && result[changed_field].hasOwnProperty('domain')) {
+                                                    if(!model_fields.hasOwnProperty(changed_field) || typeof model_fields[changed_field] !== 'object') {
+                                                        model_fields[changed_field] = result[changed_field];
+                                                    }
+                                                    // #todo - using original_domain is probability no longer necessary (see above)
+                                                    // force changing original_domain
+                                                    model_fields[changed_field].original_domain = result[changed_field].domain;
+                                                    this.view.updateModelField(changed_field, 'domain', result[changed_field].domain);
+                                                }
+
+                                                if(result[changed_field].hasOwnProperty('value')) {
+                                                    values[changed_field] = result[changed_field].value;
+                                                }
+                                                else if(changed_field_type == 'many2one') {
+                                                    console.debug('assigning value for ', changed_field);
+                                                    // #memo - m2o widgets use an object as value
                                                     values[changed_field] = result[changed_field];
                                                 }
-                                            }
+                                                else if(changed_field_type == 'many2many') {
+                                                    // m2m is a list of positive or negative integers
+                                                    if(Array.isArray(result[changed_field])) {
+                                                        values[changed_field] = result[changed_field];
+                                                    }
+                                                }
 
-                                            if(result[changed_field].hasOwnProperty('selection')) {
-                                                // special case of a descriptor providing a selection
-                                                // #memo - this is because a string with selection is handled in a distinct way (WidgetSelect)
-                                                let normalize_selection = WidgetFactory.getNormalizedSelection(translation, changed_field, result[changed_field].selection);
-                                                // 1) set virtual `values` property (used by WidgetSelect) to assign & refresh the widget accordingly
-                                                model_fields[changed_field].values = normalize_selection;
-                                                // 2) update view model in case selection is added on another widget type (WidgetString, WidgetInteger, ...)
-                                                this.view.updateModelField(changed_field, 'selection', normalize_selection);
+                                                if(result[changed_field].hasOwnProperty('selection')) {
+                                                    // special case of a descriptor providing a selection
+                                                    // #memo - this is because a string with selection is handled in a distinct way (WidgetSelect)
+                                                    let normalize_selection = WidgetFactory.getNormalizedSelection(translation, changed_field, result[changed_field].selection);
+                                                    // 1) set virtual `values` property (used by WidgetSelect) to assign & refresh the widget accordingly
+                                                    model_fields[changed_field].values = normalize_selection;
+                                                    // 2) update view model in case selection is added on another widget type (WidgetString, WidgetInteger, ...)
+                                                    this.view.updateModelField(changed_field, 'selection', normalize_selection);
+                                                }
                                             }
-                                        }
-                                        else {
-                                            // assign new value to the model (trough onchangeViewModel)
-                                            values[changed_field] = result[changed_field];
-                                            // mark widget as changed (see below)
-                                            model_fields[changed_field] = result[changed_field];
+                                            else {
+                                                // assign new value to the model (trough onchangeViewModel)
+                                                values[changed_field] = result[changed_field];
+                                                // mark widget as changed (see below)
+                                                model_fields[changed_field] = result[changed_field];
+                                            }
                                         }
                                     }
                                 }
-                            }
-                            catch(response) {
-                                // ignore faulty responses
-                                console.warn('unable to send onchange request', response);
-                            }
-                        }
-
-                        // update widgets (assign new value & mark as changed)
-                        if(Object.keys(model_fields).length > 0) {
-                            console.debug('LayoutForm::feed - updating model', model_fields);
-                            for(let widget_index of Object.keys(this.model_widgets[0])) {
-                                let widget = this.model_widgets[0][widget_index];
-                                let field = widget.config.field;
-                                if (model_fields.hasOwnProperty(field) && model_fields[field] && typeof model_fields[field] === 'object') {
-                                    for (let property of Object.keys(model_fields[field])) {
-                                        widget.config[property] = model_fields[field][property];
-                                        widget.config.changed = true;
-                                    }
-                                    console.debug('LayoutForm::feed - updated widget', widget);
+                                catch(response) {
+                                    // ignore faulty responses
+                                    console.warn('unable to send onchange request', response);
                                 }
                             }
-                        }
-                        // update model schema of the view
-                        if(Object.keys(values).length > 0) {
-                            this.view.onchangeViewModel([object.id], values, refresh);
-                        }
+
+                            // update widgets (assign new value & mark as changed)
+                            if(Object.keys(model_fields).length > 0) {
+                                console.debug('LayoutForm::feed - updating model', model_fields);
+                                for(let widget_index of Object.keys(this.model_widgets[0])) {
+                                    let widget = this.model_widgets[0][widget_index];
+                                    let field = widget.config.field;
+                                    if (model_fields.hasOwnProperty(field) && model_fields[field] && typeof model_fields[field] === 'object') {
+                                        for (let property of Object.keys(model_fields[field])) {
+                                            widget.config[property] = model_fields[field][property];
+                                            widget.config.changed = true;
+                                        }
+                                        console.debug('LayoutForm::feed - updated widget', widget);
+                                    }
+                                }
+                            }
+                            // special case: ACTION.SELECT can be explicitly enabled on a many2many widget in view mode.
+                            // In that case there is no form save action, so persist the resulting changes immediately.
+                            if(autosave) {
+                                const object_id = Number(object.id);
+                                const model = this.view.getModel();
+
+                                try {
+                                    const [current_object = object] = await model.get([object_id]);
+                                    const update_values = {...values};
+
+                                    // Keep the same concurrency-control fields as a regular form save.
+                                    if(current_object.hasOwnProperty('modified')) {
+                                        update_values.modified = current_object.modified;
+                                    }
+                                    if(current_object.hasOwnProperty('state')) {
+                                        update_values.state = current_object.state;
+                                    }
+
+                                    await ApiService.update(
+                                        this.view.getEntity(),
+                                        [object_id],
+                                        model.export(update_values, {...current_object, ...values}),
+                                        false,
+                                        this.view.getLang()
+                                    );
+                                    this.view.setChanged();
+                                }
+                                catch(response) {
+                                    await this.view.displayErrorFeedback(translation, response, object, true);
+                                }
+                                finally {
+                                    // Reload the persisted server state, or roll back the optimistic selection on error.
+                                    await this.view.onchangeView();
+                                }
+                            }
+                            // update model schema of the view
+                            else if(Object.keys(values).length > 0) {
+                                await this.view.onchangeViewModel([object.id], values, refresh);
+                            }
                         });
 
                         // append rendered widget
