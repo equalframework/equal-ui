@@ -2212,8 +2212,8 @@ export class View {
                         .appendTo($list);
 
                     if(item.hasOwnProperty('primary') && item.primary) {
-                        $container.append(UIHelper.createButton('selection-action-' + item.label, item.label, 'icon', item.icon).on('click', (event:any) => item.handler(this.selected_ids, item)));
-                        let $tooltip = UIHelper.createTooltip('selection-action-' + item.label, TranslationService.instant(item.label));
+                        $container.append(UIHelper.createButton('selection-action-' + item.label, translated_label, 'icon', item.icon).on('click', (event:any) => item.handler(this.selected_ids, item)));
+                        let $tooltip = UIHelper.createTooltip('selection-action-' + item.label, translated_label);
                         $container.append($tooltip);
                         UIHelper.decorateTooltip($tooltip);
                     }
