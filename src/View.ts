@@ -1264,26 +1264,34 @@ export class View {
         this.view_fields = {};
         var stack = [];
 
+        const addDomainDependencies = (domain: any) => {
+            this.extractFieldsFromDomain(domain).forEach((field: string) => {
+                if(!this.view_fields.hasOwnProperty(field)) {
+                    this.view_fields[field] = {type: 'field', value: field};
+                }
+            });
+        };
+
         let processNode = (node: any) => {
             if(node.visible ?? false) {
-                this.extractFieldsFromDomain(node.visible).forEach( (f: string) => {this.view_fields[f] = {type: 'field', value: f};});
+                addDomainDependencies(node.visible);
             }
             if(node.domain ?? false) {
-                this.extractFieldsFromDomain(node.domain).forEach( (f: string) => {this.view_fields[f] = {type: 'field', value: f};});
+                addDomainDependencies(node.domain);
             }
             const readonly = node.widget?.readonly ?? node.readonly;
             if(readonly ?? false) {
-                this.extractFieldsFromDomain(readonly).forEach( (f: string) => {this.view_fields[f] = {type: 'field', value: f};});
+                addDomainDependencies(readonly);
             }
         };
 
         if(view_schema.hasOwnProperty('routes')) {
             for(const route of this.view_schema.routes) {
                 if(route.context?.domain) {
-                    this.extractFieldsFromDomain(route.context.domain).forEach( (f: string) => {this.view_fields[f] = {type: 'field', value: f};});
+                    addDomainDependencies(route.context.domain);
                 }
                 if(route.visible) {
-                    this.extractFieldsFromDomain(route.visible).forEach( (f: string) => {this.view_fields[f] = {type: 'field', value: f};});
+                    addDomainDependencies(route.visible);
                 }
             }
         }
@@ -1291,7 +1299,7 @@ export class View {
         if(view_schema.hasOwnProperty('actions')) {
             for(const action of this.view_schema.actions) {
                 if(action.visible) {
-                    this.extractFieldsFromDomain(action.visible).forEach( (f: string) => {this.view_fields[f] = {type: 'field', value: f};});
+                    addDomainDependencies(action.visible);
                 }
             }
         }
@@ -1308,7 +1316,7 @@ export class View {
                     processNode(item);
                     for(const mode of ['view', 'edit', 'create', 'update']) {
                         if(item[mode] && Array.isArray(item[mode])) {
-                            this.extractFieldsFromDomain(item[mode]).forEach( (f: string) => {this.view_fields[f] = {type: 'field', value: f};});
+                            addDomainDependencies(item[mode]);
                         }
                     }
                 }
