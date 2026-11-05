@@ -770,7 +770,8 @@ export class LayoutForm extends Layout {
                                         [object_id],
                                         model.export(update_values, {...current_object, ...values}),
                                         false,
-                                        this.view.getLang()
+                                        this.view.getLang(),
+                                        {force: false, previous_state: current_object.state, previous_modified: current_object.modified}
                                     );
                                     this.view.setChanged();
                                 }

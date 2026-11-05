@@ -619,7 +619,8 @@ export class LayoutList extends Layout {
                 // update displayed value of 'order' field (handler will retrieve matching widget)
                 this.$layout.find('tr[data-id="' + object.id + '"]').trigger('_setValue', ['order', object.order]);
                 // #memo - drag n drop updates the order field directly, without triggering _updatedWidget
-                ApiService.update(this.view.getEntity(), [object.id], {order: object.order}, true, this.view.getLang());
+                const current_object = this.view.getModel().find(object.id);
+                ApiService.update(this.view.getEntity(), [object.id], {order: object.order}, true, this.view.getLang(), {force: true, previous_state: current_object?.state, previous_modified: current_object?.modified});
             }
         });
     }

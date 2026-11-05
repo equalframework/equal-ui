@@ -482,18 +482,20 @@ export class _ApiService {
      * @param ids
      * @param fields
      */
-    public async update(entity: string, ids: any[], fields: any, force: boolean=false, lang: string = '') {
+    public async update(entity: string, ids: any[], fields: any, force: boolean=false, lang: string = '', options: any = {}) {
         console.debug('ApiService::update', entity, ids, fields);
         let result: any = true;
         try {
             const environment = await EnvService.getEnv();
-            let params = {
+            let params: any = {
                 entity: entity,
                 ids: ids,
                 fields: fields,
                 lang: (lang.length) ? lang : environment.lang,
-                force: force
+                force: options.force ?? force
             };
+            if(ids.length === 1 && options.previous_state !== undefined) params.previous_state = options.previous_state;
+            if(ids.length === 1 && options.previous_modified !== undefined) params.previous_modified = options.previous_modified;
             const response = await $.post({
                 url: environment.backend_url + '?do=model_update',
                 dataType: 'json',

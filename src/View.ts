@@ -2407,6 +2407,8 @@ export class View {
                                     entity: this.getEntity(),
                                     ids: [object['id']],
                                     fields: this.model.export(object, object),
+                                    previous_state: object.state,
+                                    previous_modified: object.modified,
                                     force: false,
                                     lang: this.getLang()
                                 });
@@ -3154,7 +3156,7 @@ export class View {
                 const promises: Promise<any>[] = [];
 
                 for(let lang of Object.keys(values)) {
-                    promises.push(ApiService.update(this.entity, [object_id], {[field]: values[lang]}, true, lang));
+                    promises.push(ApiService.update(this.entity, [object_id], {[field]: values[lang]}, true, lang, {force: true, previous_state: object?.state, previous_modified: object?.modified}));
                 }
 
                 await Promise.all(promises);
@@ -3388,7 +3390,7 @@ export class View {
                                 }
                                 else {
                                     try {
-                                        const response = await ApiService.update(this.entity, [object_id], this.model.export(object, object), false, this.getLang());
+                                        const response = await ApiService.update(this.entity, [object_id], this.model.export(object, object), false, this.getLang(), {force: false, previous_state: object.state, previous_modified: object.modified});
                                         $tr.trigger('_toggle_mode', 'view');
                                         $tr.attr('data-edit', '0');
                                         // keep the display value of updated many2one fields: model_update only returns their id
@@ -3537,7 +3539,7 @@ export class View {
                         let objects = await this.model.get();
                         object = objects.find( (o: any) => o.id == object.id );
                         try {
-                            const response = await ApiService.update(this.entity, [object.id], this.model.export(object, object), false, this.getLang());
+                            const response = await ApiService.update(this.entity, [object.id], this.model.export(object, object), false, this.getLang(), {force: false, previous_state: object.state, previous_modified: object.modified});
                             $tr.trigger('_toggle_mode', 'view');
                             $tr.attr('data-edit', '0');
                             $tr.find('.sb-action-cell').empty();
@@ -3999,7 +4001,7 @@ export class View {
                         });
                         // #toto - this does not cover case where an action uses a custom controller
                         // (saving should not occur here)
-                        const response = await ApiService.update(this.entity, [object['id']], this.model.export(object, object), true, this.getLang());
+                        const response = await ApiService.update(this.entity, [object['id']], this.model.export(object, object), true, this.getLang(), {force: true, previous_state: object.state, previous_modified: object.modified});
                         // this.closeContext();
                         return response;
                     }
