@@ -16,6 +16,10 @@ export class Model {
     // Map for keeping track of the fields that have been changed, on an object basis (keys are objects ids)
     private has_changed: any;
 
+    // Transient validation errors returned by model_onchange, indexed by object id and field name.
+    // These are kept outside of objects so they can never leak into model_update payloads.
+    private field_errors: any;
+
     // total objects matching the current domain on the back-end
     private total: number;
 
@@ -31,6 +35,7 @@ export class Model {
         this.loaded_promise = $.Deferred();
 
         this.has_changed = {};
+        this.field_errors = {};
         this.objects = [];
         this.total = 0;
     }
@@ -147,6 +152,74 @@ export class Model {
 
     public hasChanged() : boolean {
         return (Object.keys(this.has_changed).length > 0);
+    }
+
+    private hasErrors(errors: any): boolean {
+        if(errors === null || typeof errors === 'undefined' || errors === false || errors === '') {
+            return false;
+        }
+        if(Array.isArray(errors)) {
+            return errors.length > 0;
+        }
+        if(typeof errors === 'object') {
+            return Object.keys(errors).length > 0;
+        }
+        return true;
+    }
+
+    /**
+     * Replace the transient validation errors of a field.
+     * An empty value explicitly clears the errors; an absent `errors` property in an
+     * onchange response must therefore not call this method.
+     */
+    public setFieldErrors(id: any, field: string, errors: any) {
+        const object_id = String(id);
+
+        if(!this.hasErrors(errors)) {
+            if(this.field_errors.hasOwnProperty(object_id)) {
+                delete this.field_errors[object_id][field];
+                if(Object.keys(this.field_errors[object_id]).length === 0) {
+                    delete this.field_errors[object_id];
+                }
+            }
+            return;
+        }
+
+        if(!this.field_errors.hasOwnProperty(object_id)) {
+            this.field_errors[object_id] = {};
+        }
+        this.field_errors[object_id][field] = this.deepCopy(errors);
+    }
+
+    public getFieldErrors(id: any, field: string): any {
+        const object_id = String(id);
+        if(!this.field_errors.hasOwnProperty(object_id) || !this.field_errors[object_id].hasOwnProperty(field)) {
+            return null;
+        }
+        return this.deepCopy(this.field_errors[object_id][field]);
+    }
+
+    public getObjectFieldErrors(id: any): any {
+        const object_id = String(id);
+        if(!this.field_errors.hasOwnProperty(object_id)) {
+            return {};
+        }
+        return this.deepCopy(this.field_errors[object_id]);
+    }
+
+    public clearFieldErrors(id?: any, field?: string) {
+        if(typeof id === 'undefined') {
+            this.field_errors = {};
+            return;
+        }
+
+        const object_id = String(id);
+        if(typeof field === 'undefined') {
+            delete this.field_errors[object_id];
+            return;
+        }
+
+        this.setFieldErrors(object_id, field, null);
     }
 
     /**
@@ -299,6 +372,9 @@ export class Model {
             // fetch objects using controller given by View (default is core_model_collect)
             let response = await ApiService.fetch('/', body);
             this.total = ApiService.getLastCount();
+            // A server refresh starts a new validation state. Onchange errors only
+            // describe the locally edited version of the previous collection.
+            this.clearFieldErrors();
             if(response) {
                 this.objects = response;
             }
@@ -359,6 +435,7 @@ export class Model {
             let object = this.objects[index];
             if(object.hasOwnProperty('id') && object.id == id) {
                 this.has_changed[id] = [];
+                this.clearFieldErrors(id);
                 for(let field in values) {
                     object[field] = values[field];
                 }
@@ -415,6 +492,7 @@ export class Model {
         for(let id of ids) {
             let index = this.objects.findIndex( (o:any) => o.id == id );
             this.objects[index] = this.deepCopy(object);
+            this.clearFieldErrors(id);
         }
         await this.view.onchangeModel();
     }

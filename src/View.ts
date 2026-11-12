@@ -3849,9 +3849,9 @@ export class View {
                                 translated_msg = translated_error;
                             }
                         }
-                        // update widget to provide feedback (as error hint)
+                        // persist field errors so their marks survive subsequent layout refreshes
                         if(object) {
-                            this.layout.markFieldAsInvalid(object['id'], field, translated_msg);
+                            this.model.setFieldErrors(object['id'], field, errors['INVALID_PARAM'][field]);
                         }
                         // generate snack, if required
                         if(snack) {
@@ -3862,6 +3862,9 @@ export class View {
                             }, delay * i );
                         }
                         ++i;
+                    }
+                    if(object) {
+                        this.layout.refreshFieldMarks(object['id']);
                     }
                 }
                 // errors['INVALID_PARAM'] is a string
@@ -3907,10 +3910,10 @@ export class View {
                                     translated_msg = translated_error;
                                 }
                             }
-                            // update widget to provide feedback (as error hint)
+                            // persist field errors so their marks survive subsequent layout refreshes
                             if(object) {
                                 // #todo - check if field is a known field in the view
-                                this.layout.markFieldAsInvalid(object['id'], field, translated_msg);
+                                this.model.setFieldErrors(object['id'], field, errors['NOT_ALLOWED'][field]);
                             }
                             // generate snack, if required
                             if(snack) {
@@ -3946,6 +3949,9 @@ export class View {
                         }
                         ++i;
                     }
+                    if(object) {
+                        this.layout.refreshFieldMarks(object['id']);
+                    }
                 }
                 // errors['NOT_ALLOWED'] is a string
                 else {
@@ -3980,7 +3986,7 @@ export class View {
                     for(let field in errors['CONFLICT_OBJECT']) {
                         let msg = TranslationService.instant('SB_ERROR_DUPLICATE_VALUE');
                         if(object) {
-                            this.layout.markFieldAsInvalid(object['id'], field, msg);
+                            this.model.setFieldErrors(object['id'], field, {duplicate_value: msg});
                         }
                         if(snack) {
                             setTimeout( () => {
@@ -3990,6 +3996,9 @@ export class View {
                             }, delay * i);
                         }
                         ++i;
+                    }
+                    if(object) {
+                        this.layout.refreshFieldMarks(object['id']);
                     }
                 }
                 else if(errors['CONFLICT_OBJECT'] == 'concurrent_change') {

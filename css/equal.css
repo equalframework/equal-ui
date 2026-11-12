@@ -759,6 +759,7 @@ body > .header-view-details-popup .header-view-details-body div {
     position: relative;
     font-size: 14px;
     border: solid 1px lightgrey;
+    border-radius: var(--mdc-shape-medium, 4px);
 }
 
 .sb-widget.sb-ui-textarea .textarea-content {

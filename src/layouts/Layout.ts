@@ -188,9 +188,170 @@ export class Layout implements LayoutInterface{
         }
         if( this.model_widgets.hasOwnProperty(object_id) && this.model_widgets[object_id].hasOwnProperty(field) ) {
             let widget = this.model_widgets[object_id][field];
-            let $elem = this.$layout.find('#'+widget.getId())
-            $elem.addClass('mdc-text-field--invalid');
-            $elem.find('.mdc-text-field-helper-text').addClass('mdc-text-field-helper-text--persistent mdc-text-field-helper-text--validation-msg').text(message).attr('title', message);
+            let $elem = this.$layout.find('#'+widget.getId());
+            let $controls = $elem
+                .filter('.mdc-text-field, .mdc-select')
+                .add($elem.find('.mdc-text-field, .mdc-select'));
+
+            $elem.addClass('sb-widget--invalid mdc-text-field--invalid');
+            $controls.filter('.mdc-text-field').addClass('mdc-text-field--invalid');
+            $controls.filter('.mdc-select').addClass('mdc-select--invalid');
+            $elem.find('input, textarea, select').attr('aria-invalid', 'true');
+            $elem.find('.mdc-text-field-helper-text')
+                .addClass('mdc-text-field-helper-text--persistent mdc-text-field-helper-text--validation-msg')
+                .text(message)
+                .attr('title', message)
+                .attr('aria-hidden', 'false');
+        }
+    }
+
+    public clearFieldMark(object_id: number, field: string) {
+        if(this.view.getType() == 'form') {
+            object_id = 0;
+        }
+        if(!this.model_widgets.hasOwnProperty(object_id) || !this.model_widgets[object_id].hasOwnProperty(field)) {
+            return;
+        }
+
+        const widget = this.model_widgets[object_id][field];
+        const $elem = this.$layout.find('#' + widget.getId());
+        const $controls = $elem
+            .filter('.mdc-text-field, .mdc-select')
+            .add($elem.find('.mdc-text-field, .mdc-select'));
+        const description = widget.getConfig()?.description ?? '';
+
+        $elem.removeClass('sb-widget--invalid mdc-text-field--invalid');
+        $controls.filter('.mdc-text-field').removeClass('mdc-text-field--invalid');
+        $controls.filter('.mdc-select').removeClass('mdc-select--invalid');
+        $elem.find('input, textarea, select').removeAttr('aria-invalid');
+        $elem.find('.mdc-text-field-helper-text')
+            .removeClass('mdc-text-field-helper-text--persistent mdc-text-field-helper-text--validation-msg')
+            .text(description)
+            .attr('title', description)
+            .attr('aria-hidden', 'true');
+    }
+
+    /**
+     * Store the `errors` properties returned in field descriptors by model_onchange.
+     * Missing properties leave the current state untouched; empty properties clear it.
+     */
+    protected updateFieldErrorsFromOnchange(object_id: number, result: any) {
+        if(!result || typeof result !== 'object') {
+            return;
+        }
+
+        for(const field of Object.keys(result)) {
+            const descriptor = result[field];
+            if(descriptor && typeof descriptor === 'object' && !Array.isArray(descriptor) && descriptor.hasOwnProperty('errors')) {
+                this.view.getModel().setFieldErrors(object_id, field, descriptor.errors);
+            }
+        }
+    }
+
+    /**
+     * Many2one onchange values are objects too (`{id, name}`), so object-ness alone
+     * cannot distinguish a value from a field descriptor.
+     */
+    protected isOnchangeFieldDescriptor(value: any, field_type: string | null): boolean {
+        if(!value || typeof value !== 'object' || Array.isArray(value)) {
+            return false;
+        }
+        if(field_type !== 'many2one') {
+            return true;
+        }
+
+        const descriptor_properties = [
+            'value', 'domain', 'selection', 'visible', 'readonly', 'required', 'errors'
+        ];
+        if(descriptor_properties.some(property => value.hasOwnProperty(property))) {
+            return true;
+        }
+
+        return !value.hasOwnProperty('id') && !value.hasOwnProperty('name');
+    }
+
+    private getFieldErrorMessage(field: string, errors: any): string {
+        let error_id = '';
+        let message: any = errors;
+
+        if(Array.isArray(errors)) {
+            message = errors[0] ?? '';
+        }
+        else if(errors && typeof errors === 'object') {
+            error_id = String(Object.keys(errors)[0] ?? '');
+            message = error_id ? errors[error_id] : '';
+        }
+
+        if(message && typeof message === 'object') {
+            if(Array.isArray(message)) {
+                message = message[0] ?? '';
+            }
+            else {
+                message = Object.keys(message)[0] ?? '';
+            }
+        }
+
+        message = String(message ?? error_id);
+        const translation = this.view.getTranslation();
+        let translated = TranslationService.resolve(translation, 'error', [], field, message, error_id || message);
+        if(translated === message.replace(/_/g, ' ') && error_id) {
+            const translation_id = 'SB_ERROR_' + error_id.toUpperCase();
+            const generic_translation = TranslationService.instant(translation_id);
+            if(generic_translation !== translation_id) {
+                translated = generic_translation;
+            }
+        }
+        return translated || message || error_id;
+    }
+
+    /**
+     * Reconcile DOM validation marks with the error state held by Model.
+     * When no id is given, all currently rendered objects are refreshed.
+     */
+    public refreshFieldMarks(object_id?: number) {
+        if(this.view.getType() === 'form') {
+            const error_object_id = typeof object_id === 'undefined'
+                ? this.view.getActiveObjectId()
+                : object_id;
+            const widgets = this.model_widgets[0];
+
+            if(!widgets) {
+                return;
+            }
+
+            for(const field of Object.keys(widgets)) {
+                const errors = this.view.getModel().getFieldErrors(error_object_id, field);
+                if(errors === null) {
+                    this.clearFieldMark(0, field);
+                }
+                else {
+                    this.markFieldAsInvalid(0, field, this.getFieldErrorMessage(field, errors));
+                }
+            }
+            return;
+        }
+
+        const object_ids = typeof object_id === 'undefined'
+            ? Object.keys(this.model_widgets)
+            : [String(object_id)];
+
+        for(const model_widget_id of object_ids) {
+            const widget_id = String(model_widget_id);
+            const widgets = this.model_widgets[widget_id];
+
+            if(!widgets) {
+                continue;
+            }
+
+            for(const field of Object.keys(widgets)) {
+                const errors = this.view.getModel().getFieldErrors(model_widget_id, field);
+                if(errors === null) {
+                    this.clearFieldMark(parseInt(String(widget_id), 10), field);
+                }
+                else {
+                    this.markFieldAsInvalid(parseInt(String(widget_id), 10), field, this.getFieldErrorMessage(field, errors));
+                }
+            }
         }
     }
 

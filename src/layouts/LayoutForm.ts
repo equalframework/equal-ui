@@ -38,7 +38,7 @@ export class LayoutForm extends Layout {
 
         // feed layout with current Model
         let objects = await this.view.getModel().get();
-        this.feed(objects);
+        await this.feed(objects);
     }
 
     public loading(loading: boolean) {
@@ -670,16 +670,20 @@ export class LayoutForm extends Layout {
 
                                     if(typeof result === 'object' && result != null) {
 
+                                        this.updateFieldErrorsFromOnchange(object.id, result);
+
                                         for(let changed_field of Object.keys(result)) {
                                             // there are changes to apply on the schema: we must force a re-feed on the Form
                                             refresh = true;
 
                                             let changed_field_type: string | null = this.view.getModel().getFinalType(changed_field);
+                                            const is_field_descriptor = this.isOnchangeFieldDescriptor(result[changed_field], changed_field_type);
                                             // if some changes are returned from the back-end, append them to the view model update
                                             if(typeof result[changed_field] === 'object' && result[changed_field] !== null) {
 
-                                                if(!Array.isArray(result[changed_field])) {
-                                                    model_fields[changed_field] = result[changed_field];
+                                                if(is_field_descriptor) {
+                                                    model_fields[changed_field] = {...result[changed_field]};
+                                                    delete model_fields[changed_field].errors;
                                                 }
 
                                                 if(['many2one', 'many2many'].includes(changed_field_type ?? '') && result[changed_field].hasOwnProperty('domain')) {
@@ -695,7 +699,7 @@ export class LayoutForm extends Layout {
                                                 if(result[changed_field].hasOwnProperty('value')) {
                                                     values[changed_field] = result[changed_field].value;
                                                 }
-                                                else if(changed_field_type == 'many2one') {
+                                                else if(changed_field_type == 'many2one' && !is_field_descriptor) {
                                                     console.debug('assigning value for ', changed_field);
                                                     // #memo - m2o widgets use an object as value
                                                     values[changed_field] = result[changed_field];
@@ -794,6 +798,8 @@ export class LayoutForm extends Layout {
                     }
                 }
             }
+
+            this.refreshFieldMarks(object.id);
 
             // attempt to give the focus back to the previously focused widget
             if(this.focused_widget_id) {
