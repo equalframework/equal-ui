@@ -353,6 +353,7 @@ export default class WidgetMany2One extends Widget {
                 };
 
                 let query = '';
+                let domain = '';
 
                 let feedObjects = async () => {
                     console.debug('WidgetMany2One::feedObjects (call)');
@@ -361,9 +362,11 @@ export default class WidgetMany2One extends Widget {
                     }
                     let val = <string> $input.val();
                     let parts: string[] = val.trim().split(" ");
+                    let current_domain = JSON.stringify(this.config.domain ?? []);
 
-                    if(val != query || !objects.length) {
+                    if(val != query || current_domain != domain || !objects.length) {
                         query = val;
+                        domain = current_domain;
 
                         let domainArray = [];
                         for(let word of parts) {

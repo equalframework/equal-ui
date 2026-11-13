@@ -3608,8 +3608,13 @@ export class View {
             const values = {...object, ...widget_values};
             for(let field of Object.keys(widgets)) {
                 const widget = widgets[field];
+                const config = widget.getConfig();
                 const $container = widget_containers[field];
-                const visible = evaluateConditionalValue(widget.getConfig().visible ?? true, values, user, parent, this.getEnv());
+                if(config.hasOwnProperty('original_domain')) {
+                    config.domain = new Domain(config.original_domain).parse(values, user, parent, this.getEnv()).toArray();
+                    config.object = values;
+                }
+                const visible = evaluateConditionalValue(config.visible ?? true, values, user, parent, this.getEnv());
                 if(visible) {
                     $container
                         .attr('data-visible', '1')
@@ -3672,7 +3677,7 @@ export class View {
             // if widget has a domain, parse it using current object and user
             if(config.hasOwnProperty('original_domain')) {
                 let tmpDomain = new Domain(config.original_domain);
-                config.domain = tmpDomain.parse(object, user, parent, this.getEnv()).toArray();
+                config.domain = tmpDomain.parse({...object, ...widget_values}, user, parent, this.getEnv()).toArray();
             }
             else {
                 config.domain = [];
