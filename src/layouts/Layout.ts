@@ -231,9 +231,16 @@ export class Layout implements LayoutInterface{
             .attr('aria-hidden', 'true');
     }
 
+    protected clearFieldError(object_id: number, field: string) {
+        if(this.view.getModel().getFieldErrors(object_id, field) !== null) {
+            this.view.getModel().clearFieldErrors(object_id, field);
+            this.clearFieldMark(object_id, field);
+        }
+    }
+
     /**
-     * Store the `errors` properties returned in field descriptors by model_onchange.
-     * Missing properties leave the current state untouched; empty properties clear it.
+     * Update field errors returned by model_onchange.
+     * A direct value clears the field error; a descriptor only changes it when it has an `errors` property.
      */
     protected updateFieldErrorsFromOnchange(object_id: number, result: any) {
         if(!result || typeof result !== 'object') {
@@ -244,6 +251,9 @@ export class Layout implements LayoutInterface{
             const descriptor = result[field];
             if(descriptor && typeof descriptor === 'object' && !Array.isArray(descriptor) && descriptor.hasOwnProperty('errors')) {
                 this.view.getModel().setFieldErrors(object_id, field, descriptor.errors);
+            }
+            else if(!this.isOnchangeFieldDescriptor(descriptor, this.view.getModel().getFinalType(field))) {
+                this.clearFieldError(object_id, field);
             }
         }
     }

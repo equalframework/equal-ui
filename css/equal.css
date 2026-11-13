@@ -425,6 +425,7 @@ body > .header-view-details-popup .header-view-details-body div {
     min-width: 450px;
     width: 450px;
     max-width: 450px;
+    border-radius: 10px !important;
 }
 
 .sb-view .sb-view-dialog .dialog-select {

@@ -629,6 +629,7 @@ export class LayoutForm extends Layout {
                         */
                         // Handle Widget update handler
                         $widget.on('_updatedWidget', async (event:any, refresh: boolean = true, options: any = {}) => {
+                            this.clearFieldError(object.id, field);
                             console.debug("Layout::feedForm : received _updatedWidget", field, widget.getValue(), refresh);
                             // #memo - the focus must be given back to currently focused item, regardless of the updated widget
                             // this.focused_widget_id = widget.getId();

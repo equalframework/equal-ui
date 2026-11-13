@@ -1559,6 +1559,7 @@ export class LayoutList extends Layout {
             console.warn('updatedWidget: widget not found', object_id, field);
             return;
         }
+        this.clearFieldError(object.id, field);
 
         let values: any = {};
 
