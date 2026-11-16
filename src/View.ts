@@ -2379,8 +2379,8 @@ export class View {
                 // define the save method (used for all action implying saving the object)
                 const save_method = async (action:any) => {
                     let objects;
-                    if(!this.layout.checkRequiredFields()) {
-                        let $snack = UIHelper.createSnackbar(TranslationService.instant('SB_ERROR_MISSING_PARAM', 'Missing value.'), TranslationService.instant('SB_ERROR_ERROR', 'Error'), '', 4000);
+                    if(!await this.layout.validateFields()) {
+                        let $snack = UIHelper.createSnackbar(TranslationService.instant('SB_ERROR_INVALID_PARAM', 'Invalid value.'), TranslationService.instant('SB_ERROR_ERROR', 'Error'), '', 4000);
                         this.$container.append($snack);
                         return null;
                     }

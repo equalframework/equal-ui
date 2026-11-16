@@ -415,6 +415,8 @@ PERFORMANCE OF THIS SOFTWARE.
 
 /*! ./Frame */
 
+/*! ./JsonCodec */
+
 /*! ./Layout */
 
 /*! ./Model */
@@ -483,6 +485,8 @@ PERFORMANCE OF THIS SOFTWARE.
 
 /*! ./form */
 
+/*! ./format */
+
 /*! ./foundation */
 
 /*! ./getPrototypeOf.js */
@@ -498,6 +502,14 @@ PERFORMANCE OF THIS SOFTWARE.
 /*! ./icon/component */
 
 /*! ./icon/index */
+
+/*! ./impl/edit */
+
+/*! ./impl/format */
+
+/*! ./impl/parser */
+
+/*! ./impl/scanner */
 
 /*! ./iterableToArray.js */
 
@@ -529,6 +541,8 @@ PERFORMANCE OF THIS SOFTWARE.
 
 /*! ./nonIterableSpread.js */
 
+/*! ./parser */
+
 /*! ./resizable */
 
 /*! ./rtl-default-scroller */
@@ -539,11 +553,15 @@ PERFORMANCE OF THIS SOFTWARE.
 
 /*! ./rtl-scroller */
 
+/*! ./scanner */
+
 /*! ./services/WebExtensionService */
 
 /*! ./setPrototypeOf.js */
 
 /*! ./sliding-foundation */
+
+/*! ./string-intern */
 
 /*! ./superPropBase.js */
 
@@ -572,6 +590,8 @@ PERFORMANCE OF THIS SOFTWARE.
 /*! ./widgets/WidgetImage */
 
 /*! ./widgets/WidgetInteger */
+
+/*! ./widgets/WidgetJson */
 
 /*! ./widgets/WidgetLabel */
 
@@ -735,6 +755,8 @@ PERFORMANCE OF THIS SOFTWARE.
 
 /*! jquery-ui/ui/widgets/sortable */
 
+/*! jsonc-parser */
+
 /*! moment */
 
 /*! moment/locale/es */
@@ -850,6 +872,10 @@ PERFORMANCE OF THIS SOFTWARE.
   \************************************/
 
 /*!************************************!*\
+  !*** ./build/widgets/JsonCodec.js ***!
+  \************************************/
+
+/*!************************************!*\
   !*** ./build/widgets/WidgetPdf.js ***!
   \************************************/
 
@@ -871,6 +897,10 @@ PERFORMANCE OF THIS SOFTWARE.
 
 /*!*************************************!*\
   !*** ./build/widgets/WidgetFile.js ***!
+  \*************************************/
+
+/*!*************************************!*\
+  !*** ./build/widgets/WidgetJson.js ***!
   \*************************************/
 
 /*!*************************************!*\
@@ -1706,6 +1736,10 @@ PERFORMANCE OF THIS SOFTWARE.
   \***************************************************/
 
 /*!***************************************************!*\
+  !*** ./node_modules/jsonc-parser/lib/esm/main.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
   !*** ./node_modules/moment/locale/ sync ^\.\/.*$ ***!
   \***************************************************/
 
@@ -1925,6 +1959,10 @@ PERFORMANCE OF THIS SOFTWARE.
   !*** ./node_modules/jquery-ui/ui/widgets/resizable.js ***!
   \********************************************************/
 
+/*!********************************************************!*\
+  !*** ./node_modules/jsonc-parser/lib/esm/impl/edit.js ***!
+  \********************************************************/
+
 /*!*********************************************************!*\
   !*** ./node_modules/@babel/runtime/helpers/inherits.js ***!
   \*********************************************************/
@@ -2005,6 +2043,14 @@ PERFORMANCE OF THIS SOFTWARE.
   !*** ./node_modules/jquery-ui/ui/safe-active-element.js ***!
   \**********************************************************/
 
+/*!**********************************************************!*\
+  !*** ./node_modules/jsonc-parser/lib/esm/impl/format.js ***!
+  \**********************************************************/
+
+/*!**********************************************************!*\
+  !*** ./node_modules/jsonc-parser/lib/esm/impl/parser.js ***!
+  \**********************************************************/
+
 /*!***********************************************************!*\
   !*** ./node_modules/@material/menu-surface/foundation.js ***!
   \***********************************************************/
@@ -2023,6 +2069,10 @@ PERFORMANCE OF THIS SOFTWARE.
 
 /*!***********************************************************!*\
   !*** ./node_modules/jquery-ui/ui/widgets/controlgroup.js ***!
+  \***********************************************************/
+
+/*!***********************************************************!*\
+  !*** ./node_modules/jsonc-parser/lib/esm/impl/scanner.js ***!
   \***********************************************************/
 
 /*!************************************************************!*\
@@ -2179,6 +2229,10 @@ PERFORMANCE OF THIS SOFTWARE.
 
 /*!*****************************************************************!*\
   !*** ./node_modules/@material/select/helper-text/foundation.js ***!
+  \*****************************************************************/
+
+/*!*****************************************************************!*\
+  !*** ./node_modules/jsonc-parser/lib/esm/impl/string-intern.js ***!
   \*****************************************************************/
 
 /*!******************************************************************!*\

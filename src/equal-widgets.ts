@@ -8,6 +8,7 @@ import WidgetInteger from "./widgets/WidgetInteger";
 import WidgetFloat from "./widgets/WidgetFloat";
 import WidgetString from "./widgets/WidgetString";
 import WidgetText from "./widgets/WidgetText";
+import WidgetJson from "./widgets/WidgetJson";
 import WidgetLink from "./widgets/WidgetLink";
 import WidgetSelect from "./widgets/WidgetSelect";
 import WidgetFile from "./widgets/WidgetFile";
@@ -101,6 +102,8 @@ class WidgetFactory {
                 return new WidgetLabel(layout, label, value, config);
             case 'text':
                 return new WidgetText(layout, label, value, config);
+            case 'json':
+                return new WidgetJson(layout, label, value, config);
             case 'string':
                 if(config.hasOwnProperty('usage') && config.usage.substring(0, 5) == 'color') {
                     // WidgetSelect with predefined std colors
@@ -142,6 +145,9 @@ class WidgetFactory {
     public static getTypeFromUsage(usage_str: string, default_type: string) {
         let result = default_type;
         let [usage, length] = usage_str.split(":");
+        if(usage === 'text/json' || usage.indexOf('text/json.') === 0) {
+            return 'json';
+        }
         if(usage.includes('text/plain') && length && parseInt(length) <= 255) {
             usage = 'text/plain.short';
         }
@@ -169,7 +175,6 @@ class WidgetFactory {
             case 'time/plain.short':
                 result = 'time';
                 break;
-            case 'text/json.short':
             case 'text/plain.short':
                 result = 'string';
                 break;
@@ -179,10 +184,6 @@ class WidgetFactory {
             case 'text/plain.small':
             case 'text/plain.medium':
             case 'text/plain.long':
-            case 'text/json':
-            case 'text/json.small':
-            case 'text/json.medium':
-            case 'text/json.long':
             case 'text/html':
             case 'text/html.small':
             case 'text/html.medium':

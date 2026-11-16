@@ -248,14 +248,7 @@ export default class WidgetText extends Widget {
                 break;
             case 'view':
                 // #memo - we don't use Quill here
-                if(usage.includes('text/json')) {
-                    const escaped = result
-                        .replace(/&/g, "&amp;")
-                        .replace(/</g, "&lt;")
-                        .replace(/>/g, "&gt;");
-                    result = `<pre><code class="language-json">${escaped}</code></pre>`;
-                }
-                else if(!isHtmlUsage) {
+                if(!isHtmlUsage) {
                     result = this.plainTextToHtml(result);
                 }
                 break;

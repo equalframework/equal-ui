@@ -176,6 +176,40 @@ export class Layout implements LayoutInterface{
     }
 
     /**
+     * Validate widget drafts and flush debounced changes before saving.
+     */
+    public async validateFields(): Promise<boolean> {
+        if(!this.checkRequiredFields()) {
+            return false;
+        }
+
+        const widgets: Array<{objectId: number, field: string, widget: Widget}> = [];
+        for(const object_id in this.model_widgets) {
+            for(const field in this.model_widgets[object_id]) {
+                widgets.push({
+                    objectId: parseInt(object_id, 10),
+                    field,
+                    widget: this.model_widgets[object_id][field]
+                });
+            }
+        }
+
+        for(const item of widgets) {
+            const error = item.widget.validate();
+            if(error) {
+                this.markFieldAsInvalid(item.objectId, item.field, error);
+                return false;
+            }
+        }
+
+        for(const item of widgets) {
+            await item.widget.flushPendingChange();
+        }
+
+        return true;
+    }
+
+    /**
      *
      * @param field
      * @param message

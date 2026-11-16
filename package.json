@@ -3,7 +3,7 @@
     "version": "1.0.2",
     "author": "Cedric Francoys",
     "scripts": {
-        "test": "node tests/ConditionalValue.test.js",
+        "test": "node tests/ConditionalValue.test.js && node tests/JsonCodec.test.js",
         "build": "babel src --out-dir build --extensions .ts,.js",
         "webpack": "webpack"
     },
@@ -52,6 +52,7 @@
         "imports-loader": "^3.1.1",
         "jquery": "^3.6.0",
         "jquery-ui": "^1.12.1",
+        "jsonc-parser": "^3.3.1",
         "moment": "^2.29.1",
         "quill": "^1.3.7",
         "signature_pad": "^5.0.10",

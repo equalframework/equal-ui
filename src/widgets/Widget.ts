@@ -118,6 +118,20 @@ export default class Widget {
         return this.meta;
     }
 
+    /**
+     * Validate the widget's current draft before saving.
+     * Widgets without client-side validation are valid by default.
+     */
+    public validate(): string | null {
+        return null;
+    }
+
+    /**
+     * Flush a debounced widget change before saving.
+     */
+    public async flushPendingChange(): Promise<void> {
+    }
+
     public setIsFirst(is_first: boolean) {
         this.is_first = is_first;
     }
