@@ -1661,6 +1661,13 @@ export class View {
                 );
 
             view.isReady().then( () => {
+                if(!Object.keys(view.getViewFields() ?? {}).length) {
+                    $elem.removeClass('has-advanced-filters is-advanced-open');
+                    $level1.empty();
+                    this.$layoutContainer.css({height: ''});
+                    return;
+                }
+
                 let updateParams = async () => {
                     // retrieve model of the view
                     let model = view.getModel();
@@ -1749,7 +1756,9 @@ export class View {
                 if(this.config.header?.advanced_search?.open) {
                     requestAnimationFrame(() => {
                         requestAnimationFrame(() => {
-                            $advanced_filters_button.trigger('click');
+                            if($elem.hasClass('has-advanced-filters')) {
+                                $advanced_filters_button.trigger('click');
+                            }
                         });
                     });
                 }
