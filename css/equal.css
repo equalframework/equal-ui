@@ -954,6 +954,10 @@ body > .header-view-details-popup .header-view-details-body div {
     max-height: none;
 }
 
+.sb-widget.sb-widget-type-json.sb-json-fullscreen .mdc-text-field-helper-text {
+    display: none !important;
+}
+
 .sb-json-raw-input {
     box-sizing: border-box;
     width: 100%;
@@ -1020,6 +1024,7 @@ body > .header-view-details-popup .header-view-details-body div {
     align-items: center;
     gap: 8px;
     min-height: 34px;
+    padding: 0 10px;
 }
 
 .sb-widget-type-json.sb-widget-mode-edit .sb-json-node-value:hover,
