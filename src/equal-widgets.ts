@@ -332,8 +332,11 @@ class WidgetFactory {
 
         // for relational fields, we need some additional values
         if(['one2many', 'many2one', 'many2many'].indexOf(config.type) > -1) {
-            // handle view based on type, parent view, or custom 'view' attribute (overriding)
-            let view_id = (config.hasOwnProperty('view') && config.view.length > 0) ? config.view : ('list.' + view.getName());
+            // handle view based on type, parent view, or custom 'view' / 'view_id' attributes (overriding)
+            // `view_id` is the canonical attribute and takes precedence over the legacy `view` attribute.
+            let view_id = (typeof config.view_id === 'string' && config.view_id.length > 0)
+                ? config.view_id
+                : ((typeof config.view === 'string' && config.view.length > 0) ? config.view : ('list.' + view.getName()));
             let parts = view_id.split(".", 2);
             let view_type = (parts.length > 1) ? parts[0] : 'list';
             let view_name = (parts.length > 1) ? parts[1] : parts[0];
