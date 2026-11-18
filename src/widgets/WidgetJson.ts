@@ -15,6 +15,7 @@ export default class WidgetJson extends Widget {
     private pendingChange: boolean = false;
     private flushPromise: Promise<void> | null = null;
     private copyFeedbackTimeout: any = null;
+    private fullscreenPlaceholder: Comment | null = null;
 
     constructor(layout: Layout, label: string, value: any, config: {}) {
         super(layout, label, value, config);
@@ -92,6 +93,11 @@ export default class WidgetJson extends Widget {
             clearTimeout(this.copyFeedbackTimeout);
             this.copyFeedbackTimeout = null;
         }
+        const placeholder = this.fullscreenPlaceholder;
+        if(placeholder?.parentNode) {
+            placeholder.parentNode.removeChild(placeholder);
+        }
+        this.fullscreenPlaceholder = null;
         super.destroy();
     }
 
@@ -223,8 +229,13 @@ export default class WidgetJson extends Widget {
             })
             .append($fullscreenIcon)
             .on('click', () => {
-                const fullscreen = !this.$elem.hasClass('sb-json-fullscreen');
-                this.$elem.toggleClass('sb-json-fullscreen', fullscreen);
+                let fullscreen = false;
+                if(this.$elem.hasClass('sb-json-fullscreen')) {
+                    this.exitFullscreen();
+                }
+                else {
+                    fullscreen = this.enterFullscreen();
+                }
                 $fullscreenIcon.text(fullscreen ? 'fullscreen_exit' : 'fullscreen');
                 $fullscreenButton.attr({
                     'aria-label': fullscreen ? 'Exit fullscreen' : 'Enter fullscreen',
@@ -245,6 +256,37 @@ export default class WidgetJson extends Widget {
             $('<div class="sb-json-title" />').text(this.label),
             $controls
         );
+    }
+
+    private enterFullscreen(): boolean {
+        const element = this.$elem[0];
+        if(!element?.parentNode) {
+            return false;
+        }
+
+        this.fullscreenPlaceholder = document.createComment('WidgetJson fullscreen placeholder');
+        element.parentNode.insertBefore(this.fullscreenPlaceholder, element);
+
+        // detach() preserves the widget events and jQuery data while it is moved under body.
+        this.$elem
+            .detach()
+            .appendTo(document.body)
+            .addClass('sb-json-fullscreen');
+        return true;
+    }
+
+    private exitFullscreen(): void {
+        const placeholder = this.fullscreenPlaceholder;
+        const element = this.$elem[0];
+
+        this.$elem.removeClass('sb-json-fullscreen');
+        if(placeholder?.parentNode && element) {
+            const parent = placeholder.parentNode;
+            this.$elem.detach();
+            parent.insertBefore(element, placeholder);
+            parent.removeChild(placeholder);
+        }
+        this.fullscreenPlaceholder = null;
     }
 
     private async copyJsonToClipboard($button: JQuery, $icon: JQuery): Promise<void> {
