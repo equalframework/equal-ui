@@ -210,6 +210,24 @@ export class Layout implements LayoutInterface{
     }
 
     /**
+     * Find elements owned by a widget without crossing into a nested view.
+     *
+     * Relational widgets can embed a complete view, including controls such as
+     * the pagination select. Validation state from the parent widget must not
+     * be propagated to those controls.
+     */
+    private findWidgetElements($widget: JQuery, selector: string): JQuery {
+        const owner_view = $widget.closest('.sb-view')[0];
+
+        return $widget
+            .filter(selector)
+            .add($widget.find(selector))
+            .filter((index: number, element: HTMLElement) => {
+                return $(element).closest('.sb-view')[0] === owner_view;
+            });
+    }
+
+    /**
      *
      * @param field
      * @param message
@@ -222,16 +240,16 @@ export class Layout implements LayoutInterface{
         }
         if( this.model_widgets.hasOwnProperty(object_id) && this.model_widgets[object_id].hasOwnProperty(field) ) {
             let widget = this.model_widgets[object_id][field];
-            let $elem = this.$layout.find('#'+widget.getId());
-            let $controls = $elem
-                .filter('.mdc-text-field, .mdc-select')
-                .add($elem.find('.mdc-text-field, .mdc-select'));
+            let $elem = this.$layout.find('#' + widget.getId());
+            let $controls = this.findWidgetElements($elem, '.mdc-text-field, .mdc-select');
+            let $inputs = this.findWidgetElements($elem, 'input, textarea, select');
+            let $helpers = this.findWidgetElements($elem, '.mdc-text-field-helper-text');
 
             $elem.addClass('sb-widget--invalid mdc-text-field--invalid');
             $controls.filter('.mdc-text-field').addClass('mdc-text-field--invalid');
             $controls.filter('.mdc-select').addClass('mdc-select--invalid');
-            $elem.find('input, textarea, select').attr('aria-invalid', 'true');
-            $elem.find('.mdc-text-field-helper-text')
+            $inputs.attr('aria-invalid', 'true');
+            $helpers
                 .addClass('mdc-text-field-helper-text--persistent mdc-text-field-helper-text--validation-msg')
                 .text(message)
                 .attr('title', message)
@@ -249,16 +267,16 @@ export class Layout implements LayoutInterface{
 
         const widget = this.model_widgets[object_id][field];
         const $elem = this.$layout.find('#' + widget.getId());
-        const $controls = $elem
-            .filter('.mdc-text-field, .mdc-select')
-            .add($elem.find('.mdc-text-field, .mdc-select'));
+        const $controls = this.findWidgetElements($elem, '.mdc-text-field, .mdc-select');
+        const $inputs = this.findWidgetElements($elem, 'input, textarea, select');
+        const $helpers = this.findWidgetElements($elem, '.mdc-text-field-helper-text');
         const description = widget.getConfig()?.description ?? '';
 
         $elem.removeClass('sb-widget--invalid mdc-text-field--invalid');
         $controls.filter('.mdc-text-field').removeClass('mdc-text-field--invalid');
         $controls.filter('.mdc-select').removeClass('mdc-select--invalid');
-        $elem.find('input, textarea, select').removeAttr('aria-invalid');
-        $elem.find('.mdc-text-field-helper-text')
+        $inputs.removeAttr('aria-invalid');
+        $helpers
             .removeClass('mdc-text-field-helper-text--persistent mdc-text-field-helper-text--validation-msg')
             .text(description)
             .attr('title', description)
